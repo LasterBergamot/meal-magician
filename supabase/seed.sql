@@ -1,0 +1,4 @@
+-- Seed data for local development.
+--
+-- Runs after migrations on `supabase db reset`. Populated in Phase 1+ once the
+-- schema exists (e.g. a demo household, a few meals, a sample planned week).

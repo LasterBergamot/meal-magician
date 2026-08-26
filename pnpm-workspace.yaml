@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Dependencies allowed to run install/build scripts (pnpm 10+ blocks these by default).
+# sharp: native image optimization used by Next.js in production builds.
+# unrs-resolver: native module resolver used by eslint-plugin-import (via eslint-config-next).
+allowBuilds:
+  sharp: true
+  unrs-resolver: true

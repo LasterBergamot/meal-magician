@@ -1,0 +1,40 @@
+# Supabase local configuration.
+# This is a minimal starting config authored by hand (the Supabase CLI was not
+# installed during scaffolding). Once the CLI is available you can regenerate a
+# fuller config with `supabase init`, or extend the sections below.
+
+project_id = "meal-magician"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+# OAuth providers (Google, Apple) are configured in the Supabase dashboard for the
+# hosted project; they can also be declared here for local dev in later phases.

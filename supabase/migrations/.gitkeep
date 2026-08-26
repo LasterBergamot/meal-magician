@@ -1,0 +1,2 @@
+# SQL migrations live here (Phase 1). Files are named <timestamp>_<description>.sql
+# and applied in order by `supabase db push` (cloud) / `supabase db reset` (local).
