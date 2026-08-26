@@ -1,0 +1,38 @@
+# Podman Compose file for running Meal Magician's app containers.
+#
+#   podman compose up --build          # build + run the web app
+#   podman compose down                # stop and remove
+#
+# Also works with `docker compose`. Variable values are read from a local `.env`
+# file (copy `.env.example` -> `.env` and fill it in). The backend (Postgres,
+# Auth, PostgREST) is provided by Supabase — either the hosted project or the
+# local stack from `supabase start` (which itself runs on Podman; see README).
+#
+# NOTE: NEXT_PUBLIC_* are compiled into the browser bundle at build time, so they
+# are passed as build args AND kept in the runtime env for server components.
+# They must be a URL the *browser* can reach (e.g. your Supabase project URL, or
+# http://localhost:54321 for the local Supabase stack). SUPABASE_SERVICE_ROLE_KEY
+# is server-only and injected at run time.
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Containerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    image: meal-magician-web:latest
+    container_name: meal-magician-web
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+    # Lets the container reach a Supabase stack running on the host (e.g. the
+    # Supabase CLI's local services on http://host.containers.internal:54321).
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
+    restart: unless-stopped

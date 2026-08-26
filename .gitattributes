@@ -1,0 +1,25 @@
+# Normalize line endings so the repo behaves identically on Windows, WSL, and in
+# Linux containers. Text files are stored with LF in git and checked out as LF.
+* text=auto eol=lf
+
+# Windows-only scripts must keep CRLF to run correctly.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+# Shell scripts and container files must always be LF (they run in Linux).
+*.sh          text eol=lf
+Containerfile text eol=lf
+Dockerfile    text eol=lf
+*.sql         text eol=lf
+
+# Treat these as binary (never normalize / diff as text).
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.woff  binary
+*.woff2 binary
+*.p8   binary

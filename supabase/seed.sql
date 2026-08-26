@@ -1,4 +1,33 @@
--- Seed data for local development.
+-- Seed data for local development. Runs after migrations on `supabase db reset`.
 --
--- Runs after migrations on `supabase db reset`. Populated in Phase 1+ once the
--- schema exists (e.g. a demo household, a few meals, a sample planned week).
+-- Meals/households are all owned by real auth users (via RLS + created_by), so
+-- meaningful seed data needs a user to exist first. The simplest, most reliable
+-- path is to sign in through the app (magic link lands in Inbucket at
+-- http://localhost:54324) and create your household there.
+--
+-- If you want a scripted local user, create one with the CLI/Admin API rather
+-- than hand-inserting into auth.users (which also needs an identities row and a
+-- correctly hashed password):
+--
+--   supabase auth admin create-user --email dev@example.com --password password123
+--
+-- Then, with that user's id, you can uncomment and adapt the block below. It is
+-- left commented so `supabase db reset` succeeds on a fresh, user-less database.
+--
+-- do $$
+-- declare
+--   v_uid uuid := '00000000-0000-0000-0000-000000000000'; -- replace with a real auth.users.id
+--   v_household uuid;
+-- begin
+--   insert into public.households (name, created_by)
+--   values ('Demo Household', v_uid)
+--   returning id into v_household;
+--
+--   insert into public.household_members (household_id, user_id, role)
+--   values (v_household, v_uid, 'admin');
+--
+--   insert into public.meals (household_id, name, description, created_by) values
+--     (v_household, 'Grilled chicken salad', 'Light and quick', v_uid),
+--     (v_household, 'Veggie stir-fry',       'Uses up leftovers', v_uid),
+--     (v_household, 'Tomato pasta',          'Weeknight staple',  v_uid);
+-- end $$;

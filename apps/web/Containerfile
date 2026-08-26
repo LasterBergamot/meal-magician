@@ -1,0 +1,59 @@
+# Multi-stage build for the Next.js web app in a pnpm + Turborepo monorepo.
+# Engine-agnostic: build with `podman build` or `docker build`.
+# The build context MUST be the repo root (see compose.yaml / .containerignore),
+# because pnpm needs the workspace manifests and packages/* sources.
+#
+#   podman build -f apps/web/Containerfile -t meal-magician-web .
+#
+# NEXT_PUBLIC_* values are inlined into the client bundle at BUILD time, so they
+# are passed as build args. Server-only secrets (SUPABASE_SERVICE_ROLE_KEY) are
+# provided at RUN time via the environment, never baked into the image.
+
+# ---- Base: pnpm on Node LTS (Debian slim avoids musl/sharp friction) ----
+FROM node:22-bookworm-slim AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN corepack enable && corepack prepare pnpm@11.24.0 --activate
+WORKDIR /app
+
+# ---- Dependencies: install with a cached, frozen lockfile ----
+FROM base AS deps
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/core/package.json ./packages/core/
+RUN pnpm install --frozen-lockfile
+
+# ---- Builder: bring in sources and produce the standalone output ----
+FROM base AS builder
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+# Turn on Next.js standalone output for the image (see apps/web/next.config.mjs).
+ENV BUILD_STANDALONE=true
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm --filter web build
+
+# ---- Runner: minimal image that serves the standalone server ----
+FROM node:22-bookworm-slim AS runner
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+WORKDIR /app
+
+# Run as a non-root user.
+RUN groupadd --system --gid 1001 nodejs \
+  && useradd --system --uid 1001 --gid nodejs nextjs
+
+# The standalone output already contains a pruned node_modules and the server.
+# With outputFileTracingRoot at the repo root, paths keep the monorepo layout.
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+
+USER nextjs
+EXPOSE 3000
+CMD ["node", "apps/web/server.js"]

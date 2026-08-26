@@ -14,6 +14,8 @@ The whole system is designed around one principle: **simple now, extensible late
 | Monorepo tooling | **pnpm workspaces + Turborepo** |
 | Backend | **Supabase only** (Postgres + Auth + RLS + PostgREST + Edge Functions). No custom Python/Java API. |
 | Hosting | **Vercel** (web) + **managed Supabase Cloud** (backend) |
+| Dev environment | **WSL2 (Linux distro) on Windows 11** — develop on the same OS family the app runs on in production, avoiding Windows-only surprises |
+| Containerization | **Podman + Podman Compose** — the web app ships as a Next.js **standalone** image; local dev and CI build the same image |
 | Auth | **Magic link + Google OAuth + Apple sign-in** |
 | Meal slots | **Lunch in UI now**, DB has a `meal_slot` enum so breakfast/dinner/snack are a config change |
 | Reuse model | Meals **auto-collect into a household library**; days/weeks are **explicitly saved as templates** and applied to the calendar |
@@ -30,9 +32,11 @@ meal-magician/
 │                     data-access functions/hooks, Zod schemas, constants
 ├─ supabase/          Backend-as-code: migrations, RLS policies, RPC
 │                     functions, Edge Functions, seed.sql
-├─ .github/workflows/ CI (lint, typecheck, build)
+├─ .github/workflows/ CI (lint, typecheck, build, container image)
+├─ compose.yaml       Podman Compose: build + run the app container(s)
+│  apps/web/Containerfile   Multi-stage Next.js standalone image
 ├─ turbo.json, pnpm-workspace.yaml, package.json, tsconfig.base.json
-├─ .gitignore, .env.example
+├─ .gitignore, .gitattributes, .dockerignore, .env.example
 ```
 
 **Key idea:** the running backend lives in Supabase Cloud, but its schema/policies/functions are version-controlled in `supabase/` and pushed via the Supabase CLI. `packages/core` holds the data layer written **once** and imported by both web and (later) mobile. **Share logic, not UI** initially — each platform keeps its own UI (web = shadcn/ui; mobile = RN components). Cross-platform UI (Tamagui/NativeWind) is a possible later optimization, not a starting constraint.
@@ -79,9 +83,19 @@ Enums: `meal_slot` = `breakfast | lunch | dinner | snack` (default `lunch`); `me
 - Data-access functions/hooks: `getWeekPlan`, `upsertPlannedMeal`, `listMeals`, `createMeal`, template list/apply/save (via `rpc`), household + member management.
 - Zod schemas, domain types, shared constants (slots, roles).
 
+## Development environment & containerization
+
+**Why:** the app runs on Linux in production (Vercel and/or a Podman host), so development happens on Linux too — via **WSL2 on Windows 11**. This keeps native modules (e.g. `sharp`), file-system casing, line endings, and shell tooling identical between dev, CI, and prod.
+
+- **WSL2 + a Linux distro** (e.g. Ubuntu) is the dev shell. Node/pnpm and the Supabase CLI are installed *inside* the distro. For best file-watch performance the repo should live on the Linux filesystem (`~/…`), not `/mnt/c/…`. `.gitattributes` pins **LF** line endings so a Windows checkout still behaves in Linux containers.
+- **Podman + Podman Compose** run the app containers. The web app builds to a Next.js **standalone** bundle (`output: "standalone"` with `outputFileTracingRoot` at the monorepo root) and is packaged by `apps/web/Containerfile` — a multi-stage build (pnpm deps → build → minimal non-root runner). `compose.yaml` at the root builds and runs it; the file is compatible with `docker compose` too.
+- **Backend engine:** the Supabase CLI's local stack (Postgres, Auth, PostgREST, Studio…) is itself a set of containers. It runs on **Podman** by pointing the CLI at the Podman socket (`DOCKER_HOST`) — no Docker Desktop required. Production uses managed Supabase Cloud regardless.
+- **Env vars & containers:** `NEXT_PUBLIC_*` are compiled into the browser bundle at **build time** (passed as `--build-arg`); `SUPABASE_SERVICE_ROLE_KEY` is a **run-time**, server-only secret. The container reaches a host-run Supabase stack via `host.containers.internal`.
+- **Two dev loops:** fast inner loop = `pnpm dev` inside WSL (hot reload); parity/pre-deploy check = `podman compose up --build` to exercise the exact production image. CI builds the image on every push/PR so the Containerfile can't silently rot.
+
 ## Phased delivery roadmap (→ GitHub issues/milestones)
 
-**Phase 0 — Scaffolding.** pnpm + Turborepo; `apps/web` (Next.js+TS+Tailwind+shadcn); `packages/core`; `supabase init`; ESLint/Prettier/tsconfig base; `.gitignore`, `.env.example`; GitHub Actions (lint/typecheck/build); create + link Supabase Cloud project.
+**Phase 0 — Scaffolding.** pnpm + Turborepo; `apps/web` (Next.js+TS+Tailwind+shadcn); `packages/core`; `supabase init`; ESLint/Prettier/tsconfig base; `.gitignore`, `.env.example`; GitHub Actions (lint/typecheck/build); WSL2 + Podman dev setup, `Containerfile` + `compose.yaml` + container-image CI job; create + link Supabase Cloud project.
 
 **Phase 1 — Backend foundation (issue #1 `add-backend`).** All migrations (profiles+trigger, households, members, invites, meals, day/week templates+items, planned_meals, enums); RLS + helper functions (recursion-safe); RPC functions; `seed.sql`; generate types into `packages/core`.
 
@@ -108,7 +122,8 @@ Enums: `meal_slot` = `breakfast | lunch | dinner | snack` (default `lunch`); `me
 
 ## Verification
 
-- **Local dev:** `supabase start` (local stack) or link to cloud; `supabase db reset` applies migrations + seed; `pnpm dev` runs web; `pnpm typecheck` + `pnpm lint` across the monorepo (Turborepo).
+- **Local dev (WSL2):** `supabase start` (local stack on Podman) or link to cloud; `supabase db reset` applies migrations + seed; `pnpm dev` runs web; `pnpm typecheck` + `pnpm lint` across the monorepo (Turborepo).
+- **Container parity:** `podman compose up --build` runs the production standalone image locally; CI (`podman build`) verifies the image builds on every push/PR.
 - **Manual E2E happy path:** sign in (magic link) → create household → add meals → plan a week of lunches → save week as template → move to a new week → apply the template.
 - **RLS checks:** with a second account **not** in the household, confirm zero visibility; after accepting an invite, confirm household data appears; verify a `member` cannot perform admin-only actions.
 - **CI:** GitHub Actions runs lint/typecheck/build on PRs; Vercel posts a preview URL per PR.

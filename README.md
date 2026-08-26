@@ -49,12 +49,14 @@ The web app is a focused, app-like tool. Main screens/flows:
 meal-magician/
 ├─ apps/
 │  ├─ web/            Next.js web app (built first)
+│  │  └─ Containerfile   Multi-stage build → Next.js standalone image
 │  └─ mobile/         Expo / React Native app (later)
 ├─ packages/
 │  └─ core/           Shared TypeScript: types, Supabase client, data hooks, schemas
 ├─ supabase/          Backend-as-code: SQL migrations, RLS policies, RPC & Edge Functions, seed.sql
-├─ .github/workflows/ CI: lint, typecheck, build
-└─ (workspace + tooling config at root)
+├─ compose.yaml       Podman Compose: build + run the app container(s)
+├─ .github/workflows/ CI: lint, typecheck, build, container image
+└─ (workspace + tooling config at root: .gitattributes, .dockerignore, .env.example, …)
 ```
 
 The **running backend lives in Supabase Cloud**, but its schema, security policies, and functions are version-controlled here under `supabase/` and pushed with the Supabase CLI.
@@ -63,13 +65,50 @@ The **running backend lives in Supabase Cloud**, but its schema, security polici
 
 ## Prerequisites
 
-Install these before setting up:
+Development targets **Linux** (via WSL2 on Windows) so your environment matches where the app runs in production. Install these inside your Linux/WSL environment unless noted:
 
-- **Node.js** (LTS) and **[pnpm](https://pnpm.io/installation)** — `npm install -g pnpm`
+- **[WSL2](https://learn.microsoft.com/windows/wsl/install)** with a Linux distro (e.g. Ubuntu) — Windows users. See [Development on Windows (WSL2)](#development-on-windows-wsl2).
+- **Node.js** (LTS) and **[pnpm](https://pnpm.io/installation)** — `npm install -g pnpm` (or Corepack)
+- **[Podman](https://podman.io/docs/installation)** + **[Podman Compose](https://github.com/containers/podman-compose)** — run the app container(s); also used as the container engine for the local Supabase stack
 - **[Supabase CLI](https://supabase.com/docs/guides/cli)** — `npm install -g supabase` (or Scoop/Homebrew)
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** — only if you want to run the full Supabase stack locally (`supabase start`)
 - Accounts: **[Supabase](https://supabase.com)**, **[Vercel](https://vercel.com)**, a **GitHub** account (repo is already on GitHub)
 - Later, for mobile/social auth: a **Google Cloud** project and an **Apple Developer** account
+
+> Docker also works everywhere Podman is mentioned (the `Containerfile` and `compose.yaml` are engine-agnostic), but this project standardizes on **Podman**.
+
+---
+
+## Development on Windows (WSL2)
+
+The app runs on Linux in production, so we develop on Linux too. On Windows 11:
+
+1. **Install WSL2 and a distro** (PowerShell, as admin):
+   ```powershell
+   wsl --install -d Ubuntu
+   ```
+   Reboot if prompted, then open **Ubuntu** and create your Linux user.
+   > Windows ships a `podman-machine-default` WSL image for Podman — that's the Podman VM, **not** a dev shell. Install a real distro (Ubuntu) for development.
+
+2. **Clone into the Linux filesystem** (not `/mnt/c/…`) for fast file watching:
+   ```bash
+   cd ~ && git clone https://github.com/LasterBergamot/meal-magician.git
+   cd meal-magician
+   ```
+
+3. **Install toolchain inside the distro:** Node LTS + `pnpm`, the Supabase CLI, and Podman:
+   ```bash
+   sudo apt-get update && sudo apt-get install -y podman
+   pip install podman-compose         # or: sudo apt-get install -y podman-compose
+   npm install -g pnpm supabase
+   ```
+
+4. **Point the Supabase CLI at Podman** (so `supabase start` uses Podman, no Docker Desktop):
+   ```bash
+   systemctl --user enable --now podman.socket
+   export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/podman/podman.sock"   # add to ~/.bashrc
+   ```
+
+VS Code users: install the **WSL** extension and open the folder with `code .` from inside the distro.
 
 ---
 
@@ -100,7 +139,7 @@ supabase link --project-ref <your-project-ref>
 supabase db push          # applies everything in supabase/migrations to the cloud DB
 ```
 
-For local development instead of cloud, run `supabase start` (needs Docker) and `supabase db reset` to apply migrations + seed data locally.
+For local development instead of cloud, run `supabase start` (uses your container engine — **Podman** here; see [Development on Windows (WSL2)](#development-on-windows-wsl2) for pointing the CLI at the Podman socket) and `supabase db reset` to apply migrations + seed data locally.
 
 ### 4. Configure Auth providers (Supabase UI → Authentication)
 
@@ -153,6 +192,8 @@ supabase secrets set ANTHROPIC_API_KEY=<your-anthropic-key>
 
 ## Local development
 
+Run these inside your WSL2 / Linux shell (see [Development on Windows (WSL2)](#development-on-windows-wsl2)).
+
 ```bash
 # 1. Install all workspace dependencies
 pnpm install
@@ -161,12 +202,12 @@ pnpm install
 cp .env.example .env.local        # then fill in the values from Supabase
 
 # 3. Start the backend
-#    Option A — full local stack (requires Docker):
+#    Option A — full local stack (uses Podman as the container engine):
 supabase start
 supabase db reset                 # applies migrations + seed.sql locally
 #    Option B — use your cloud project (skip supabase start; just link + db push)
 
-# 4. Run the web app
+# 4. Run the web app (fast inner loop with hot reload)
 pnpm dev                          # Next.js dev server, usually http://localhost:3000
 ```
 
@@ -177,6 +218,43 @@ pnpm lint          # lint all packages
 pnpm typecheck     # TypeScript across the monorepo
 pnpm build         # production build
 ```
+
+> **`pnpm build` on native Windows:** the container's Next.js **standalone** output is only produced when `BUILD_STANDALONE=true` (set automatically inside the `Containerfile`). It's gated because the standalone step creates symlinks, which native Windows blocks without Developer Mode. On WSL/Linux and in the container it works unconditionally — another reason to develop in WSL.
+
+---
+
+## Running with Podman (production parity)
+
+To exercise the exact **production image** — a Next.js standalone server on a minimal, non-root Linux container — use Podman Compose. This is the recommended pre-deploy check.
+
+```bash
+# 1. Copy env values (compose substitutes ${...} from this file)
+cp .env.example .env              # fill in NEXT_PUBLIC_* and SUPABASE_SERVICE_ROLE_KEY
+
+# 2. Build + run the web container
+podman compose up --build         # serves http://localhost:3000
+podman compose down               # stop and remove
+```
+
+Or build/run the image directly:
+
+```bash
+podman build -f apps/web/Containerfile \
+  --build-arg NEXT_PUBLIC_SUPABASE_URL=... \
+  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=... \
+  -t meal-magician-web .
+podman run --rm -p 3000:3000 -e SUPABASE_SERVICE_ROLE_KEY=... meal-magician-web
+```
+
+**How env vars flow into the container:**
+
+| Variable | When it's needed | How it's provided |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | build time (inlined into the browser bundle) | `--build-arg` / compose `build.args` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | build time | `--build-arg` / compose `build.args` |
+| `SUPABASE_SERVICE_ROLE_KEY` | run time (server only) | `-e` / compose `environment` |
+
+> `NEXT_PUBLIC_SUPABASE_URL` must be reachable **from the browser**. Use your Supabase project URL, or — when running the local Supabase stack — `http://localhost:54321`. Server-side code in the container can reach a host-run Supabase stack via `http://host.containers.internal:54321` (already wired via `extra_hosts` in `compose.yaml`). Everything is engine-agnostic, so `docker compose` / `docker build` work identically.
 
 ---
 

@@ -33,3 +33,15 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  image:
+    name: Build web container image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Podman is preinstalled on the ubuntu-latest runner and matches the
+      # engine used for local development. Public env vars aren't needed to
+      # validate that the image builds (the landing page doesn't consume them).
+      - name: Build image with Podman
+        run: podman build -f apps/web/Containerfile -t meal-magician-web:ci .

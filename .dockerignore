@@ -1,0 +1,26 @@
+# Keeps the image build context small and deterministic.
+# Honored by both `podman build` (which reads .containerignore or .dockerignore)
+# and `docker build`. The build context is the repo root.
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/build
+**/out
+**/*.tsbuildinfo
+
+.git
+.github
+.vscode
+.idea
+
+# Never ship env files into the image. Public vars come in via --build-arg;
+# server secrets are injected at run time.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Local Supabase state and logs aren't needed to build the web image.
+supabase/.branches
+supabase/.temp
+**/*.log
