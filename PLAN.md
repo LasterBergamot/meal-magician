@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **planning done, Phase 0 not started** · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phase 0 in progress** · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -68,39 +68,40 @@ after a server.
 Each phase is an **epic** with sub-issues, created with the `new-issue` skill (conventions in
 `.claude/context/issues.md`). Fill in the `#N` numbers here when the issues exist.
 
-### Phase 0 — Foundation (milestone `M0 – Foundation`)
-- [ ] Create the GitHub repo `LasterBergamot/meal-magician` (private): `main` as default,
-      branch protection, labels, milestones, project board, wiki enabled. *(Ask the owner
-      first: these are outward-facing.)*
-- [ ] File the epics for Phases 0–7 and the Phase 0 sub-issues.
+### Phase 0 — Foundation (milestone `M0 – Foundation`, epic #1)
+- [x] Create the GitHub repo `LasterBergamot/meal-magician` (**public**, so branch protection
+      and the wiki work on the free plan): `main` as default, PRs required, merge commits only,
+      wiki on, labels, milestones, Dependabot alerts, secret scanning.
+- [x] Project board #7 (Status/Area/Priority/Size), with all issues added.
+- [x] File the epics for Phases 0–7 (#1–#8) and the Phase 0 sub-issues (#9–#18).
 - [x] Claude Code setup: ai-common `workflow` skills through APM, router `CLAUDE.md`,
       `.claude/context`, `.claude/rules`, settings. *(Done when the repo was initialised.)*
 - [x] Docs skeleton: `README.md`, `documentation/` (Current-State and Roadmap pages), and this plan.
-- [ ] Gradle skeleton: Java 25 toolchain, Spring Boot 4, Spring Modulith, JTE (precompiled),
+- [ ] #9 Gradle skeleton: Java 25 toolchain, Spring Boot 4, Spring Modulith, JTE (precompiled),
       Lombok + `lombok.config`, Spotless, Checkstyle (Javadoc), JaCoCo 100 %, version catalog.
-- [ ] `Taskfile.yml` + `scripts/doctor.sh`. The tasks listed in `.claude/context/workflow.md`.
-- [ ] `compose.yml` (Postgres with pgvector) and the H2 dev profile; the Flyway baseline
+- [ ] #10 `Taskfile.yml` + `scripts/doctor.sh`. The tasks listed in `.claude/context/workflow.md`.
+- [ ] #11 `compose.yml` (Postgres with pgvector) and the H2 dev profile; the Flyway baseline
       (`V1__init.sql`, plus the pgvector extension in `postgresql/`).
-- [ ] Identity: Google OIDC login, the DB allowlist and `MM_ADMIN_EMAILS` bootstrap, `AppUser`,
+- [ ] #12 Identity: Google OIDC login, the DB allowlist and `MM_ADMIN_EMAILS` bootstrap, `AppUser`,
       Spring Session JDBC, sign-out, fail-closed production config.
-- [ ] Base layout: JTE layout, Tailwind standalone CLI, htmx + Alpine (CSP build), the `t()`
+- [ ] #13 Base layout: JTE layout, Tailwind standalone CLI, htmx + Alpine (CSP build), the `t()`
       i18n helper (hu/en) and language switcher, PWA manifest + service worker, error pages,
       htmx session-expiry handling (`HX-Redirect`).
-- [ ] Tests: the Modulith verify test, an "every endpoint needs auth" test, the template
+- [ ] #14 Tests: the Modulith verify test, an "every endpoint needs auth" test, the template
       hard-coded-text test, a docs-tooling test (router paths exist, rule globs match,
       `CLAUDE.md` under 100 lines).
-- [ ] `Dockerfile` (multi-stage, pinned by digest, uid 10001, AppCDS) and `compose.e2e.yml`
+- [ ] #15 `Dockerfile` (multi-stage, pinned by digest, uid 10001, AppCDS) and `compose.e2e.yml`
       with a stub OIDC provider; one Playwright-Java e2e test (sign in → hello page) on phone
       and desktop viewports.
-- [ ] CI: `ci.yml`, `docs-check.yml` (+ `scripts/check_docs_touched.sh`), `wiki-sync.yml`,
+- [ ] #16 CI: `ci.yml`, `docs-check.yml` (+ `scripts/check_docs_touched.sh`), `wiki-sync.yml`,
       `dependabot.yml`, PR template already in place.
-- [ ] Railway: project, Postgres with pgvector, app service from the GHCR image, sleeping on,
+- [ ] #17 Railway: project, Postgres with pgvector, app service from the GHCR image, sleeping on,
       variables. The Google OAuth client is created in Google Cloud. Runbooks:
       `documentation/Railway-Setup.md`, `documentation/Auth-Setup.md`.
-- [ ] `release.yml` → first deploy **v0.1.0**: sign in on a phone and see the hello page.
+- [ ] #18 `release.yml` → first deploy **v0.1.0**: sign in on a phone and see the hello page.
       Confirm that the app really sleeps when idle.
 
-### Phase 1 — Households (`M1 – Core planner`)
+### Phase 1 — Households (`M1 – Core planner`, epic #2)
 - [ ] Create a household (the creator becomes OWNER), rename it, switch between households
       (stored in the session).
 - [ ] Email-bound invites: create, list, revoke, `/join/<code>`, expiry options.
@@ -108,31 +109,31 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
 - [ ] Tenant-isolation test (404 for another household's data), plus 403 tests for owner-only actions.
 - [ ] Admin page for the allowlist (instance admins only).
 
-### Phase 2 — Meal library (`M1`)
+### Phase 2 — Meal library (`M1`, epic #3)
 - [ ] Meal CRUD: name, notes, recipe URL, tags, which occasion types it suits, archive.
 - [ ] Tags per household; search and filter (name, tag), recently used meals first.
 - [ ] Quick-add from a phone (name only, add the details later).
 
-### Phase 3 — Weekly plan (`M1`)
+### Phase 3 — Weekly plan (`M1`, epic #4)
 - [ ] Week view: a grid on desktop, a list of days on phone; ISO-week navigation; today highlighted.
 - [ ] Slots: BREAKFAST / LUNCH / DINNER / SNACK. Add a meal from the library or create one inline;
       a note per slot; reorder and move slots.
 - [ ] Optimistic locking (`@Version`) with a friendly "someone else changed this, reload" message.
 
-### Phase 4 — Reuse and occasions (`M1`)
+### Phase 4 — Reuse and occasions (`M1`, epic #5)
 - [ ] Copy a day onto another date, and copy a week onto another week (merge or replace).
 - [ ] `PlanTemplate` with scope DAY or WEEK: save from a plan, apply to a date or week (merge
       or replace), rename and delete.
 - [ ] Occasions: a dated event (name, date, type: birthday, holiday, party, other) with its own
       menu items; shown on the week view; save as a template and reuse next year.
 
-### Phase 5 — Feedback, sharing, PWA polish (`M1`) → **v1.0.0**
+### Phase 5 — Feedback, sharing, PWA polish (`M1`, epic #6) → **v1.0.0**
 - [ ] Rate an eaten meal: each member gives a thumbs up/down or 1–5, with an optional comment;
       a "how did it go" prompt on past slots.
 - [ ] Print-friendly week view; read-only share link (hashed token, expires, can be revoked).
 - [ ] PWA polish: icons, theme colour, install hint. Lighthouse check on a phone.
 
-### Phase 6 — Hardening (`M2 – Hardening`)
+### Phase 6 — Hardening (`M2 – Hardening`, epic #7)
 - [ ] Backups: Railway's own backups, if the plan has them, plus `db-backup.yml` (scheduled
       `pg_dump` → encrypted with `age` → artifact or object storage). One **restore drill**,
       documented.
@@ -141,7 +142,7 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
 - [ ] `repo-audit` run; fix or file its findings.
 - [ ] Review the cost and cold starts after one month (D17): stay on the JVM or move to native.
 
-### Phase 7 — AI assistant (`M3 – Assistant`)
+### Phase 7 — AI assistant (`M3 – Assistant`, epic #8)
 - [ ] `assistant` module: Spring AI `ChatClient`, with the provider chosen by config (D19);
       monthly spend cap per household.
 - [ ] In-process ONNX embeddings → `PgVectorStore`; re-index on `MealChanged` and
@@ -301,14 +302,11 @@ meal-magician/
 ## 9. Start here (next agent)
 
 1. Read `CLAUDE.md`, then this file, then `.claude/context/workflow.md` and `pr-checklist.md`.
-2. The repo has only been initialised locally (git `main`, no commits, no remote). **Ask the
-   owner before:** creating the GitHub repo, pushing, creating labels, milestones, the board or
-   issues, and setting up Google Cloud or Railway. Those are outward-facing.
-3. Suggested first session:
-   1. With the owner's OK, create the GitHub repo and push an initial commit
-      (`chore: initial project setup`; issue numbers don't exist yet).
-   2. Create the labels, milestones and board from `.claude/context/issues.md`.
-   3. File the epics and Phase 0 issues with `new-issue`, then write their numbers into §3.
+2. The repo, labels, milestones, epics (#1–#8) and Phase 0 issues (#9–#18, with blocked-by
+   links) exist. Still **ask the owner before** pushing to `main`, merging PRs, and anything
+   in Google Cloud or Railway.
+3. Start with #9 (Gradle skeleton). The dependency order is #9 → #10/#11/#13 → #12 → #14/#15
+   → #16 → #18; #17 runs in parallel and needs the owner (consoles).
 4. Then work on Phase 0 issue by issue: a branch per issue, PRs through `create-pr`.
 5. Before scaffolding, look up the current latest versions (Spring Boot 4.x, Spring Modulith,
    JTE, the Gradle plugins, Testcontainers, Playwright) and pin them in the version catalog.
@@ -319,4 +317,5 @@ meal-magician/
 
 | Date | What | Refs |
 |---|---|---|
+| 2026-10-31 | Base package `hu.lasterbergamot.mealmagician` (D20), Temurin 25 through the wrapper and toolchain (D21). Repo created on GitHub as public (free-plan branch protection and wiki). Labels, milestones, board #7, epics and Phase 0 issues filed. | #1–#18 |
 | 2026-10-31 | Plan agreed with the owner (interview: hosting, auth, UI, AI, workflow). Repo initialised locally, ai-common `workflow` v0.1.1 installed through APM, docs skeleton written. | — |

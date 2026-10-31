@@ -3,7 +3,7 @@
 Read by the `repo-audit` skill (from `ai-common`). The skill holds the procedure; this file
 holds what this repo's audit covers, so runs are comparable.
 
-- **Repo and board:** `LasterBergamot/meal-magician`, project TBD (see `issues.md`).
+- **Repo and board:** `LasterBergamot/meal-magician`, project #7.
 - **Marker line:** `_Found in the <Mon YYYY> repository audit._`
 
 ## Code explorer
