@@ -68,6 +68,7 @@ meal-magician/
 ├── src/main/java/hu/lasterbergamot/mealmagician/   # app class + one package per module (identity, household, catalog, planning, feedback, sharing, shared)
 ├── src/main/jte/             # JTE templates (empty until #13)
 ├── compose.yml               # local Postgres 17 + pgvector (`task up`)
+├── .env.example              # variables for local runs (copy to .env, git-ignored)
 ├── src/main/resources/       # application.yml (+ -dev, -postgres profiles), db/migration/{common,postgresql} (Flyway)
 ├── src/test/java/…           # ModularityTests, context smoke test, persistence/ (H2 + Testcontainers Postgres), unit tests
 ├── .claude/

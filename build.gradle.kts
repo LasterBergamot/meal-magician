@@ -33,6 +33,8 @@ dependencies {
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.flyway)
+    implementation(libs.spring.boot.starter.security)
+    implementation(libs.spring.boot.starter.session.jdbc)
     implementation(libs.flyway.postgresql)
     implementation(libs.spring.modulith.starter.core)
     implementation(libs.jte.spring.boot.starter)
@@ -49,6 +51,7 @@ dependencies {
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.boot.starter.webmvc.test)
+    testImplementation(libs.spring.boot.starter.security.test)
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.modulith.docs)
     testImplementation(libs.spring.boot.testcontainers)

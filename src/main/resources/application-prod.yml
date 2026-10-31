@@ -1,0 +1,13 @@
+# Production (Railway). Secrets and the database URL come from environment variables, never from
+# this file; ProductionConfigGuard refuses to start if any are missing (PLAN.md §4.4).
+spring:
+  flyway:
+    # Portable SQL plus the Postgres-only folder (pgvector). Prod always runs on Postgres.
+    locations: classpath:db/migration/common,classpath:db/migration/postgresql
+server:
+  # Railway's proxy terminates TLS; without this the app would build http:// redirect URLs.
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        secure: true

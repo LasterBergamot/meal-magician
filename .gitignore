@@ -27,3 +27,6 @@ src/main/resources/application-local.yml
 
 # APM: fetched packages (the deployed skills in .claude/ are committed)
 apm_modules/
+
+# Claude Code sub-agent worktrees (local, never committed)
+.claude/worktrees/

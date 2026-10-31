@@ -4,8 +4,7 @@ The step-by-step way from a fresh clone to a working dev environment, for a pers
 **and** for an AI agent: every step has a command, the result to expect, and what to do when the
 result differs. The `setup-project` skill follows only this page, so keep it current.
 
-> **Status:** the Gradle skeleton and `Taskfile.yml` exist. Steps marked *(Phase 0)* need files
-> that later Phase 0 issues add (`.env.example`, the dev profile, Google sign-in). Until then, once
+> **Status:** the Gradle skeleton, `Taskfile.yml`, the databases and Google sign-in exist. Once
 > steps 1–3 pass, `task lint && task test:fast` (or `./gradlew build`) proves the setup: it
 > downloads Gradle, Temurin 25 and the dependencies, then runs the formatter check, Checkstyle,
 > tests and the coverage gate. Expect `BUILD SUCCESSFUL`.
@@ -59,10 +58,14 @@ task install
 installed, so run it again and report it if it repeats. `No Tailwind standalone CLI for …` means
 an unsupported platform (on Windows use WSL).
 
-## 4. Local secrets *(Phase 0)*
+## 4. Local secrets
 
-Copy `.env.example` to `.env` and fill in a **dev** Google OAuth client and your email in
-`MM_ADMIN_EMAILS` ([[Auth Setup]]). Agents: ask the person to do this; never read `.env`.
+Create a **dev** Google OAuth client, copy `.env.example` to `.env` and fill in the client id and
+secret and your own e-mail in `MM_ADMIN_EMAILS`. The click-by-click guide is [[Auth Setup]].
+Agents: ask the person to do this; never read `.env`.
+
+**Expected:** `.env` exists (it is git-ignored). Without it the app still starts, but signing in
+fails at Google with `invalid_client`.
 
 ## 5. Run the app
 
@@ -72,8 +75,9 @@ task serve
 
 **Expected:** the app starts on <http://localhost:8080> on in-memory H2 (no Docker needed) and
 `curl localhost:8080/actuator/health` answers `{"status":"UP",…}`. The log shows
-`The following 1 profile is active: "dev"` and Flyway applying version 1. *(Phase 0, #12: signing
-in with Google as an admin email shows the home page; any other email gets 403.)*
+`The following 1 profile is active: "dev"` and Flyway applying versions 1 and 3. Opening
+<http://localhost:8080/> shows the sign-in page; signing in with Google as an admin e-mail gets you
+in, and any other e-mail gets a 403 (needs step 4).
 
 **If not:** a port clash means something else uses 8080; stop it.
 

@@ -2,9 +2,7 @@
 
 Planned backend work, by `PLAN.md` phase. Move items to [[Current State: Backend]] when they land.
 
-- **Phase 0:** `identity` module (Google OIDC,
-  DB allowlist + `MM_ADMIN_EMAILS`, `AppUser`), Spring Session JDBC, fail-closed prod config;
-  Flyway baseline (common + postgresql/pgvector); guard tests (modularity, endpoint auth).
+- **Phase 0:** guard tests (modularity, endpoint auth: #14).
 - **Phase 1:** `household` module: households, OWNER/MEMBER, switcher, email-bound invites,
   member management, tenant isolation, allowlist admin.
 - **Phase 2:** `catalog` module: meals, tags, search, archive.

@@ -28,5 +28,14 @@ paths:
   `MM_ADMIN_EMAILS`, a Postgres datasource and `server.forward-headers-strategy=framework`.
 - Never log tokens, invite codes, session ids or full emails at INFO; secrets only via env
   (Railway variables / GitHub secrets).
+- Where it lives: `identity/internal/SecurityConfig` (the one filter chain and `PUBLIC_PATHS`),
+  `AllowlistedOidcUserService` (the allowlist gate), `ProductionConfigGuard` (a
+  `BeanFactoryPostProcessor`, so it fails before Flyway or the datasource start). Controllers get
+  the person with `@AuthenticationPrincipal SignedInUser` (public API of `identity`).
+- Spring Security gotcha: an explicit `exceptionHandling().authenticationEntryPoint(...)` overrides
+  every `defaultAuthenticationEntryPointFor(...)` mapping, which silently disables the htmx
+  `HX-Redirect` rule. Register entry points only as mappings.
+- Session clean-up is not scheduled (D11): `SessionCleanupOnSignIn` deletes expired sessions at
+  sign-in. `SessionStoreTests` fails if a timer ever appears.
 - A test walks every mapped endpoint and fails if any non-public one is reachable anonymously;
   keep the public list (`/login`, `/join/**` landing, static assets, `/actuator/health`) explicit.
