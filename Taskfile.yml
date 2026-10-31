@@ -40,9 +40,7 @@ tasks:
 
   "serve:pg":
     desc: Run the app against the compose Postgres (run `task up` first)
-    cmd: |
-      echo "serve:pg arrives with #11 (compose.yml and the Postgres settings)." >&2
-      exit 1
+    cmd: ./gradlew bootRun --args='--spring.profiles.active=dev,postgres'
 
   test:
     desc: All tests and the 100 % JaCoCo line + branch gate (needs Docker for Testcontainers)
@@ -67,23 +65,16 @@ tasks:
 
   up:
     desc: Start compose.yml (Postgres + pgvector)
-    preconditions:
-      - sh: test -f compose.yml
-        msg: "compose.yml arrives with #11."
     cmd: docker compose up -d --wait
 
   down:
     desc: Stop compose.yml
-    preconditions:
-      - sh: test -f compose.yml
-        msg: "compose.yml arrives with #11."
     cmd: docker compose down
 
   migrate-check:
     desc: Flyway migrate + validate on a throw-away Postgres (CI runs it)
-    cmd: |
-      echo "migrate-check arrives with #11 (the Flyway baseline)." >&2
-      exit 1
+    # Runs the Testcontainers test that applies every migration to a pgvector Postgres.
+    cmd: ./gradlew test --tests '*PostgresMigrationTests'
 
   "docs:check":
     desc: Docs tooling checks (CI runs it)

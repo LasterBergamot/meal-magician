@@ -1,0 +1,7 @@
+# Local development and the fast tests: an in-memory H2 that behaves like Postgres (PLAN.md D10).
+# It starts empty on every run; Flyway rebuilds the schema. `task serve` needs no Docker.
+spring:
+  datasource:
+    url: jdbc:h2:mem:mealmagician;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""

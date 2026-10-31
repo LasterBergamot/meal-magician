@@ -3,7 +3,7 @@
 Run the tasks from anywhere in the repo (`task`, or `go-task` where `task` is only a shell
 alias). `Taskfile.yml` is the single entry point (#10); keep this list and the Taskfile in sync.
 Tasks marked *later* already exist but stop with a message naming the issue that makes them real;
-tasks with a file precondition (`up`, `down`, `build`) start working when that file lands.
+`build` needs the `Dockerfile` and says so until it lands.
 
 ## Tasks
 
@@ -12,15 +12,15 @@ task install      # ./gradlew dependencies + download the Tailwind standalone CL
 task doctor       # check required tools + versions (scripts/doctor.sh; runbook: documentation/Setup.md)
 task lint         # Spotless check + Checkstyle (Javadoc presence)
 task format       # Spotless apply (google-java-format)
-task serve        # bootRun with the dev profile (no Docker needed); tailwind --watch joins in #13
-task serve:pg     # later (#11): bootRun against the compose Postgres (run `task up` first)
+task serve        # bootRun with the dev profile on in-memory H2 (no Docker needed); tailwind --watch joins in #13
+task serve:pg     # bootRun with profiles dev,postgres against the compose Postgres (run `task up` first)
 task test         # unit + slice + Testcontainers integration tests, JaCoCo 100 % gate (needs Docker)
 task test:fast    # skips @Tag("integration") tests (-Pfast): no Docker, no coverage gate (inner loop; CI always runs `task test`)
 task test-e2e     # later (#15): build image, start compose.e2e.yml (app + stub OIDC + Postgres), Playwright tests, tear down
 task build        # build the container image (meal-magician); needs the Dockerfile (#15)
-task up           # start compose.yml (Postgres + pgvector); needs compose.yml (#11)
+task up           # start compose.yml (Postgres + pgvector) and wait until it is healthy
 task down         # stop it
-task migrate-check  # later (#11): Flyway migrate + validate on a throw-away Postgres (CI runs it)
+task migrate-check  # runs PostgresMigrationTests: every migration applied to a throw-away pgvector Postgres (needs Docker; CI runs it)
 task docs:check   # later (#14): docs tooling checks (CI runs it)
 ```
 

@@ -1,0 +1,6 @@
+-- Baseline. Nothing to create yet: the tables arrive with the issues that need them (identity
+-- in #12, then the household, catalog and planning modules).
+--
+-- This folder holds SQL that runs unchanged on H2 (PostgreSQL mode) and on Postgres. SQL that
+-- only works on Postgres belongs in db/migration/postgresql/. Version numbers are shared by both
+-- folders, so pick the next free one. See .claude/rules/persistence.md.

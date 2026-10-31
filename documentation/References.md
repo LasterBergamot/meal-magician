@@ -33,6 +33,10 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | PostgreSQL | https://www.postgresql.org/docs/ |
 | pgvector | https://github.com/pgvector/pgvector |
 | H2 | https://h2database.com/html/features.html |
+| Spring Data JPA | https://docs.spring.io/spring-data/jpa/reference/ |
+| HikariCP (connection pool) | https://github.com/brettwooldridge/HikariCP#gear-configuration-knobs-baby |
+| Spring Boot: Testcontainers and `@ServiceConnection` | https://docs.spring.io/spring-boot/reference/testing/testcontainers.html |
+| pgvector Docker image | https://hub.docker.com/r/pgvector/pgvector |
 | Testcontainers (Java) | https://java.testcontainers.org/ |
 | Playwright for Java | https://playwright.dev/java/ |
 | JaCoCo | https://www.jacoco.org/jacoco/trunk/doc/ |

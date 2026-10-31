@@ -26,9 +26,9 @@ What exists in `main` today:
 - **Lombok** is configured (`lombok.config`) but not used yet.
 - **Taskfile (#10):** `Taskfile.yml` is the one command surface for people, agents and CI
   (`task --list`). Working today: `install`, `doctor`, `lint`, `format`, `serve`, `test`,
-  `test:fast`. `up`, `down` and `build` start working when `compose.yml` / the `Dockerfile` land;
-  `serve:pg`, `test-e2e`, `migrate-check` and `docs:check` exist but stop with a message naming
-  the issue that implements them. Why it exists: everyone, including CI, runs the same commands,
+  `test:fast`, `up`, `down`, `serve:pg` and `migrate-check`. `build` starts working when the
+  `Dockerfile` lands; `test-e2e` and `docs:check` exist but stop with a message naming the issue
+  that implements them. Why it exists: everyone, including CI, runs the same commands,
   so "works on my machine" and "passes in CI" mean the same thing.
   - `scripts/doctor.sh` (`task doctor`) prints `ok`/`FAIL` per tool: Java 17+ (only to start
     Gradle), Task, Docker with a running daemon, Compose 2.24+; `gh`, Railway CLI, `apm` and the
@@ -38,5 +38,16 @@ What exists in `main` today:
     a binary that doesn't match is never installed. This keeps the project free of Node.
   - `task test:fast` passes `-Pfast`, which makes Gradle skip tests tagged `@Tag("integration")`
     (the Testcontainers ones), so the inner loop needs no Docker. CI never uses it.
+
+- **Local databases (#11):** two setups, so the inner loop is fast and the truth is real
+  (PLAN.md D10).
+  - `task serve` runs the `dev` profile on **in-memory H2 in PostgreSQL mode**: no Docker, and
+    the data is gone when you stop the app (Flyway rebuilds the schema on every start).
+  - `task up` starts `compose.yml`: **Postgres 17 with the pgvector extension**, the image pinned
+    by digest, on `localhost:5432` with throw-away dev credentials. `task serve:pg` runs the
+    app against it (profiles `dev,postgres`); `task down` stops it, keeping the data volume.
+  - The Docker-based tests share one Testcontainers Postgres through
+    `AbstractPostgresIntegrationTest`. `task migrate-check` runs `PostgresMigrationTests`, which
+    applies every migration to that real Postgres and checks `pgvector` is installed.
 
 Not yet: CI, container, hosting — see [[Roadmap: Everything Else]].

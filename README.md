@@ -46,7 +46,8 @@ task format       # format the code
 task lint         # Spotless + Checkstyle (Javadoc)
 task test         # tests + the 100 % JaCoCo gate
 task test:fast    # same without the Docker-based tests (inner loop)
-task serve        # run the app on http://localhost:8080
+task serve        # run the app on http://localhost:8080 (in-memory H2, no Docker)
+task up           # start local Postgres + pgvector (Docker); then `task serve:pg`
 ```
 
 Plain `./gradlew build` still runs the whole quality gate in one go.
@@ -66,8 +67,9 @@ meal-magician/
 ├── lombok.config, config/checkstyle/   # Lombok settings; Checkstyle Javadoc rules
 ├── src/main/java/hu/lasterbergamot/mealmagician/   # app class + one package per module (identity, household, catalog, planning, feedback, sharing, shared)
 ├── src/main/jte/             # JTE templates (empty until #13)
-├── src/main/resources/application.yml
-├── src/test/java/…           # ModularityTests, context smoke test, unit tests
+├── compose.yml               # local Postgres 17 + pgvector (`task up`)
+├── src/main/resources/       # application.yml (+ -dev, -postgres profiles), db/migration/{common,postgresql} (Flyway)
+├── src/test/java/…           # ModularityTests, context smoke test, persistence/ (H2 + Testcontainers Postgres), unit tests
 ├── .claude/
 │   ├── agents/               # convention-reviewer (from ai-common)
 │   ├── context/              # workflow, PR checklist, issues, docs map, audit, claude-code

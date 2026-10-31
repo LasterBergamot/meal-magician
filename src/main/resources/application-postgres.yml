@@ -1,0 +1,11 @@
+# Real Postgres. Local defaults match compose.yml (`task up`); Railway overrides them with
+# SPRING_DATASOURCE_URL / _USERNAME / _PASSWORD. Combine with dev as `dev,postgres`: this file
+# is read last, so its datasource wins over dev's H2.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mealmagician
+    username: mealmagician
+    password: mealmagician
+  flyway:
+    # Postgres-only SQL (pgvector) on top of the portable folder.
+    locations: classpath:db/migration/common,classpath:db/migration/postgresql
