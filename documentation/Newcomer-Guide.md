@@ -17,7 +17,7 @@ allowlisted emails get in; households are shared through email-bound invite link
 | JTE + htmx + Alpine + Tailwind | server-rendered, type-safe templates; SPA-like feel without a JS build |
 | PostgreSQL + pgvector, Flyway | one DB for app data and later AI embeddings; versioned schema |
 | H2 | fast local runs and tests without Docker |
-| Gradle + Taskfile | build, and one command surface for people, agents and CI. The `gradlew` wrapper pins the Gradle version; a *toolchain* downloads Java 25 itself, so your machine's JDK doesn't matter |
+| Gradle + Taskfile | build, and one command surface for people, agents and CI: type `task --list` to see every command, `task doctor` to check your machine. The `gradlew` wrapper pins the Gradle version; a *toolchain* downloads Java 25 itself, so your machine's JDK doesn't matter |
 | Spotless, Checkstyle, JaCoCo | the quality gates: formatting, "every public method has Javadoc", and 100 % test coverage. `./gradlew build` runs all three |
 | Lombok | removes getter/builder boilerplate from JPA entities (later); its output is marked so coverage ignores it |
 | Railway | hosting with no server to manage; app sleeps when idle |
@@ -37,6 +37,6 @@ See `PLAN.md` §4.3; this section will walk through real code once Phase 0 exist
 
 ## Your first change
 
-Pick an issue, branch `feat/<issue>-…`, write tests first, `task lint && task test` (until the
-Taskfile exists: `./gradlew spotlessApply build`), open a PR
-with the template. Details: `.claude/context/workflow.md`.
+Run `task doctor` once to check your tools and `task install` to fetch dependencies. Then pick an
+issue, branch `feat/<issue>-…`, write tests first, run `task format`, `task lint` and `task test`
+(`task test:fast` is the quick loop while you work), and open a PR with the template. Details: `.claude/context/workflow.md`.

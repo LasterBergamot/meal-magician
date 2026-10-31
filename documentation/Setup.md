@@ -4,8 +4,9 @@ The step-by-step way from a fresh clone to a working dev environment, for a pers
 **and** for an AI agent: every step has a command, the result to expect, and what to do when the
 result differs. The `setup-project` skill follows only this page, so keep it current.
 
-> **Status:** the Gradle skeleton exists; `Taskfile.yml` does not yet. Steps marked *(Phase 0)*
-> become valid once the Taskfile lands. Until then, after steps 1–2, run `./gradlew build`: it
+> **Status:** the Gradle skeleton and `Taskfile.yml` exist. Steps marked *(Phase 0)* need files
+> that later Phase 0 issues add (`.env.example`, the dev profile, Google sign-in). Until then, once
+> steps 1–3 pass, `task lint && task test:fast` (or `./gradlew build`) proves the setup: it
 > downloads Gradle, Temurin 25 and the dependencies, then runs the formatter check, Checkstyle,
 > tests and the coverage gate. Expect `BUILD SUCCESSFUL`.
 
@@ -20,19 +21,19 @@ result differs. The `setup-project` skill follows only this page, so keep it cur
 ## 1. Check the tools
 
 ```bash
-java -version && (task --version || go-task --version) && docker compose version && gh --version
+bash scripts/doctor.sh      # the same check as `task doctor`, for when Task itself is missing
 ```
 
-**Expected:**
-- Any JDK that can run Gradle; the wrapper's toolchain downloads Temurin 25 by itself (PLAN.md D21).
+**Expected:** `ok` for each required tool and `All required tools are present.`:
+- Java 17+: any JDK that can run Gradle; the wrapper's toolchain downloads Temurin 25 by itself (PLAN.md D21).
 - Task 3.x.
-- Docker Compose 2.24+.
-- gh 2.x.
+- Docker with a running daemon, and Docker Compose 2.24+.
+- Optional, only reported: `gh` 2.x (needed for issues and PRs), the Railway CLI, `apm`, and the
+  Tailwind CLI (`skip` until step 3).
 
-*(Phase 0: replaced by `task doctor`.)*
-
-**If not:** install the missing tool (README → Prerequisites). On Arch the Task binary is
-`go-task`. If `task` is only a shell alias, agents and scripts must call `go-task`.
+**If not:** a `FAIL` line names the tool and the problem. Install the missing tool (README →
+Prerequisites) and run it again. On Arch the Task binary is `go-task`; if `task` is only a shell
+alias, agents and scripts must call `go-task`.
 
 ## 2. Claude Code skills are present
 
@@ -45,13 +46,18 @@ ls .claude/skills
 **If not:** the deployed copies are committed; check out a clean tree. Only maintainers updating
 them need `GITHUB_APM_PAT=$(gh auth token) apm install`.
 
-## 3. Install dependencies *(Phase 0)*
+## 3. Install dependencies
 
 ```bash
 task install
 ```
 
-**Expected:** Gradle resolves dependencies and the Tailwind CLI is in `.tools/`.
+**Expected:** Gradle resolves the dependencies and `.tools/tailwindcss` exists
+(`Installed .tools/tailwindcss (v…)`; a second run says it is already there).
+
+**If not:** `Checksum mismatch` means the download was corrupted or tampered with: nothing was
+installed, so run it again and report it if it repeats. `No Tailwind standalone CLI for …` means
+an unsupported platform (on Windows use WSL).
 
 ## 4. Local secrets *(Phase 0)*
 
@@ -67,10 +73,11 @@ task serve
 **Expected:** the app on <http://localhost:8080>; signing in with Google as an admin email shows
 the home page; any other email gets 403.
 
-## 6. Run the tests *(Phase 0)*
+## 6. Run the tests
 
 ```bash
 task lint && task test
 ```
 
-**Expected:** both pass; coverage 100 %. `task test` needs Docker (Testcontainers).
+**Expected:** both pass; coverage 100 %. `task test` needs Docker once Testcontainers tests
+exist; `task test:fast` skips them and the coverage gate for a quick check without Docker.

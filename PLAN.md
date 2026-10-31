@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phase 0 in progress** (#9 done) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phase 0 in progress** (#9, #10 done) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -80,7 +80,10 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
 - [x] #9 Gradle skeleton: Java 25 toolchain, Spring Boot 4, Spring Modulith, JTE (precompiled),
       Lombok + `lombok.config`, Spotless, Checkstyle (Javadoc), JaCoCo 100 %, version catalog.
       *(Done in PR #20.)*
-- [ ] #10 `Taskfile.yml` + `scripts/doctor.sh`. The tasks listed in `.claude/context/workflow.md`.
+- [x] #10 `Taskfile.yml` + `scripts/doctor.sh`. The tasks listed in `.claude/context/workflow.md`.
+      Tasks that need later Phase 0 files (`serve:pg`, `test-e2e`, `migrate-check`, `docs:check`,
+      and `up`/`down`/`build`) exist and stop with a message naming their issue.
+      *(Done in PR #21.)*
 - [ ] #11 `compose.yml` (Postgres with pgvector) and the H2 dev profile; the Flyway baseline
       (`V1__init.sql`, plus the pgvector extension in `postgresql/`).
 - [ ] #12 Identity: Google OIDC login, the DB allowlist and `MM_ADMIN_EMAILS` bootstrap, `AppUser`,
@@ -307,8 +310,8 @@ meal-magician/
 2. The repo, labels, milestones, epics (#1–#8) and Phase 0 issues (#9–#18, with blocked-by
    links) exist. Still **ask the owner before** pushing to `main`, merging PRs, and anything
    in Google Cloud or Railway.
-3. Start with #9 (Gradle skeleton). The dependency order is #9 → #10/#11/#13 → #12 → #14/#15
-   → #16 → #18; #17 runs in parallel and needs the owner (consoles).
+3. #9 and #10 are done. The dependency order is #9 → #10/#11/#13 → #12 → #14/#15
+   → #16 → #18; #17 runs in parallel and needs the owner (consoles). Next: #11 or #13.
 4. Then work on Phase 0 issue by issue: a branch per issue, PRs through `create-pr`.
 5. Before scaffolding, look up the current latest versions (Spring Boot 4.x, Spring Modulith,
    JTE, the Gradle plugins, Testcontainers, Playwright) and pin them in the version catalog.
@@ -322,3 +325,4 @@ meal-magician/
 | 2026-10-31 | Base package `hu.lasterbergamot.mealmagician` (D20), Temurin 25 through the wrapper and toolchain (D21). Repo created on GitHub as public (free-plan branch protection and wiki). Labels, milestones, board #7, epics and Phase 0 issues filed. | #1–#18 |
 | 2026-10-31 | Plan agreed with the owner (interview: hosting, auth, UI, AI, workflow). Repo initialised locally, ai-common `workflow` v0.1.1 installed through APM, docs skeleton written. | — |
 | 2026-10-31 | Gradle skeleton: wrapper 9.8.2, Boot 4.1.2, Modulith 2.1.2, JTE 3.2.4, Temurin 25 toolchain, Spotless, Checkstyle (Javadoc), JaCoCo 100 % gate, empty module packages, `ModularityTests`. Gates proven to fail on untested/undocumented code. | #9, #20 |
+| 2026-10-31 | `Taskfile.yml` with the workflow.md tasks (later ones stop with a message naming their issue), `scripts/doctor.sh`, checksum-pinned Tailwind CLI download, `task test:fast` via the `integration` JUnit tag. | #10, #21 |

@@ -79,7 +79,13 @@ checkstyle {
 tasks.named("checkstyleTest") { enabled = false }
 
 tasks.test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // `task test:fast` (-Pfast) skips the Testcontainers tests, which carry @Tag("integration"),
+        // so the inner loop needs no Docker. CI never passes -Pfast (tests.md).
+        if (providers.gradleProperty("fast").isPresent) {
+            excludeTags("integration")
+        }
+    }
     testLogging {
         events("failed")
         exceptionFormat = TestExceptionFormat.FULL

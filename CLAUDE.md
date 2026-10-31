@@ -18,7 +18,7 @@ RAG, pluggable provider) drafts plans from that history.
 - Data: Postgres with pgvector and Flyway; H2 for fast tests and `task serve`.
 - Hosted on Railway.
 
-All decisions are in `PLAN.md` §2. **Status:** Phase 0 in progress; the Gradle skeleton (#9) exists. Next steps are in
+All decisions are in `PLAN.md` §2. **Status:** Phase 0 in progress; the Gradle skeleton (#9) and the Taskfile (#10) exist. Next steps are in
 `PLAN.md` §9.
 
 ## Router: working on X → read Y
