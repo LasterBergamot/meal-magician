@@ -50,4 +50,18 @@ What exists in `main` today:
     `AbstractPostgresIntegrationTest`. `task migrate-check` runs `PostgresMigrationTests`, which
     applies every migration to that real Postgres and checks `pgvector` is installed.
 
+- **Tailwind in the build, and `task serve` (#13):** the Gradle task `tailwindBuild` runs the
+  pinned CLI (`.tools/tailwindcss`) to produce the minified `static/css/app.css` and runs before
+  `processResources`, so every `./gradlew` build, test run and `bootJar` includes a fresh
+  stylesheet. Without `task install` it fails with a message saying so (CI therefore runs
+  `task install` first). The output is generated, ignored by Git, and neither Spotless nor
+  Checkstyle looks at it. Checkstyle also skips the JTE-generated Java classes
+  (`gg/jte/generated`); the templates are the source.
+  `task serve` and `task serve:pg` call `scripts/serve.sh`, which starts `tailwindcss
+  --watch=always` in the background and `./gradlew bootRun -PskipTailwind` in the foreground, and
+  stops the watcher when the app stops (Ctrl-C). The `dev` profile serves static files straight
+  from `src/main/resources/static`, so CSS and JS edits show after a browser reload.
+- **Icons:** `scripts/generate-icons.sh` regenerates the placeholder PWA icons with ImageMagick;
+  the PNGs are committed, so nobody needs ImageMagick for a normal build.
+
 Not yet: CI, container, hosting — see [[Roadmap: Everything Else]].

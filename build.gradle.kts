@@ -66,6 +66,37 @@ jte {
     binaryStaticContent = true
 }
 
+// Tailwind (PLAN.md D4): the standalone CLI (no Node) compiles src/main/css/app.css into the
+// minified static/css/app.css. The output is generated and git-ignored, so it is neither linted nor
+// committed. `task install` downloads the CLI into .tools/; CI runs it before the build.
+// `task serve` passes -PskipTailwind because it runs `tailwindcss --watch` itself.
+val tailwindCli = layout.projectDirectory.file(".tools/tailwindcss")
+val tailwindBuild =
+    tasks.register<Exec>("tailwindBuild") {
+        group = "build"
+        description = "Builds the minified Tailwind stylesheet (needs `task install` once)."
+        onlyIf { !providers.gradleProperty("skipTailwind").isPresent }
+        inputs.file("src/main/css/app.css")
+        inputs.dir("src/main/jte")
+        inputs.file("src/main/resources/static/js/app.js")
+        inputs.property("cliVersion", providers.fileContents(layout.projectDirectory.file(".tools/tailwindcss.version")).asText.orElse(""))
+        outputs.file("src/main/resources/static/css/app.css")
+        doFirst {
+            check(tailwindCli.asFile.canExecute()) {
+                "The Tailwind CLI is missing (.tools/tailwindcss). Run `task install` (go-task install) once."
+            }
+        }
+        commandLine(
+            tailwindCli.asFile.path,
+            "--input",
+            "src/main/css/app.css",
+            "--output",
+            "src/main/resources/static/css/app.css",
+            "--minify",
+        )
+    }
+tasks.processResources { dependsOn(tailwindBuild) }
+
 spotless {
     java {
         target("src/**/*.java")
@@ -85,6 +116,9 @@ checkstyle {
     configFile = file("config/checkstyle/checkstyle.xml")
     maxWarnings = 0
 }
+// The JTE plugin generates one Java class per template into the main source set; those are not
+// hand-written, so they are not checked for Javadoc (the templates are the source of truth).
+tasks.named<Checkstyle>("checkstyleMain") { exclude("**/gg/jte/generated/**") }
 // Javadoc is required on production code only (CLAUDE.md); tests are named for behaviour instead.
 tasks.named("checkstyleTest") { enabled = false }
 

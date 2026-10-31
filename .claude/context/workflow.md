@@ -12,8 +12,8 @@ task install      # ./gradlew dependencies + download the Tailwind standalone CL
 task doctor       # check required tools + versions (scripts/doctor.sh; runbook: documentation/Setup.md)
 task lint         # Spotless check + Checkstyle (Javadoc presence)
 task format       # Spotless apply (google-java-format)
-task serve        # bootRun with the dev profile on in-memory H2 (no Docker needed); tailwind --watch joins in #13
-task serve:pg     # bootRun with profiles dev,postgres against the compose Postgres (run `task up` first)
+task serve        # bootRun with the dev profile on in-memory H2 (no Docker needed) + `tailwindcss --watch` (scripts/serve.sh stops both together)
+task serve:pg     # same, with profiles dev,postgres against the compose Postgres (run `task up` first)
 task test         # unit + slice + Testcontainers integration tests, JaCoCo 100 % gate (needs Docker)
 task test:fast    # skips @Tag("integration") tests (-Pfast): no Docker, no coverage gate (inner loop; CI always runs `task test`)
 task test-e2e     # later (#15): build image, start compose.e2e.yml (app + stub OIDC + Postgres), Playwright tests, tear down
@@ -23,6 +23,12 @@ task down         # stop it
 task migrate-check  # runs PostgresMigrationTests: every migration applied to a throw-away pgvector Postgres (needs Docker; CI runs it)
 task docs:check   # later (#14): docs tooling checks (CI runs it)
 ```
+
+Every Gradle build (`task test`, `./gradlew build`, `bootJar`) first runs the Tailwind CLI through
+the `tailwindBuild` task, so `task install` is needed once per clone and in CI before the build;
+without it the build stops with "run `task install`". `task serve` passes `-PskipTailwind`
+because its own `--watch` process builds the stylesheet. The generated `static/css/app.css` is
+ignored by Git, not linted and not covered.
 
 The Tailwind CLI version and per-platform SHA-256 hashes are pinned in `scripts/install-tailwind.sh`
 (Dependabot can't track them; bump by hand, the script says how).

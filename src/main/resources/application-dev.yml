@@ -5,3 +5,9 @@ spring:
     url: jdbc:h2:mem:mealmagician;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
     username: sa
     password: ""
+  web:
+    resources:
+      # Serve CSS/JS/icons straight from the source tree, so the Tailwind watcher's output and
+      # edits to app.js show up on reload without a rebuild (task serve). The classpath copy is
+      # the fallback, e.g. when the working directory is not the project root.
+      static-locations: file:src/main/resources/static/,classpath:/static/
