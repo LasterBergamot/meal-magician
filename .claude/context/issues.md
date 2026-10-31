@@ -4,8 +4,8 @@ Read by the `new-issue` skill (from `ai-common`), and by `repo-audit` when it dr
 The skill holds the procedure; this file holds the project's values.
 
 - **Repo:** `LasterBergamot/meal-magician` (`$REPO`; `$OWNER` = `LasterBergamot`, `$NAME` = `meal-magician`).
-- **Status:** the repo, labels, milestones and board don't exist yet (PLAN.md §9). Create them
-  with the owner's OK, then replace the `TBD` values below.
+- **Status:** the repo, labels and milestones exist. The board is still TBD: it needs the
+  `project` scope on the `gh` token.
 
 ## Body extras
 
@@ -33,8 +33,9 @@ The skill holds the procedure; this file holds the project's values.
 
 ## Parent epics
 
-One epic per PLAN.md phase (Phase 0 … Phase 7). Numbers: TBD — fill in when created, and
-mirror them in PLAN.md §3.
+One epic per PLAN.md phase, mirrored in PLAN.md §3: #1 Phase 0 Foundation, #2 Households,
+#3 Meal library, #4 Weekly plan, #5 Reuse and occasions, #6 Feedback/sharing/PWA (v1.0.0),
+#7 Hardening, #8 AI assistant. Each phase's sub-issues are filed when the phase starts.
 
 ## Board
 
