@@ -1,0 +1,8 @@
+.git
+.idea
+.gradle
+build
+out
+.tools
+apm_modules
+*.mv.db

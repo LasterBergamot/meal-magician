@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(task lint)",
+      "Bash(task test)",
+      "Bash(task format)",
+      "Bash(task build)"
+    ],
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(git reset:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(railway:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./.env.production)",
+      "Read(./.env.development)",
+      "Read(./src/main/resources/application-local.yml)"
+    ]
+  }
+}

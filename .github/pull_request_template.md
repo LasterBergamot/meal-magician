@@ -1,0 +1,14 @@
+## Summary
+- **What changed**, and the *why* (the bug or need it addresses)
+
+Closes #N / Refs #M
+
+## Docs
+- Updated: … (README / CLAUDE.md / `.claude/rules` or `.claude/context` / `documentation/` pages / PLAN.md), or `No doc impact: <reason>` (and add the `no-docs` label)
+
+## Test plan
+- [ ] `task lint`
+- [ ] `task test` (100 % coverage)
+- [ ] `task test-e2e` (if templates, static assets, security config or the container changed)
+- [ ] `task migrate-check` (if migrations changed)
+- [ ] Checked on a phone-sized viewport (UI changes)
