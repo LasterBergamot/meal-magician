@@ -14,4 +14,15 @@ What exists in `main` today:
 - **Workflow conventions:** `main`-only branching, merge commits, `#N - subject` commits
   (`.claude/context/workflow.md`).
 
-Not yet: build, CI, container, hosting — see [[Roadmap: Everything Else]].
+- **Build (#9):** Gradle 9.8.2 (Kotlin DSL, committed wrapper) with versions in
+  `gradle/libs.versions.toml`. The Java toolchain (Temurin 25, via the foojay resolver) is
+  downloaded automatically, so only *some* JDK is needed to start Gradle. `./gradlew build` runs:
+  - **Spotless** (google-java-format for Java, ktlint for `*.gradle.kts`); `./gradlew spotlessApply` fixes formatting.
+  - **Checkstyle**, which only checks Javadoc: every public type and method in `src/main/java`
+    needs one, and every package needs a `package-info.java`.
+  - **Tests** (JUnit 5, AssertJ) and a **JaCoCo gate** requiring 100 % line and branch coverage.
+    Excluded, with reasons in `build.gradle.kts`: the class holding `main()` and the generated
+    JTE classes. Lombok-generated code is skipped through `lombok.config`.
+- **Lombok** is configured (`lombok.config`) but not used yet.
+
+Not yet: Taskfile, CI, container, hosting — see [[Roadmap: Everything Else]].

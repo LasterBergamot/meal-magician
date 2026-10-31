@@ -1,7 +1,8 @@
 # Development workflow, environment variables, branches
 
 Run the tasks from anywhere in the repo. **Status:** the `Taskfile.yml` doesn't exist yet; it
-is a Phase 0 item, and this list is its target contents. Keep the list and the Taskfile in sync.
+is a Phase 0 item (#10), and this list is its target contents. Keep the list and the Taskfile in
+sync. Until then use `./gradlew spotlessApply` (format) and `./gradlew build` (lint + tests + coverage gate).
 
 ## Tasks (target)
 

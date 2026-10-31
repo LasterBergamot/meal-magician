@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: meal-magician
+  threads:
+    virtual:
+      enabled: true
+server:
+  shutdown: graceful
+gg:
+  jte:
+    # Templates are compiled at build time (see build.gradle.kts). A dev profile may switch to
+    # developmentMode for hot reload; production always runs the precompiled classes.
+    use-precompiled-templates: true

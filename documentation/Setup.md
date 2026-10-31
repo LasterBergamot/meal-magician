@@ -4,8 +4,10 @@ The step-by-step way from a fresh clone to a working dev environment, for a pers
 **and** for an AI agent: every step has a command, the result to expect, and what to do when the
 result differs. The `setup-project` skill follows only this page, so keep it current.
 
-> **Status:** the application code doesn't exist yet. Steps marked *(Phase 0)* become valid
-> once the Gradle project and `Taskfile.yml` land; until then only steps 1–2 apply.
+> **Status:** the Gradle skeleton exists; `Taskfile.yml` does not yet. Steps marked *(Phase 0)*
+> become valid once the Taskfile lands. Until then, after steps 1–2, run `./gradlew build`: it
+> downloads Gradle, Temurin 25 and the dependencies, then runs the formatter check, Checkstyle,
+> tests and the coverage gate. Expect `BUILD SUCCESSFUL`.
 
 ## Ground rules (agents read these first)
 

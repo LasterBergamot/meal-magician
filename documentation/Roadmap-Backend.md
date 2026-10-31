@@ -2,7 +2,7 @@
 
 Planned backend work, by `PLAN.md` phase. Move items to [[Current State: Backend]] when they land.
 
-- **Phase 0:** Gradle + Spring Boot 4 + Spring Modulith skeleton; `identity` module (Google OIDC,
+- **Phase 0:** `identity` module (Google OIDC,
   DB allowlist + `MM_ADMIN_EMAILS`, `AppUser`), Spring Session JDBC, fail-closed prod config;
   Flyway baseline (common + postgresql/pgvector); guard tests (modularity, endpoint auth).
 - **Phase 1:** `household` module: households, OWNER/MEMBER, switcher, email-bound invites,
