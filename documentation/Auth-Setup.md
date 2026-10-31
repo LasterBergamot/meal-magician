@@ -21,16 +21,17 @@ secret.
 You need an **OAuth client** (an id and a secret) so Google knows which app is asking and where it
 may send people back to.
 
-## Two clients, on purpose
+## One client, two redirect URIs
 
-Create **two** clients so a leaked development secret cannot touch production:
+This is a home project, so one client (`meal-magician`) serves both places (PLAN.md D23):
 
-| Client | Redirect URI | Used by |
-|---|---|---|
-| `meal-magician-dev` | `http://localhost:8080/login/oauth2/code/google` | your machine (`.env`) |
-| `meal-magician-prod` | `https://<railway-domain>/login/oauth2/code/google` | Railway (issue #17) |
+| Redirect URI | Used by |
+|---|---|
+| `http://localhost:8080/login/oauth2/code/google` | your machine (`.env`) |
+| `https://<railway-domain>/login/oauth2/code/google` | Railway |
 
-Do the dev client now. The prod client is created in #17, once Railway has given the app a domain.
+Create the Railway domain first ([[Railway Setup]], part 1) so you can add both URIs at once. If
+the secret ever leaks, rotate it (bottom of this page); both places then get the new one.
 
 ## Step by step: the project and consent screen (once)
 
@@ -54,14 +55,15 @@ Do the dev client now. The prod client is created in #17, once Railway has given
    the status becomes **In production**. This is safe here: with only the three basic scopes there
    is no review, and the allowlist (not Google's test-user list) controls access.
 
-## Step by step: the dev client
+## Step by step: the client
 
 1. Open **Clients** (under Google Auth Platform) → **Create client**.
-2. **Application type:** *Web application*. **Name:** `meal-magician-dev`.
+2. **Application type:** *Web application*. **Name:** `meal-magician`.
 3. **Authorized JavaScript origins:** leave empty (not needed: the exchange happens on the server).
-4. **Authorized redirect URIs → Add URI:** exactly
-   `http://localhost:8080/login/oauth2/code/google`
-   (copy-paste it: scheme, port and path must match character for character).
+4. **Authorized redirect URIs → Add URI** twice, exactly:
+   `http://localhost:8080/login/oauth2/code/google` and
+   `https://<railway-domain>/login/oauth2/code/google`
+   (copy-paste them: scheme, host, port and path must match character for character).
 5. Click **Create**. A dialog shows the **Client ID** and **Client secret**. Copy both now; you
    can also reveal the secret again later from the client's page.
 
@@ -102,7 +104,7 @@ error message lists every missing one at once.
 
 | Variable | Meaning |
 |---|---|
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | the **prod** client |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | the `meal-magician` client |
 | `MM_ADMIN_EMAILS` | at least one instance admin |
 | `SPRING_DATASOURCE_URL` | a `jdbc:postgresql://...` URL (plus `_USERNAME`, `_PASSWORD`) |
 

@@ -55,6 +55,8 @@ Postgres URL is missing.
 - **`main` is the only long-lived branch** (default, protected: PRs only, required checks green,
   no force-push). Feature branches: `feat/<issue>-…`, `fix/<issue>-…`, `chore/<issue>-…`,
   `docs/…`, cut from `main` and PR'd back.
+- **Who merges:** for issues in `PLAN.md` the agent merges its own PR once all required checks
+  are green (PLAN.md D22); repo settings, Railway, Google Cloud and unplanned work need the owner.
 - **Merge commits only** (`gh pr merge <n> --merge`), never squash or rebase. Keep branch history
   clean with `git commit --amend` / `--fixup` + `git rebase --autosquash origin/main`, then
   `git push --force-with-lease` (feature branches only).
