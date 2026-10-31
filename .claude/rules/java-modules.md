@@ -17,6 +17,9 @@ paths:
   `ModularityTests` fails the build if you do.
 - Cross-module side effects go through **application events** (`@ApplicationModuleListener`),
   not direct calls, e.g. `MealChanged` → `assistant`. Name events in past tense, as records.
+- Every package, including each `internal/`, needs a `package-info.java` with Javadoc (Checkstyle
+  `JavadocPackage`). A module's root `package-info.java` carries `@ApplicationModule(displayName = …)`;
+  `shared` is `type = OPEN` because every module may use it.
 - Controllers return JTE views; an htmx request (`HX-Request` header) gets a fragment, otherwise
   the full page. Keep business rules in services, not controllers or templates.
 - Use **records** for DTOs, commands, events and value objects. **Lombok** is for JPA entities

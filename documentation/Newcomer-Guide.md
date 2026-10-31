@@ -1,6 +1,6 @@
 # Newcomer Guide
 
-For a junior developer joining Meal Magician. **Status:** skeleton — it fills in as Phase 0 lands.
+For a junior developer joining Meal Magician. **Status:** skeleton — it fills in as Phase 0 lands. The build works today; run `./gradlew build`.
 
 ## What the app does
 
@@ -17,7 +17,9 @@ allowlisted emails get in; households are shared through email-bound invite link
 | JTE + htmx + Alpine + Tailwind | server-rendered, type-safe templates; SPA-like feel without a JS build |
 | PostgreSQL + pgvector, Flyway | one DB for app data and later AI embeddings; versioned schema |
 | H2 | fast local runs and tests without Docker |
-| Gradle + Taskfile | build, and one command surface for people, agents and CI |
+| Gradle + Taskfile | build, and one command surface for people, agents and CI. The `gradlew` wrapper pins the Gradle version; a *toolchain* downloads Java 25 itself, so your machine's JDK doesn't matter |
+| Spotless, Checkstyle, JaCoCo | the quality gates: formatting, "every public method has Javadoc", and 100 % test coverage. `./gradlew build` runs all three |
+| Lombok | removes getter/builder boilerplate from JPA entities (later); its output is marked so coverage ignores it |
 | Railway | hosting with no server to manage; app sleeps when idle |
 
 ## Glossary
@@ -35,5 +37,6 @@ See `PLAN.md` §4.3; this section will walk through real code once Phase 0 exist
 
 ## Your first change
 
-Pick an issue, branch `feat/<issue>-…`, write tests first, `task lint && task test`, open a PR
+Pick an issue, branch `feat/<issue>-…`, write tests first, `task lint && task test` (until the
+Taskfile exists: `./gradlew spotlessApply build`), open a PR
 with the template. Details: `.claude/context/workflow.md`.

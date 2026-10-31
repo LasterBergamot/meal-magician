@@ -1,0 +1,29 @@
+# Single place for dependency and plugin versions (PLAN.md D2). Looked up on 2026-10-31.
+# Not listed here on purpose: Lombok, Flyway, Hibernate, the Postgres driver, Testcontainers,
+# JUnit, AssertJ and Mockito are versioned by the Spring Boot BOM. Do not pin them twice.
+[versions]
+spring-boot = "4.1.2"
+spring-modulith = "2.1.2"
+jte = "3.2.4"
+spotless = "8.10.4"
+google-java-format = "2.0.0"
+checkstyle = "14.3.0"
+jacoco = "0.8.16"
+
+[libraries]
+spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+spring-modulith-starter-core = { module = "org.springframework.modulith:spring-modulith-starter-core" }
+spring-modulith-starter-test = { module = "org.springframework.modulith:spring-modulith-starter-test" }
+spring-modulith-docs = { module = "org.springframework.modulith:spring-modulith-docs" }
+jte-spring-boot-starter = { module = "gg.jte:jte-spring-boot-starter-4", version.ref = "jte" }
+lombok = { module = "org.projectlombok:lombok" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+jte = { id = "gg.jte.gradle", version.ref = "jte" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

@@ -14,6 +14,7 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | Spring AI (Phase 7) | https://docs.spring.io/spring-ai/reference/ |
 | Flyway | https://documentation.red-gate.com/flyway |
 | Lombok | https://projectlombok.org/features/ |
+| Spring Modulith `ApplicationModule` / `Documenter` | https://docs.spring.io/spring-modulith/reference/fundamentals.html |
 
 ## UI
 
@@ -35,6 +36,13 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | Testcontainers (Java) | https://java.testcontainers.org/ |
 | Playwright for Java | https://playwright.dev/java/ |
 | JaCoCo | https://www.jacoco.org/jacoco/trunk/doc/ |
+| JaCoCo Gradle plugin | https://docs.gradle.org/current/userguide/jacoco_plugin.html |
+| Spotless (Gradle) | https://github.com/diffplug/spotless/tree/main/plugin-gradle |
+| google-java-format | https://github.com/google/google-java-format |
+| Checkstyle | https://checkstyle.org/ |
+| Gradle Java toolchains + foojay resolver | https://docs.gradle.org/current/userguide/toolchains.html |
+| Gradle version catalogs | https://docs.gradle.org/current/userguide/version_catalogs.html |
+| JTE Gradle plugin | https://jte.gg/gradle-plugin/ |
 | Gradle | https://docs.gradle.org/current/userguide/userguide.html |
 | Task | https://taskfile.dev/ |
 | APM | https://github.com/microsoft/apm |

@@ -6,8 +6,9 @@ paths:
 
 # Tests and coverage
 
-- **100 % JaCoCo line + branch coverage** (`task test`). Exclusions only for generated code
-  (JTE classes, Lombok via `@Generated`) and the `main()` class, each with a comment why.
+- **100 % JaCoCo line + branch coverage** (`task test`; today `./gradlew build`). Exclusions only for
+  generated code (JTE classes, Lombok via `@Generated`) and the `main()` class, each with a comment
+  why. The exclusion list lives in `coverageExclusions` in `build.gradle.kts`.
 - Layers:
   - **Unit** (JUnit 5 + AssertJ + Mockito) for services and domain logic; fixed `Clock`.
   - **Slice** (`@WebMvcTest` + `spring-security-test` `oidcLogin()`) for controllers and

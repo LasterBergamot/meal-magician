@@ -5,10 +5,11 @@ invite the family, and plan meals day by day: breakfasts, lunches, dinners, and 
 occasions like birthdays or Christmas. Reuse meals, single days and whole weeks; rate what you
 ate. A later AI assistant will learn the household's preferences and draft plans.
 
-> **Status:** planning done, no application code yet. The plan, decisions and phases are in
-> [`PLAN.md`](PLAN.md); development starts with Phase 0 (`PLAN.md` §9).
+> **Status:** Phase 0 (foundation) in progress. The Gradle skeleton builds and the quality gates
+> run, but there is no user-facing feature yet. The plan, decisions and phases are in
+> [`PLAN.md`](PLAN.md).
 
-## Stack (planned)
+## Stack
 
 | Area | Choice |
 |---|---|
@@ -21,7 +22,7 @@ ate. A later AI assistant will learn the household's preferences and draft plans
 | Hosting | Railway (EU), app sleeps when idle; images in GHCR; deploy on release tag |
 | CI | GitHub Actions: lint, tests (100 % coverage), migrations on Postgres, e2e (Playwright), Trivy |
 
-## Prerequisites (planned)
+## Prerequisites
 
 - Any JDK able to run Gradle. The committed Gradle wrapper and toolchain download Eclipse
   Temurin 25 by themselves (PLAN.md D21).
@@ -36,7 +37,13 @@ Step-by-step setup: [`documentation/Setup.md`](documentation/Setup.md).
 ## Tasks
 
 The target task list is in [`.claude/context/workflow.md`](.claude/context/workflow.md)
-(`task serve`, `task test`, `task lint`, `task test-e2e`, …). `Taskfile.yml` arrives in Phase 0.
+(`task serve`, `task test`, `task lint`, `task test-e2e`, …). `Taskfile.yml` arrives in Phase 0
+(#10); until then call Gradle directly:
+
+```bash
+./gradlew spotlessApply   # format the code
+./gradlew build           # compile, Spotless + Checkstyle, tests, 100 % JaCoCo gate
+```
 
 ## Project structure
 
@@ -48,6 +55,12 @@ meal-magician/
 ├── PLAN.md                   # working plan: decisions, phases, progress log
 ├── README.md
 ├── apm.yml, apm.lock.yaml    # shared Claude Code skills from ai-common (via APM)
+├── build.gradle.kts, settings.gradle.kts, gradle/libs.versions.toml, gradlew   # build (Gradle wrapper pins Gradle 9.8.2)
+├── lombok.config, config/checkstyle/   # Lombok settings; Checkstyle Javadoc rules
+├── src/main/java/hu/lasterbergamot/mealmagician/   # app class + one package per module (identity, household, catalog, planning, feedback, sharing, shared)
+├── src/main/jte/             # JTE templates (empty until #13)
+├── src/main/resources/application.yml
+├── src/test/java/…           # ModularityTests, context smoke test, unit tests
 ├── .claude/
 │   ├── agents/               # convention-reviewer (from ai-common)
 │   ├── context/              # workflow, PR checklist, issues, docs map, audit, claude-code

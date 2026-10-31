@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phase 0 in progress** · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phase 0 in progress** (#9 done) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -40,7 +40,7 @@ after a server.
 | # | Decision | Status |
 |---|---|---|
 | D1 | **Java 25 (current LTS)**, through a Gradle toolchain. Java 27 is out (Sept 2026) but is not LTS; move to the next LTS when it ships. | Decided |
-| D2 | **Spring Boot 4.x, latest patch**, with the exact version pinned when scaffolding (check the latest release then). **Gradle Kotlin DSL** with a version catalog (`gradle/libs.versions.toml`). | Decided |
+| D2 | **Spring Boot 4.x, latest patch**, with the exact version pinned when scaffolding (check the latest release then) *(Amended 2026-10-31: pinned Boot 4.1.2, Modulith 2.1.2, JTE 3.2.4, Gradle 9.8.2; the newest Boot and Modulith releases were still RCs, so the latest stable ones were taken)*. **Gradle Kotlin DSL** with a version catalog (`gradle/libs.versions.toml`). | Decided |
 | D3 | **Modular monolith with Spring Modulith**: `ApplicationModules.verify()` runs in a test, modules talk through public APIs and application events, and module docs are generated. Worth it because the AI is added later as its own module. | Decided |
 | D4 | **UI: JTE + htmx + Alpine.js + Tailwind CSS.** JTE templates are precompiled and type-safe. htmx swaps in partial pages so the app feels like a single-page app. Alpine uses its **CSP build** and handles small client-side state. Tailwind runs through its **standalone CLI**, so there is no Node toolchain. Server-rendered, mobile-first, responsive. | Decided |
 | D5 | **PWA**: a manifest, icons and a minimal service worker so the app can be installed on a phone's home screen. **No offline mode.** The layout is responsive in a plain browser too; installing only adds the icon and full-screen mode. | Decided |
@@ -77,8 +77,9 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
 - [x] Claude Code setup: ai-common `workflow` skills through APM, router `CLAUDE.md`,
       `.claude/context`, `.claude/rules`, settings. *(Done when the repo was initialised.)*
 - [x] Docs skeleton: `README.md`, `documentation/` (Current-State and Roadmap pages), and this plan.
-- [ ] #9 Gradle skeleton: Java 25 toolchain, Spring Boot 4, Spring Modulith, JTE (precompiled),
+- [x] #9 Gradle skeleton: Java 25 toolchain, Spring Boot 4, Spring Modulith, JTE (precompiled),
       Lombok + `lombok.config`, Spotless, Checkstyle (Javadoc), JaCoCo 100 %, version catalog.
+      *(Done in PR #20.)*
 - [ ] #10 `Taskfile.yml` + `scripts/doctor.sh`. The tasks listed in `.claude/context/workflow.md`.
 - [ ] #11 `compose.yml` (Postgres with pgvector) and the H2 dev profile; the Flyway baseline
       (`V1__init.sql`, plus the pgvector extension in `postgresql/`).
@@ -280,6 +281,7 @@ meal-magician/
 - **Local Java (D21):** the dev machine's default JDK is 27, and only Gradle itself runs on it.
   The toolchain downloads Temurin 25 for compiling and testing. If the pinned Gradle version
   can't run on JDK 27 yet, run the wrapper on a supported JDK (`JAVA_HOME` or mise).
+  *(Checked 2026-10-31: Gradle 9.8.2 runs on JDK 27, so no workaround is needed.)*
 - **`task` vs `go-task`:** on Arch the Task binary is `go-task`, and `task` is only a shell
   alias, so it isn't available in scripts or in Claude Code's non-interactive shell. Docs say
   `task …`; scripts and agents run `go-task …`, or the owner adds a real symlink
@@ -319,3 +321,4 @@ meal-magician/
 |---|---|---|
 | 2026-10-31 | Base package `hu.lasterbergamot.mealmagician` (D20), Temurin 25 through the wrapper and toolchain (D21). Repo created on GitHub as public (free-plan branch protection and wiki). Labels, milestones, board #7, epics and Phase 0 issues filed. | #1–#18 |
 | 2026-10-31 | Plan agreed with the owner (interview: hosting, auth, UI, AI, workflow). Repo initialised locally, ai-common `workflow` v0.1.1 installed through APM, docs skeleton written. | — |
+| 2026-10-31 | Gradle skeleton: wrapper 9.8.2, Boot 4.1.2, Modulith 2.1.2, JTE 3.2.4, Temurin 25 toolchain, Spotless, Checkstyle (Javadoc), JaCoCo 100 % gate, empty module packages, `ModularityTests`. Gates proven to fail on untested/undocumented code. | #9, #20 |
