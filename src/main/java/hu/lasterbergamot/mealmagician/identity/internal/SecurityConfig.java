@@ -1,5 +1,7 @@
 package hu.lasterbergamot.mealmagician.identity.internal;
 
+import hu.lasterbergamot.mealmagician.shared.web.CsrfMeta;
+import hu.lasterbergamot.mealmagician.shared.web.CsrfMetaSource;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -7,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
@@ -85,5 +88,19 @@ class SecurityConfig {
                 .frameOptions(frame -> frame.deny())
                 .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.SAME_ORIGIN)))
         .build();
+  }
+
+  /**
+   * Hands the CSRF token of the current request to the layout, which renders it as {@code <meta>}
+   * tags for htmx to send back as a header.
+   *
+   * @return the source; it returns {@code null} when Spring Security gave the request no token
+   */
+  @Bean
+  CsrfMetaSource csrfMetaSource() {
+    return request -> {
+      CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+      return token == null ? null : new CsrfMeta(token.getHeaderName(), token.getToken());
+    };
   }
 }

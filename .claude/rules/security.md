@@ -24,9 +24,10 @@ paths:
 - htmx + expired session: return `HX-Redirect` to the login URL instead of a 302 into a fragment.
 - Headers: CSP without `unsafe-inline` / `unsafe-eval` (use Alpine's CSP build), `frame-ancestors 'none'`,
   `Referrer-Policy: same-origin`, HSTS in prod.
-  Until Spring Security is configured (#12) these headers come from `shared.web.SecurityHeadersFilter`
-  (a plain filter; fold its policy into `http.headers(...)` and delete it). The CSRF token reaches
-  the layout through a `CsrfMetaSource` bean (`shared.web`): publish one that reads the `CsrfToken`.
+  The CSP, `X-Content-Type-Options` and `Referrer-Policy` come from `shared.web.SecurityHeadersFilter`,
+  a filter ordered *before* the Spring Security chain so that login redirects and 401/403 answers
+  carry them too; Spring Security adds `X-Frame-Options: DENY` and HSTS (on HTTPS). The CSRF token
+  reaches the layout through the `CsrfMetaSource` bean in `identity.internal.SecurityConfig`.
 - **Fail closed in prod:** the `prod` profile refuses to start without the Google client,
   `MM_ADMIN_EMAILS`, a Postgres datasource and `server.forward-headers-strategy=framework`.
 - Never log tokens, invite codes, session ids or full emails at INFO; secrets only via env

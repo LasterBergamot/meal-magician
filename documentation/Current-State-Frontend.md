@@ -17,7 +17,8 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   other statuses show the 500 text). A normal request gets a full page. An htmx request gets the
   fragment, and `HX-Retarget` puts it into `#error-slot` so the page around it stays intact.
   Exception: htmx 401/403 responses make `app.js` send the whole page to `/`, because an expired
-  session looks like a 403 (the server-side `HX-Redirect` arrives with #12).
+  session looks like a 403; the server also answers an anonymous htmx request with 401 +
+  `HX-Redirect: /login` (#12), which htmx follows by itself.
 - Every template declares `@param ViewContext ctx`. `ViewContextAdvice` puts it into every
   controller's model, so templates write `ctx.t("key")` for text and nothing has to be passed by
   hand. Later additions (current user, household) go into `ViewContext`.
@@ -59,9 +60,9 @@ expressions like `open = !open`, so a template only names a component (`x-data="
 - The language links in the header go to `?lang=hu` / `?lang=en`. `LanguageSwitchInterceptor`
   stores the choice in the cookie `mm_lang` (one year, `HttpOnly`, `SameSite=Lax`). The browser's
   `Accept-Language` is ignored: Hungarian is the default. Anything other than hu/en is ignored.
-- **Not yet per user:** the issue asks for the choice to persist per user. The cookie is the
-  stop-gap that also works before sign-in; with `app_user` (#12) the language moves into the
-  database and the cookie stays as the fallback for signed-out pages.
+- **Not yet per user:** the issue asks for the choice to persist per user. `app_user.locale`
+  exists since #12 but nothing reads or writes it yet; the cookie still decides. Applying the
+  stored language after sign-in is planned with the profile screen (Phase 1).
 - Guard tests (`UiGuardTest`): both bundles have the same keys and placeholders, every
   `ctx.t("key")` in a template exists, and no template contains hard-coded visible text.
 
@@ -70,12 +71,22 @@ expressions like `open = !open`, so a template only names a component (`x-data="
 `shared.web.SecurityHeadersFilter` adds, to every response (including errors and static files),
 a Content-Security-Policy without `unsafe-inline`/`unsafe-eval` (everything must come from our own
 origin, `frame-ancestors 'none'`), `X-Content-Type-Options: nosniff` and
-`Referrer-Policy: same-origin`. A plain filter for now; it moves into Spring Security's header
-configuration with #12. Consequences for templates: no inline `<script>`, no `onclick=`-style
+`Referrer-Policy: same-origin`. It is a plain filter that runs before Spring Security's chain, so
+login redirects and 401/403 answers carry the policy too; Spring Security adds `X-Frame-Options` and
+HSTS. Consequences for templates: no inline `<script>`, no `onclick=`-style
 handlers, no `style=` attributes (`UiGuardTest` checks it).
 
 **CSRF:** the layout writes `<meta name="_csrf">` and `<meta name="_csrf_header">` only when a
-`CsrfMetaSource` bean exists; none does until Spring Security arrives (#12).
+`CsrfMetaSource` bean exists. `identity.internal.SecurityConfig` publishes it (#12), so every page
+rendered through Spring Security has them and `app.js` sends the header on htmx requests.
+
+## Sign-in page (#12)
+
+`login/page.jte` (served by `identity.internal.LoginController` at `/login`, the only page an
+anonymous visitor sees) has one link, "Sign in with Google", to `/oauth2/authorization/google`.
+`?error` shows a retry notice (cancelled consent) and `?logout` a "signed out" notice. A refused
+account does not come back here: it gets the 403 error page. A person who is already signed in is
+sent to `/`. There is no sign-out button in the header yet (`POST /logout` works).
 
 ## PWA shell (D5)
 

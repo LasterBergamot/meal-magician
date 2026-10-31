@@ -37,7 +37,8 @@ allowlisted emails get in; households are shared through email-bound invite link
 
 The plan is in `PLAN.md` §4.3. What exists today, for the hello page (`GET /`):
 
-1. The browser asks for `/`. `SecurityHeadersFilter` adds the security headers to the response.
+1. The browser asks for `/`. `SecurityHeadersFilter` adds the security headers to the response,
+   then the Spring Security chain checks the session; an anonymous visitor is redirected to `/login`.
 2. `LanguageSwitchInterceptor` looks for `?lang=`; otherwise the `mm_lang` cookie (default
    Hungarian) decides the language.
 3. `HelloController` (in `shared.web`) builds a small view record and picks a view with

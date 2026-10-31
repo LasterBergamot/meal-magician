@@ -47,7 +47,7 @@ class SecurityRulesTests {
 
   @Test
   void staticAssetPathsAreNotBehindTheLogin() throws Exception {
-    mvc.perform(get("/css/app.css")).andExpect(status().isNotFound());
+    mvc.perform(get("/css/no-such-file.css")).andExpect(status().isNotFound());
   }
 
   @Test

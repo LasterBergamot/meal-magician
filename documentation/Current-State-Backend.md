@@ -17,7 +17,7 @@ no business modules yet.
   use its precompiled templates.
 - **Web plumbing (#13), in `shared`:** `shared.i18n` (`Messages` is the `t("key")` helper,
   `I18nConfig` the message bundles and the `mm_lang` cookie locale resolver, `SupportedLocales`)
-  and `shared.web` (`SecurityHeadersFilter`, `ViewContext` + `ViewContextAdvice`, `Htmx`,
+  and `shared.web` (`SecurityHeadersFilter` and `CsrfMetaSource`, `ViewContext` + `ViewContextAdvice`, `Htmx`,
   `AppErrorController`, `ManifestController`, and the temporary `HelloController`). They are
   described from the UI side in [[Current State: Frontend]].
 - **Database (#11):** Spring Data JPA (Hibernate set to `ddl-auto: validate`, so it only checks

@@ -32,7 +32,7 @@ class RealErrorFlowTest {
 
   @Test
   void unknownUrlShowsTheNotFoundPage() throws Exception {
-    HttpResponse<String> response = get("/no-such-page");
+    HttpResponse<String> response = get("/css/no-such-file.css");
 
     assertThat(response.statusCode()).isEqualTo(404);
     assertThat(response.body()).contains("<html lang=\"hu\"").contains("Az oldal nem található");
@@ -44,7 +44,7 @@ class RealErrorFlowTest {
 
   @Test
   void unknownUrlFromHtmxGetsTheFragmentForTheErrorSlot() throws Exception {
-    HttpResponse<String> response = get("/no-such-page", "HX-Request", "true");
+    HttpResponse<String> response = get("/css/no-such-file.css", "HX-Request", "true");
 
     assertThat(response.statusCode()).isEqualTo(404);
     assertThat(response.body()).doesNotContain("<html").contains("Az oldal nem található");
@@ -52,10 +52,19 @@ class RealErrorFlowTest {
   }
 
   @Test
-  void helloPageIsServedOnARealPort() throws Exception {
-    HttpResponse<String> response = get("/");
+  void signInPageIsServedOnARealPort() throws Exception {
+    HttpResponse<String> response = get("/login");
 
     assertThat(response.statusCode()).isEqualTo(200);
-    assertThat(response.body()).contains("Szia, Meal Magician!");
+    assertThat(response.body()).contains("Bejelentkezés Google-lal");
+  }
+
+  @Test
+  void homePageSendsAnAnonymousVisitorToTheSignInPage() throws Exception {
+    HttpResponse<String> response = get("/");
+
+    assertThat(response.statusCode()).isEqualTo(302);
+    assertThat(response.headers().firstValue("Location"))
+        .hasValueSatisfying(l -> assertThat(l).endsWith("/login"));
   }
 }

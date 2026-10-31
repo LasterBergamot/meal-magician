@@ -15,18 +15,35 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Shared setup of the web slice tests: a {@code @WebMvcTest} does not load JTE or our configuration
  * on its own, so this meta-annotation adds them. Time is fixed to 2026-10-31 in Budapest, which was
  * a Saturday.
+ *
+ * <p>Spring Security is on the classpath, so a slice would otherwise get its default "everything
+ * needs a login" chain. {@link OpenSecurity} lets every request through: these tests are about
+ * templates and headers; who may enter is tested in {@code SecurityRulesTests}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @WebMvcTest
 @ImportAutoConfiguration({JteAutoConfiguration.class, ServletJteAutoConfiguration.class})
-@Import({I18nConfig.class, WebSliceTest.FixedClock.class})
+@Import({I18nConfig.class, WebSliceTest.FixedClock.class, WebSliceTest.OpenSecurity.class})
 @interface WebSliceTest {
+
+  @TestConfiguration(proxyBeanMethods = false)
+  class OpenSecurity {
+    @Bean
+    SecurityFilterChain openChain(HttpSecurity http) throws Exception {
+      return http.authorizeHttpRequests(requests -> requests.anyRequest().permitAll())
+          .csrf(Customizer.withDefaults())
+          .build();
+    }
+  }
 
   @TestConfiguration(proxyBeanMethods = false)
   class FixedClock {
