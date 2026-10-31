@@ -25,6 +25,15 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | htmx | https://htmx.org/docs/ |
 | Alpine.js (CSP build) | https://alpinejs.dev/advanced/csp |
 | Tailwind CSS (standalone CLI) | https://tailwindcss.com/docs |
+| htmx configuration (`htmx-config`, `responseHandling`) | https://htmx.org/docs/#config |
+| htmx response headers (`HX-Retarget`, `HX-Reswap`, `HX-Redirect`) | https://htmx.org/reference/#response_headers |
+| htmx npm package (vendored file source) | https://www.npmjs.com/package/htmx.org |
+| `@alpinejs/csp` npm package (vendored file source) | https://www.npmjs.com/package/@alpinejs/csp |
+| Tailwind CSS v4 (`@theme`, `@source`) | https://tailwindcss.com/docs/functions-and-directives |
+| Content-Security-Policy | https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP |
+| Service Worker API | https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API |
+| Web app manifest (installability, maskable icons) | https://web.dev/articles/add-manifest |
+| Spring MVC `LocaleResolver` | https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-servlet/localeresolver.html |
 | PWA / Web App Manifest | https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps |
 
 ## Data, testing, tooling
@@ -52,6 +61,7 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | Task | https://taskfile.dev/ |
 | Tailwind standalone CLI (releases and `sha256sums.txt`) | https://github.com/tailwindlabs/tailwindcss/releases |
 | APM | https://github.com/microsoft/apm |
+| ImageMagick (only `scripts/generate-icons.sh`) | https://imagemagick.org/script/command-line-processing.php |
 
 ## Services
 

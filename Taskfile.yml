@@ -35,12 +35,12 @@ tasks:
     cmd: ./gradlew spotlessApply
 
   serve:
-    desc: Run the app with the dev profile on H2 (no Docker needed; Tailwind --watch joins in #13)
-    cmd: ./gradlew bootRun --args='--spring.profiles.active=dev'
+    desc: Run the app with the dev profile on H2 (no Docker needed) and Tailwind --watch next to it
+    cmd: bash scripts/serve.sh dev
 
   "serve:pg":
-    desc: Run the app against the compose Postgres (run `task up` first)
-    cmd: ./gradlew bootRun --args='--spring.profiles.active=dev,postgres'
+    desc: Run the app against the compose Postgres with Tailwind --watch (run `task up` first)
+    cmd: bash scripts/serve.sh dev,postgres
 
   test:
     desc: All tests and the 100 % JaCoCo line + branch gate (needs Docker for Testcontainers)

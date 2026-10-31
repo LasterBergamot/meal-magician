@@ -1,0 +1,34 @@
+/*
+ * Tailwind input (v4, CSS-first configuration; there is no tailwind.config.js).
+ * `task serve` rebuilds it on every change; the Gradle build runs it once, minified, and writes
+ * src/main/resources/static/css/app.css. That output is generated and git-ignored: never edit it.
+ */
+
+/* `source(none)` turns off Tailwind's "scan the whole repo" default (it would pick up class-like
+   words from docs and Java files); the two @source lines name the only places classes live. */
+@import "tailwindcss" source(none);
+@source "../jte";
+@source "../resources/static/js/app.js";
+
+@theme {
+  /* The brand green; --color-brand-700 is also the manifest's theme_color. */
+  --color-brand-50: #f0fdf4;
+  --color-brand-100: #dcfce7;
+  --color-brand-600: #16a34a;
+  --color-brand-700: #15803d;
+  --color-brand-800: #166534;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@layer base {
+  /* Alpine hides x-cloak elements until it has started. */
+  [x-cloak] {
+    display: none !important;
+  }
+
+  /* A visible keyboard focus everywhere (web-ui.md: accessibility). */
+  :focus-visible {
+    outline: 3px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+}

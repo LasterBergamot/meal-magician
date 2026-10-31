@@ -88,9 +88,11 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       (`V1__init.sql`, plus the pgvector extension in `postgresql/`). *(Done in PR #22.)*
 - [ ] #12 Identity: Google OIDC login, the DB allowlist and `MM_ADMIN_EMAILS` bootstrap, `AppUser`,
       Spring Session JDBC, sign-out, fail-closed production config.
-- [ ] #13 Base layout: JTE layout, Tailwind standalone CLI, htmx + Alpine (CSP build), the `t()`
+- [x] #13 Base layout: JTE layout, Tailwind standalone CLI, htmx + Alpine (CSP build), the `t()`
       i18n helper (hu/en) and language switcher, PWA manifest + service worker, error pages,
-      htmx session-expiry handling (`HX-Redirect`).
+      htmx session-expiry handling (`HX-Redirect`). *(PR #23. Language is a cookie for now and
+      the server-side `HX-Redirect` comes with #12; the client already redirects on 401/403.
+      Home-screen install on a real phone is still a manual check.)*
 - [ ] #14 Tests: the Modulith verify test, an "every endpoint needs auth" test, the template
       hard-coded-text test, a docs-tooling test (router paths exist, rule globs match,
       `CLAUDE.md` under 100 lines).
@@ -311,7 +313,7 @@ meal-magician/
    links) exist. Still **ask the owner before** pushing to `main`, merging PRs, and anything
    in Google Cloud or Railway.
 3. #9 and #10 are done. The dependency order is #9 → #10/#11/#13 → #12 → #14/#15
-   → #16 → #18; #17 runs in parallel and needs the owner (consoles). Next: #12 (needs #11) or #13.
+   → #16 → #18; #17 runs in parallel and needs the owner (consoles). #11 and #13 are done too; next: #12 (identity), then #14 and #15.
 4. Then work on Phase 0 issue by issue: a branch per issue, PRs through `create-pr`.
 5. Before scaffolding, look up the current latest versions (Spring Boot 4.x, Spring Modulith,
    JTE, the Gradle plugins, Testcontainers, Playwright) and pin them in the version catalog.
@@ -327,3 +329,4 @@ meal-magician/
 | 2026-10-31 | Gradle skeleton: wrapper 9.8.2, Boot 4.1.2, Modulith 2.1.2, JTE 3.2.4, Temurin 25 toolchain, Spotless, Checkstyle (Javadoc), JaCoCo 100 % gate, empty module packages, `ModularityTests`. Gates proven to fail on untested/undocumented code. | #9, #20 |
 | 2026-10-31 | `Taskfile.yml` with the workflow.md tasks (later ones stop with a message naming their issue), `scripts/doctor.sh`, checksum-pinned Tailwind CLI download, `task test:fast` via the `integration` JUnit tag. | #10, #21 |
 | 2026-10-31 | `compose.yml` (pgvector Postgres 17, digest-pinned), `dev` profile on in-memory H2 and `postgres` profile, Flyway `common/` + `postgresql/` baseline (V1, V2 pgvector), Hikari `minimum-idle: 0`, shared Testcontainers base class, `task serve:pg` and `task migrate-check` made real. | #11, #22 |
+| 2026-10-31 | Base UI: JTE layout + hello and error pages (full page / htmx fragment), Tailwind v4 standalone CLI (watch in `task serve`, minified in the Gradle build), vendored htmx 2.0.11 + Alpine CSP 3.17.5, `ctx.t("key")` i18n (hu default, cookie language switch), CSP/security-header filter, PWA manifest + icons + static-only service worker, guard tests (bundles, template literals, CSP-unsafe markup). | #13, #23 |

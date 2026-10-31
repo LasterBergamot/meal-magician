@@ -75,9 +75,10 @@ task serve
 
 **Expected:** the app starts on <http://localhost:8080> on in-memory H2 (no Docker needed) and
 `curl localhost:8080/actuator/health` answers `{"status":"UP",…}`. The log shows
-`The following 1 profile is active: "dev"` and Flyway applying versions 1 and 3. Opening
-<http://localhost:8080/> shows the sign-in page; signing in with Google as an admin e-mail gets you
-in, and any other e-mail gets a 403 (needs step 4).
+`The following 1 profile is active: "dev"` and Flyway applying versions 1 and 3. The Tailwind
+watcher runs next to the app until you stop it with Ctrl-C. Opening <http://localhost:8080/> shows
+the sign-in page (the `EN` link switches the language); signing in with Google as an admin e-mail
+gets you in, and any other e-mail gets a 403 (needs step 4).
 
 **If not:** a port clash means something else uses 8080; stop it.
 
