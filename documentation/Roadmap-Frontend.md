@@ -3,9 +3,8 @@
 Planned UI work (JTE + htmx + Alpine + Tailwind), by `PLAN.md` phase. Move items to
 [[Current State: Frontend]] when they land.
 
-- **Phase 0:** base layout, Tailwind standalone CLI, htmx + Alpine (CSP build), `t()` i18n
-  helper with hu/en and a language switcher, PWA manifest + service worker, error pages,
-  htmx session-expiry redirect.
+- **Phase 0 (rest):** the server-side `HX-Redirect` to the login page for expired sessions
+  and the per-user language (both #12); real PWA artwork comes in Phase 5.
 - **Phase 1:** household create/switch, invite and member screens, allowlist admin page.
 - **Phase 2:** meal library list/search, meal form, phone quick-add.
 - **Phase 3:** week view (grid on desktop, day list on phone), slot editing, week navigation,

@@ -13,7 +13,12 @@ What exists in `main` today: **the build skeleton only**, no business logic yet.
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
   "today" instead of calling `LocalDate.now()`, so tests can fix the date.
 - **Config:** `application.yml` turns on virtual threads and graceful shutdown, and tells JTE to
-  use its precompiled templates (there are none yet).
+  use its precompiled templates.
+- **Web plumbing (#13), in `shared`:** `shared.i18n` (`Messages` is the `t("key")` helper,
+  `I18nConfig` the message bundles and the `mm_lang` cookie locale resolver, `SupportedLocales`)
+  and `shared.web` (`SecurityHeadersFilter`, `ViewContext` + `ViewContextAdvice`, `Htmx`,
+  `AppErrorController`, `ManifestController`, and the temporary `HelloController`). They are
+  described from the UI side in [[Current State: Frontend]].
 - **Database (#11):** Spring Data JPA (Hibernate set to `ddl-auto: validate`, so it only checks
   the schema) plus **Flyway**, which owns the schema. There are no tables or entities yet; they
   arrive with the modules that need them, starting with identity (#12).

@@ -5,8 +5,9 @@ invite the family, and plan meals day by day: breakfasts, lunches, dinners, and 
 occasions like birthdays or Christmas. Reuse meals, single days and whole weeks; rate what you
 ate. A later AI assistant will learn the household's preferences and draft plans.
 
-> **Status:** Phase 0 (foundation) in progress. The Gradle skeleton builds and the quality gates
-> run, but there is no user-facing feature yet. The plan, decisions and phases are in
+> **Status:** Phase 0 (foundation) in progress. The Gradle skeleton builds, the quality gates
+> run, and `task serve` shows a bilingual (hu/en) hello page in the base layout, but there is no
+> real feature yet. The plan, decisions and phases are in
 > [`PLAN.md`](PLAN.md).
 
 ## Stack
@@ -46,11 +47,12 @@ task format       # format the code
 task lint         # Spotless + Checkstyle (Javadoc)
 task test         # tests + the 100 % JaCoCo gate
 task test:fast    # same without the Docker-based tests (inner loop)
-task serve        # run the app on http://localhost:8080 (in-memory H2, no Docker)
+task serve        # run the app on http://localhost:8080 (in-memory H2, no Docker) + Tailwind watch
 task up           # start local Postgres + pgvector (Docker); then `task serve:pg`
 ```
 
-Plain `./gradlew build` still runs the whole quality gate in one go.
+Plain `./gradlew build` still runs the whole quality gate in one go. Run `task install` once
+first: every build compiles the Tailwind stylesheet with the CLI it downloads.
 
 ## Project structure
 
@@ -63,13 +65,14 @@ meal-magician/
 ├── README.md
 ├── apm.yml, apm.lock.yaml    # shared Claude Code skills from ai-common (via APM)
 ├── build.gradle.kts, settings.gradle.kts, gradle/libs.versions.toml, gradlew   # build (Gradle wrapper pins Gradle 9.8.2)
-├── Taskfile.yml, scripts/    # task entry point; doctor.sh (tool check), install-tailwind.sh (pinned CLI download)
+├── Taskfile.yml, scripts/    # task entry point; doctor.sh (tool check), install-tailwind.sh (pinned CLI download), serve.sh (app + Tailwind watch), generate-icons.sh
 ├── lombok.config, config/checkstyle/   # Lombok settings; Checkstyle Javadoc rules
-├── src/main/java/hu/lasterbergamot/mealmagician/   # app class + one package per module (identity, household, catalog, planning, feedback, sharing, shared)
-├── src/main/jte/             # JTE templates (empty until #13)
+├── src/main/java/hu/lasterbergamot/mealmagician/   # app class + one package per module (identity, household, catalog, planning, feedback, sharing, shared); shared/i18n (translations), shared/web (layout plumbing, CSP filter, error + hello pages)
+├── src/main/jte/             # JTE templates: layout/, hello/, error/ (fragments are _*.jte)
+├── src/main/css/app.css      # Tailwind input; the output static/css/app.css is generated and not committed
 ├── compose.yml               # local Postgres 17 + pgvector (`task up`)
-├── src/main/resources/       # application.yml (+ -dev, -postgres profiles), db/migration/{common,postgresql} (Flyway)
-├── src/test/java/…           # ModularityTests, context smoke test, persistence/ (H2 + Testcontainers Postgres), unit tests
+├── src/main/resources/       # application.yml (+ -dev, -postgres profiles), messages_{hu,en}.properties, static/ (js/ vendored htmx + Alpine CSP, icons/, manifest, sw.js), db/migration/{common,postgresql} (Flyway)
+├── src/test/java/…           # ModularityTests, UiGuardTest (bundles + template guards), shared/web slice tests, persistence/ (H2 + Testcontainers Postgres), unit tests
 ├── .claude/
 │   ├── agents/               # convention-reviewer (from ai-common)
 │   ├── context/              # workflow, PR checklist, issues, docs map, audit, claude-code

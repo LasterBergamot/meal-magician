@@ -71,7 +71,9 @@ task serve
 ```
 
 **Expected:** the app starts on <http://localhost:8080> on in-memory H2 (no Docker needed) and
-`curl localhost:8080/actuator/health` answers `{"status":"UP",…}`. The log shows
+`curl localhost:8080/actuator/health` answers `{"status":"UP",…}`. <http://localhost:8080/> shows
+the Hungarian hello page (the `EN` link switches the language), and the Tailwind watcher runs
+next to the app until you stop it with Ctrl-C. The log shows
 `The following 1 profile is active: "dev"` and Flyway applying version 1. *(Phase 0, #12: signing
 in with Google as an admin email shows the home page; any other email gets 403.)*
 
