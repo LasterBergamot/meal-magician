@@ -24,5 +24,19 @@ What exists in `main` today:
     Excluded, with reasons in `build.gradle.kts`: the class holding `main()` and the generated
     JTE classes. Lombok-generated code is skipped through `lombok.config`.
 - **Lombok** is configured (`lombok.config`) but not used yet.
+- **Taskfile (#10):** `Taskfile.yml` is the one command surface for people, agents and CI
+  (`task --list`). Working today: `install`, `doctor`, `lint`, `format`, `serve`, `test`,
+  `test:fast`. `up`, `down` and `build` start working when `compose.yml` / the `Dockerfile` land;
+  `serve:pg`, `test-e2e`, `migrate-check` and `docs:check` exist but stop with a message naming
+  the issue that implements them. Why it exists: everyone, including CI, runs the same commands,
+  so "works on my machine" and "passes in CI" mean the same thing.
+  - `scripts/doctor.sh` (`task doctor`) prints `ok`/`FAIL` per tool: Java 17+ (only to start
+    Gradle), Task, Docker with a running daemon, Compose 2.24+; `gh`, Railway CLI, `apm` and the
+    Tailwind CLI are optional.
+  - `scripts/install-tailwind.sh` (`task install`) downloads the Tailwind standalone CLI into
+    `.tools/` (git-ignored). The version and each platform's SHA-256 are pinned in the script, and
+    a binary that doesn't match is never installed. This keeps the project free of Node.
+  - `task test:fast` passes `-Pfast`, which makes Gradle skip tests tagged `@Tag("integration")`
+    (the Testcontainers ones), so the inner loop needs no Docker. CI never uses it.
 
-Not yet: Taskfile, CI, container, hosting — see [[Roadmap: Everything Else]].
+Not yet: CI, container, hosting — see [[Roadmap: Everything Else]].

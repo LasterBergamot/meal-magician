@@ -47,6 +47,6 @@ All current skills come from the owner's private `ai-common` repo via
   bump the tag in `apm.yml`, `GITHUB_APM_PAT=$(gh auth token) apm install`, review
   `git diff .claude/`, run `apm audit`, commit `apm.yml`, `apm.lock.yaml` and the deployed files together.
 - Project-specific skills (none yet) live only here.
-- `.claude/settings.json` (shared) allows `task lint/test/format/build`, asks before git
+- `.claude/settings.json` (shared) allows `task` and `go-task` `lint/test/test:fast/format/build/doctor`, asks before git
   state changes, `gh pr create/merge` and `railway`, and denies reading `.env*`.
   `.claude/settings.local.json` is personal and git-ignored.

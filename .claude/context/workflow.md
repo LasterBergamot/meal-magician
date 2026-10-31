@@ -1,27 +1,31 @@
 # Development workflow, environment variables, branches
 
-Run the tasks from anywhere in the repo. **Status:** the `Taskfile.yml` doesn't exist yet; it
-is a Phase 0 item (#10), and this list is its target contents. Keep the list and the Taskfile in
-sync. Until then use `./gradlew spotlessApply` (format) and `./gradlew build` (lint + tests + coverage gate).
+Run the tasks from anywhere in the repo (`task`, or `go-task` where `task` is only a shell
+alias). `Taskfile.yml` is the single entry point (#10); keep this list and the Taskfile in sync.
+Tasks marked *later* already exist but stop with a message naming the issue that makes them real;
+tasks with a file precondition (`up`, `down`, `build`) start working when that file lands.
 
-## Tasks (target)
+## Tasks
 
 ```
 task install      # ./gradlew dependencies + download the Tailwind standalone CLI into .tools/
 task doctor       # check required tools + versions (scripts/doctor.sh; runbook: documentation/Setup.md)
 task lint         # Spotless check + Checkstyle (Javadoc presence)
 task format       # Spotless apply (google-java-format)
-task serve        # bootRun with the dev profile on H2 + tailwind --watch (no Docker needed)
-task serve:pg     # bootRun against the compose Postgres (run `task up` first)
+task serve        # bootRun with the dev profile (no Docker needed); tailwind --watch joins in #13
+task serve:pg     # later (#11): bootRun against the compose Postgres (run `task up` first)
 task test         # unit + slice + Testcontainers integration tests, JaCoCo 100 % gate (needs Docker)
-task test:fast    # H2-only tests, no Docker (inner loop; CI always runs `task test`)
-task test-e2e     # build image, start compose.e2e.yml (app + stub OIDC + Postgres), Playwright tests, tear down
-task build        # build the container image (meal-magician)
-task up           # start compose.yml (Postgres + pgvector)
+task test:fast    # skips @Tag("integration") tests (-Pfast): no Docker, no coverage gate (inner loop; CI always runs `task test`)
+task test-e2e     # later (#15): build image, start compose.e2e.yml (app + stub OIDC + Postgres), Playwright tests, tear down
+task build        # build the container image (meal-magician); needs the Dockerfile (#15)
+task up           # start compose.yml (Postgres + pgvector); needs compose.yml (#11)
 task down         # stop it
-task migrate-check  # Flyway migrate + validate on a throw-away Postgres (CI runs it)
-task docs:check   # docs tooling checks (CI runs it)
+task migrate-check  # later (#11): Flyway migrate + validate on a throw-away Postgres (CI runs it)
+task docs:check   # later (#14): docs tooling checks (CI runs it)
 ```
+
+The Tailwind CLI version and per-platform SHA-256 hashes are pinned in `scripts/install-tailwind.sh`
+(Dependabot can't track them; bump by hand, the script says how).
 
 ## Environment variables
 

@@ -6,7 +6,7 @@ paths:
 
 # Tests and coverage
 
-- **100 % JaCoCo line + branch coverage** (`task test`; today `./gradlew build`). Exclusions only for
+- **100 % JaCoCo line + branch coverage** (`task test`). Exclusions only for
   generated code (JTE classes, Lombok via `@Generated`) and the `main()` class, each with a comment
   why. The exclusion list lives in `coverageExclusions` in `build.gradle.kts`.
 - Layers:
@@ -16,6 +16,7 @@ paths:
   - **Integration** on **Testcontainers Postgres** (pgvector image, reused container) for
     repositories, migrations and cross-module flows (`@ApplicationModuleTest`, `Scenario`).
   - **H2** variants are allowed for speed (`task test:fast`) but never replace the Postgres run.
+    Tag every Testcontainers test `@Tag("integration")`: `task test:fast` (`-Pfast`) skips those.
   - **E2E** (`src/e2eTest`, Playwright for Java) against `compose.e2e.yml` with a stub OIDC
     provider; run at phone (390×844) and desktop (1280×800) viewports.
 - Always-present guard tests: `ModularityTests` (Modulith verify + docs), endpoint-auth walk,

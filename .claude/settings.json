@@ -3,8 +3,16 @@
     "allow": [
       "Bash(task lint)",
       "Bash(task test)",
+      "Bash(task test:fast)",
       "Bash(task format)",
-      "Bash(task build)"
+      "Bash(task build)",
+      "Bash(task doctor)",
+      "Bash(go-task lint)",
+      "Bash(go-task test)",
+      "Bash(go-task test:fast)",
+      "Bash(go-task format)",
+      "Bash(go-task build)",
+      "Bash(go-task doctor)"
     ],
     "ask": [
       "Bash(git commit:*)",

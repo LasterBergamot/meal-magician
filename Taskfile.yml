@@ -1,0 +1,92 @@
+# The single entry point for people, agents and CI (PLAN.md D16). Keep the task list in sync with
+# .claude/context/workflow.md. On Arch the binary is `go-task`; use `go-task` where `task` is only
+# a shell alias.
+#
+# Tasks whose inputs land in a later Phase 0 issue exist already and stop with a message that
+# names that issue. They are real once the file they need exists.
+version: "3"
+
+# Loads .env (git-ignored, see workflow.md) into the environment of every command. A missing
+# file is fine.
+dotenv: [".env"]
+
+tasks:
+  default:
+    desc: List the tasks
+    silent: true
+    cmd: "{{.TASK_EXE}} --list"
+
+  install:
+    desc: Resolve the Gradle dependencies and download the Tailwind standalone CLI into .tools/
+    cmds:
+      - ./gradlew dependencies --quiet > /dev/null
+      - bash scripts/install-tailwind.sh
+
+  doctor:
+    desc: Check the required tools and their versions (runbook, documentation/Setup.md)
+    cmd: bash scripts/doctor.sh
+
+  lint:
+    desc: Spotless check and Checkstyle (Javadoc presence)
+    cmd: ./gradlew spotlessCheck checkstyleMain
+
+  format:
+    desc: Apply the formatters (google-java-format, ktlint)
+    cmd: ./gradlew spotlessApply
+
+  serve:
+    desc: Run the app with the dev profile on H2 (no Docker needed; Tailwind --watch joins in #13)
+    cmd: ./gradlew bootRun --args='--spring.profiles.active=dev'
+
+  "serve:pg":
+    desc: Run the app against the compose Postgres (run `task up` first)
+    cmd: |
+      echo "serve:pg arrives with #11 (compose.yml and the Postgres settings)." >&2
+      exit 1
+
+  test:
+    desc: All tests and the 100 % JaCoCo line + branch gate (needs Docker for Testcontainers)
+    cmd: ./gradlew test jacocoTestCoverageVerification
+
+  "test:fast":
+    desc: Tests without the @Tag("integration") ones, no Docker and no coverage gate (inner loop only)
+    cmd: ./gradlew test -Pfast
+
+  test-e2e:
+    desc: Build the image, start compose.e2e.yml, run the Playwright tests, tear down
+    cmd: |
+      echo "test-e2e arrives with #15 (Dockerfile, compose.e2e.yml, Playwright)." >&2
+      exit 1
+
+  build:
+    desc: Build the container image (meal-magician)
+    preconditions:
+      - sh: test -f Dockerfile
+        msg: "The Dockerfile arrives with #15."
+    cmd: docker build -t meal-magician .
+
+  up:
+    desc: Start compose.yml (Postgres + pgvector)
+    preconditions:
+      - sh: test -f compose.yml
+        msg: "compose.yml arrives with #11."
+    cmd: docker compose up -d --wait
+
+  down:
+    desc: Stop compose.yml
+    preconditions:
+      - sh: test -f compose.yml
+        msg: "compose.yml arrives with #11."
+    cmd: docker compose down
+
+  migrate-check:
+    desc: Flyway migrate + validate on a throw-away Postgres (CI runs it)
+    cmd: |
+      echo "migrate-check arrives with #11 (the Flyway baseline)." >&2
+      exit 1
+
+  "docs:check":
+    desc: Docs tooling checks (CI runs it)
+    cmd: |
+      echo "docs:check arrives with #14 (the docs-tooling test)." >&2
+      exit 1

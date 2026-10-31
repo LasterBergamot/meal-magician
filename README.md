@@ -36,14 +36,20 @@ Step-by-step setup: [`documentation/Setup.md`](documentation/Setup.md).
 
 ## Tasks
 
-The target task list is in [`.claude/context/workflow.md`](.claude/context/workflow.md)
-(`task serve`, `task test`, `task lint`, `task test-e2e`, …). `Taskfile.yml` arrives in Phase 0
-(#10); until then call Gradle directly:
+`Taskfile.yml` is the single entry point. `task --list` shows everything; the full list, with
+which tasks are still to come, is in [`.claude/context/workflow.md`](.claude/context/workflow.md).
 
 ```bash
-./gradlew spotlessApply   # format the code
-./gradlew build           # compile, Spotless + Checkstyle, tests, 100 % JaCoCo gate
+task doctor       # check the required tools
+task install      # resolve dependencies, download the Tailwind CLI into .tools/
+task format       # format the code
+task lint         # Spotless + Checkstyle (Javadoc)
+task test         # tests + the 100 % JaCoCo gate
+task test:fast    # same without the Docker-based tests (inner loop)
+task serve        # run the app on http://localhost:8080
 ```
+
+Plain `./gradlew build` still runs the whole quality gate in one go.
 
 ## Project structure
 
@@ -56,6 +62,7 @@ meal-magician/
 ├── README.md
 ├── apm.yml, apm.lock.yaml    # shared Claude Code skills from ai-common (via APM)
 ├── build.gradle.kts, settings.gradle.kts, gradle/libs.versions.toml, gradlew   # build (Gradle wrapper pins Gradle 9.8.2)
+├── Taskfile.yml, scripts/    # task entry point; doctor.sh (tool check), install-tailwind.sh (pinned CLI download)
 ├── lombok.config, config/checkstyle/   # Lombok settings; Checkstyle Javadoc rules
 ├── src/main/java/hu/lasterbergamot/mealmagician/   # app class + one package per module (identity, household, catalog, planning, feedback, sharing, shared)
 ├── src/main/jte/             # JTE templates (empty until #13)

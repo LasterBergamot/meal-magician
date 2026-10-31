@@ -45,6 +45,7 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | JTE Gradle plugin | https://jte.gg/gradle-plugin/ |
 | Gradle | https://docs.gradle.org/current/userguide/userguide.html |
 | Task | https://taskfile.dev/ |
+| Tailwind standalone CLI (releases and `sha256sums.txt`) | https://github.com/tailwindlabs/tailwindcss/releases |
 | APM | https://github.com/microsoft/apm |
 
 ## Services
