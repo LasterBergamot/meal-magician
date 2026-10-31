@@ -59,6 +59,8 @@ after a server.
 | D18 | **Lombok is allowed**, mainly for JPA entities and builders. `lombok.config` sets `lombok.addLombokGeneratedAnnotation = true` so JaCoCo skips the generated code. Use records for DTOs, commands and value objects. | Decided |
 | D19 | **The in-app AI provider is pluggable through Spring AI**, so it doesn't have to be Claude. The default is a cheap hosted model on a **paid tier**, so household data isn't used for training: Gemini Flash, a GPT mini model, Claude Haiku, or OpenRouter to switch freely. The model is chosen by config; the final pick comes from a small eval in Phase 7. **Embeddings run in-process** (Spring AI ONNX transformers, e.g. all-MiniLM-L6-v2), so they cost nothing per call. Ollama on Railway is rejected: it would cost far more and be slow on CPU. | Decided |
 | D20 | **Base package `hu.lasterbergamot.mealmagician`.** | Decided |
+| D22 | **Agents may merge their own PRs for planned work.** For an issue in this plan, an agent pushes its feature branch, opens the PR and merges it (merge commit) once every required check is green (before CI exists, #16: once `task lint` and `task test` pass locally). Repo settings, Railway, Google Cloud and anything outside the plan still need the owner's OK. Goal: the owner does one setup session and then only reviews results. | Decided (2026-10-31) |
+| D23 | **One Google OAuth client** (`meal-magician`) with two redirect URIs, `localhost:8080` and the Railway domain, instead of separate dev and prod clients: this is a home project, and rotating the one secret takes a minute. | Decided (2026-10-31) |
 | D21 | **JDK: Eclipse Temurin 25** (Adoptium's OpenJDK build), used the same way everywhere. The **Gradle wrapper** (`./gradlew`, committed) pins Gradle. The **Gradle toolchain** (`languageVersion = 25`, `vendor = ADOPTIUM`) with the foojay resolver plugin downloads the JDK automatically, so nobody installs Java 25 by hand. The container uses `eclipse-temurin:25-jdk` for the build and `eclipse-temurin:25-jre` at runtime, both pinned by digest. Railway runs our image, so production uses exactly that JRE: there's no separate host JVM to match. | Decided |
 
 ---
@@ -105,7 +107,9 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
 - [ ] #16 CI: `ci.yml`, `docs-check.yml` (+ `scripts/check_docs_touched.sh`), `wiki-sync.yml`,
       `dependabot.yml`, PR template already in place.
 - [ ] #17 Railway: project, Postgres with pgvector, app service from the GHCR image, sleeping on,
-      variables. The Google OAuth client is created in Google Cloud. Runbooks:
+      variables. The Google OAuth client is created in Google Cloud (one client, D23). The owner
+      does all console steps in **one setup session** up front (Railway project + domain + token,
+      Google client, GitHub secret and auto-merge); agents do the rest from CI. Runbooks:
       `documentation/Railway-Setup.md`, `documentation/Auth-Setup.md`.
 - [ ] #18 `release.yml` → first deploy **v0.1.0**: sign in on a phone and see the hello page.
       Confirm that the app really sleeps when idle.
@@ -313,10 +317,14 @@ meal-magician/
 
 1. Read `CLAUDE.md`, then this file, then `.claude/context/workflow.md` and `pr-checklist.md`.
 2. The repo, labels, milestones, epics (#1–#8) and Phase 0 issues (#9–#18, with blocked-by
-   links) exist. Still **ask the owner before** pushing to `main`, merging PRs, and anything
-   in Google Cloud or Railway.
-3. #9 and #10 are done. The dependency order is #9 → #10/#11/#13 → #12 → #14/#15
-   → #16 → #18; #17 runs in parallel and needs the owner (consoles). #11, #12 and #13 are done too; next: #14 and #15.
+   links) exist. Agents push, open and merge PRs for planned issues once checks are green
+   (D22); still **ask the owner before** anything in Google Cloud or Railway, repo settings,
+   or work outside the plan.
+3. #9–#13 are done. **Order for the rest (amended 2026-10-31, to remove manual verification
+   early):** #16 CI first, so "green" means verified; then #15 (Dockerfile, stub OIDC provider,
+   Playwright e2e), so agents verify sign-in and screens without a real Google account; then
+   #14; then #17/#18. *(Amended 2026-10-31; was #14/#15 → #16 → #18.)* #17's console steps are
+   the owner's one setup session (`documentation/Railway-Setup.md`).
 4. Then work on Phase 0 issue by issue: a branch per issue, PRs through `create-pr`.
 5. Before scaffolding, look up the current latest versions (Spring Boot 4.x, Spring Modulith,
    JTE, the Gradle plugins, Testcontainers, Playwright) and pin them in the version catalog.
@@ -334,3 +342,4 @@ meal-magician/
 | 2026-10-31 | `compose.yml` (pgvector Postgres 17, digest-pinned), `dev` profile on in-memory H2 and `postgres` profile, Flyway `common/` + `postgresql/` baseline (V1, V2 pgvector), Hikari `minimum-idle: 0`, shared Testcontainers base class, `task serve:pg` and `task migrate-check` made real. | #11, #22 |
 | 2026-10-31 | Base UI: JTE layout + hello and error pages (full page / htmx fragment), Tailwind v4 standalone CLI (watch in `task serve`, minified in the Gradle build), vendored htmx 2.0.11 + Alpine CSP 3.17.5, `ctx.t("key")` i18n (hu default, cookie language switch), CSP/security-header filter, PWA manifest + icons + static-only service worker, guard tests (bundles, template literals, CSP-unsafe markup). | #13, #23 |
 | 2026-10-31 | Identity: Google OIDC sign-in with a DB allowlist (`MM_ADMIN_EMAILS` + `allowed_email`), `app_user` keyed by Google `sub`, Spring Session JDBC (30 days, cleanup at sign-in), CSRF on, htmx 401 + `HX-Redirect`, fail-closed `prod` profile, login page, CSRF meta tags. | #12, #24 |
+| 2026-10-31 | Decided D22 (agents merge planned PRs when checks are green) and D23 (one Google OAuth client); Phase 0 order changed to #16 → #15 → #14 → #17/#18 so agents can verify without the owner; owner console steps batched into one setup session. | — |

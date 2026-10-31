@@ -48,8 +48,11 @@ Explore and Plan subagents load neither this file nor the rules: put the rule fi
 - `PLAN.md` is the working plan. Tick its checklist and add a progress-log row (with the real
   issue/PR number) when an item lands; record any change of decision in its D-table as an
   amendment (`*(Amended YYYY-MM-DD; was …)*`).
-- **Outward-facing actions need the owner's OK first:** creating or changing the GitHub repo,
-  labels, issues or PRs, pushing, merging, Railway or Google Cloud changes.
+- **Outward-facing actions need the owner's OK first:** GitHub repo settings, labels, issues
+  outside the plan, Railway or Google Cloud changes, anything not in `PLAN.md`.
+  **Standing permission (D22):** for issues in `PLAN.md`, push the feature branch, open the PR
+  and merge it (merge commit) once all required checks are green; until CI exists (#16), once
+  `task lint` and `task test` pass locally. Never push or force-push `main`.
 - On **every** change, check `README.md`, the rule/context file for the area you touched
   (`.claude/context/claude-code.md` has the map) and the matching `documentation/` page(s);
   update whatever the change makes stale. A PR has a docs diff, or a `No doc impact: <reason>`

@@ -9,6 +9,8 @@ the procedure; this file holds the project's rules and values.
 - **Branch names:** `feat/<issue>-…`, `fix/<issue>-…`, `chore/<issue>-…`, `docs/…`.
 - **Protected:** `main` changes only through PRs that pass `Lint & test`, `Migrations (Postgres)`,
   `E2E` and `Docs updated`.
+- **Who merges:** for issues in `PLAN.md` the agent merges its own PR once all required checks
+  are green (D22); anything else waits for the owner.
 - **Merge method:** a merge commit (`gh pr merge <n> --repo LasterBergamot/meal-magician --merge`),
   never squash or rebase. GitHub deletes the remote branch on merge.
 - **Commit subjects:** `#N - <imperative summary>`.
