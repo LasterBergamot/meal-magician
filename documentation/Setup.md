@@ -64,14 +64,27 @@ an unsupported platform (on Windows use WSL).
 Copy `.env.example` to `.env` and fill in a **dev** Google OAuth client and your email in
 `MM_ADMIN_EMAILS` ([[Auth Setup]]). Agents: ask the person to do this; never read `.env`.
 
-## 5. Run the app on H2 *(Phase 0)*
+## 5. Run the app
 
 ```bash
 task serve
 ```
 
-**Expected:** the app on <http://localhost:8080>; signing in with Google as an admin email shows
-the home page; any other email gets 403.
+**Expected:** the app starts on <http://localhost:8080> on in-memory H2 (no Docker needed) and
+`curl localhost:8080/actuator/health` answers `{"status":"UP",…}`. The log shows
+`The following 1 profile is active: "dev"` and Flyway applying version 1. *(Phase 0, #12: signing
+in with Google as an admin email shows the home page; any other email gets 403.)*
+
+**If not:** a port clash means something else uses 8080; stop it.
+
+To run against real Postgres with pgvector instead (needs Docker):
+
+```bash
+task up && task serve:pg
+```
+
+**Expected:** `task up` ends with the container `Healthy`; the app log shows
+`PostgreSQL 17` and Flyway applying versions 1 and 2. Stop the database with `task down`.
 
 ## 6. Run the tests
 

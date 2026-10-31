@@ -17,6 +17,8 @@ paths:
     repositories, migrations and cross-module flows (`@ApplicationModuleTest`, `Scenario`).
   - **H2** variants are allowed for speed (`task test:fast`) but never replace the Postgres run.
     Tag every Testcontainers test `@Tag("integration")`: `task test:fast` (`-Pfast`) skips those.
+    Extend `AbstractPostgresIntegrationTest` (a shared pgvector container, profiles
+    `dev,postgres`) rather than starting containers yourself.
   - **E2E** (`src/e2eTest`, Playwright for Java) against `compose.e2e.yml` with a stub OIDC
     provider; run at phone (390×844) and desktop (1280×800) viewports.
 - Always-present guard tests: `ModularityTests` (Modulith verify + docs), endpoint-auth walk,

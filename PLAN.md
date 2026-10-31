@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phase 0 in progress** (#9, #10 done) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phase 0 in progress** (#9, #10, #11 done) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -84,8 +84,8 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       Tasks that need later Phase 0 files (`serve:pg`, `test-e2e`, `migrate-check`, `docs:check`,
       and `up`/`down`/`build`) exist and stop with a message naming their issue.
       *(Done in PR #21.)*
-- [ ] #11 `compose.yml` (Postgres with pgvector) and the H2 dev profile; the Flyway baseline
-      (`V1__init.sql`, plus the pgvector extension in `postgresql/`).
+- [x] #11 `compose.yml` (Postgres with pgvector) and the H2 dev profile; the Flyway baseline
+      (`V1__init.sql`, plus the pgvector extension in `postgresql/`). *(Done in PR #22.)*
 - [ ] #12 Identity: Google OIDC login, the DB allowlist and `MM_ADMIN_EMAILS` bootstrap, `AppUser`,
       Spring Session JDBC, sign-out, fail-closed production config.
 - [ ] #13 Base layout: JTE layout, Tailwind standalone CLI, htmx + Alpine (CSP build), the `t()`
@@ -311,7 +311,7 @@ meal-magician/
    links) exist. Still **ask the owner before** pushing to `main`, merging PRs, and anything
    in Google Cloud or Railway.
 3. #9 and #10 are done. The dependency order is #9 → #10/#11/#13 → #12 → #14/#15
-   → #16 → #18; #17 runs in parallel and needs the owner (consoles). Next: #11 or #13.
+   → #16 → #18; #17 runs in parallel and needs the owner (consoles). Next: #12 (needs #11) or #13.
 4. Then work on Phase 0 issue by issue: a branch per issue, PRs through `create-pr`.
 5. Before scaffolding, look up the current latest versions (Spring Boot 4.x, Spring Modulith,
    JTE, the Gradle plugins, Testcontainers, Playwright) and pin them in the version catalog.
@@ -326,3 +326,4 @@ meal-magician/
 | 2026-10-31 | Plan agreed with the owner (interview: hosting, auth, UI, AI, workflow). Repo initialised locally, ai-common `workflow` v0.1.1 installed through APM, docs skeleton written. | — |
 | 2026-10-31 | Gradle skeleton: wrapper 9.8.2, Boot 4.1.2, Modulith 2.1.2, JTE 3.2.4, Temurin 25 toolchain, Spotless, Checkstyle (Javadoc), JaCoCo 100 % gate, empty module packages, `ModularityTests`. Gates proven to fail on untested/undocumented code. | #9, #20 |
 | 2026-10-31 | `Taskfile.yml` with the workflow.md tasks (later ones stop with a message naming their issue), `scripts/doctor.sh`, checksum-pinned Tailwind CLI download, `task test:fast` via the `integration` JUnit tag. | #10, #21 |
+| 2026-10-31 | `compose.yml` (pgvector Postgres 17, digest-pinned), `dev` profile on in-memory H2 and `postgres` profile, Flyway `common/` + `postgresql/` baseline (V1, V2 pgvector), Hikari `minimum-idle: 0`, shared Testcontainers base class, `task serve:pg` and `task migrate-check` made real. | #11, #22 |
