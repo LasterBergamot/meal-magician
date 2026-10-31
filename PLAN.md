@@ -72,7 +72,7 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
 - [x] Create the GitHub repo `LasterBergamot/meal-magician` (**public**, so branch protection
       and the wiki work on the free plan): `main` as default, PRs required, merge commits only,
       wiki on, labels, milestones, Dependabot alerts, secret scanning.
-- [ ] Project board. *(Waiting for the `project` scope on the owner's `gh` token.)*
+- [x] Project board #7 (Status/Area/Priority/Size), with all issues added.
 - [x] File the epics for Phases 0–7 (#1–#8) and the Phase 0 sub-issues (#9–#18).
 - [x] Claude Code setup: ai-common `workflow` skills through APM, router `CLAUDE.md`,
       `.claude/context`, `.claude/rules`, settings. *(Done when the repo was initialised.)*
@@ -317,5 +317,5 @@ meal-magician/
 
 | Date | What | Refs |
 |---|---|---|
-| 2026-10-31 | Base package `hu.lasterbergamot.mealmagician` (D20), Temurin 25 through the wrapper and toolchain (D21). Repo created on GitHub as public (free-plan branch protection and wiki). Labels, milestones, epics and Phase 0 issues filed. | #1–#18 |
+| 2026-10-31 | Base package `hu.lasterbergamot.mealmagician` (D20), Temurin 25 through the wrapper and toolchain (D21). Repo created on GitHub as public (free-plan branch protection and wiki). Labels, milestones, board #7, epics and Phase 0 issues filed. | #1–#18 |
 | 2026-10-31 | Plan agreed with the owner (interview: hosting, auth, UI, AI, workflow). Repo initialised locally, ai-common `workflow` v0.1.1 installed through APM, docs skeleton written. | — |

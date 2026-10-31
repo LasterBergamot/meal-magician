@@ -4,8 +4,7 @@ Read by the `new-issue` skill (from `ai-common`), and by `repo-audit` when it dr
 The skill holds the procedure; this file holds the project's values.
 
 - **Repo:** `LasterBergamot/meal-magician` (`$REPO`; `$OWNER` = `LasterBergamot`, `$NAME` = `meal-magician`).
-- **Status:** the repo, labels and milestones exist. The board is still TBD: it needs the
-  `project` scope on the `gh` token.
+- **Status:** the repo, labels, milestones and board (#7) exist.
 
 ## Body extras
 
@@ -39,6 +38,8 @@ One epic per PLAN.md phase, mirrored in PLAN.md §3: #1 Phase 0 Foundation, #2 H
 
 ## Board
 
-- Project: TBD (owner `LasterBergamot`), with Auto-add for new issues.
+- Project **#7** (owner `LasterBergamot`, linked to the repo). Turn on its **Auto-add** workflow
+  in the board's Workflows settings (only possible in the UI); until then, add new issues with
+  `gh project item-add 7 --owner LasterBergamot --url <issue-url>`.
 - Fields: Area (same values as `area:*`), Priority (P0, P1, P2), Size (S ≤ half a day,
   M ≤ 2 days, L bigger), Status (`Todo` for new issues).
