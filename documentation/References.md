@@ -11,6 +11,7 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | Spring Modulith | https://docs.spring.io/spring-modulith/reference/ |
 | Spring Security (OAuth2 login) | https://docs.spring.io/spring-security/reference/servlet/oauth2/login/ |
 | Spring Session JDBC | https://docs.spring.io/spring-session/reference/ |
+| Google Cloud Console (OAuth clients) | https://console.cloud.google.com/auth/clients |
 | Spring AI (Phase 7) | https://docs.spring.io/spring-ai/reference/ |
 | Flyway | https://documentation.red-gate.com/flyway |
 | Lombok | https://projectlombok.org/features/ |

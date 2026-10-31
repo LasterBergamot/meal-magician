@@ -35,7 +35,7 @@ The Tailwind CLI version and per-platform SHA-256 hashes are pinned in `scripts/
 
 ## Environment variables
 
-Documented in `.env.example` (create it in Phase 0); copy to `.env` (git-ignored, never read by
+Documented in `.env.example`; copy to `.env` (git-ignored, never read by
 agents). With no datasource variables, `task serve` uses H2. Google sign-in always needs a
 client id/secret; use a separate dev OAuth client (`documentation/Auth-Setup.md`).
 

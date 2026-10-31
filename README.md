@@ -71,6 +71,7 @@ meal-magician/
 ├── src/main/jte/             # JTE templates: layout/, hello/, error/ (fragments are _*.jte)
 ├── src/main/css/app.css      # Tailwind input; the output static/css/app.css is generated and not committed
 ├── compose.yml               # local Postgres 17 + pgvector (`task up`)
+├── .env.example              # variables for local runs (copy to .env, git-ignored)
 ├── src/main/resources/       # application.yml (+ -dev, -postgres profiles), messages_{hu,en}.properties, static/ (js/ vendored htmx + Alpine CSP, icons/, manifest, sw.js), db/migration/{common,postgresql} (Flyway)
 ├── src/test/java/…           # ModularityTests, UiGuardTest (bundles + template guards), shared/web slice tests, persistence/ (H2 + Testcontainers Postgres), unit tests
 ├── .claude/

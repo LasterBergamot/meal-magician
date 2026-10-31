@@ -5,6 +5,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -13,10 +15,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * unsafe-inline} or {@code unsafe-eval}, {@code X-Content-Type-Options} and {@code
  * Referrer-Policy}.
  *
- * <p>Why a plain filter: Spring Security does not exist yet (issue #12). Once it does, move {@link
- * #CONTENT_SECURITY_POLICY} into {@code http.headers(...)} (security.md lists the target header
- * set, including HSTS in prod) and delete this class. It is deliberately small and self-contained
- * so that move is mechanical.
+ * <p>Why a plain filter and not {@code http.headers(...)}: it runs <em>before</em> the Spring
+ * Security chain ({@link Ordered#HIGHEST_PRECEDENCE}), so even the redirect to the login page and
+ * the 401/403 answers carry the policy, and the {@code shared} module needs no Spring Security
+ * dependency. Spring Security adds the remaining headers ({@code X-Frame-Options}, HSTS on HTTPS).
  *
  * <p>What the policy means for developers: only files from our own origin may load, there are no
  * inline {@code <script>} blocks, inline event handlers ({@code onclick=...}) or {@code style=}
@@ -24,6 +26,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * code. A template guard test enforces the same rules before the browser has to.
  */
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class SecurityHeadersFilter extends OncePerRequestFilter {
 
   /**

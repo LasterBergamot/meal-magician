@@ -11,6 +11,24 @@ spring:
       minimum-idle: 0
       maximum-pool-size: 5
       idle-timeout: 60000
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            # Placeholders keep dev and tests starting without credentials; signing in then fails
+            # at Google. ProductionConfigGuard rejects them under the prod profile.
+            client-id: ${GOOGLE_CLIENT_ID:not-configured}
+            client-secret: ${GOOGLE_CLIENT_SECRET:not-configured}
+  session:
+    # A phone should stay signed in for a month (the household app is not a bank).
+    timeout: 30d
+    jdbc:
+      initialize-schema: never
+      # No scheduled clean-up: nothing in the app may poll the database on a timer, or Railway
+      # could not put it to sleep (PLAN.md D11). Expired sessions are ignored when read and
+      # deleted at the next sign-in instead (SessionCleanupOnSignIn).
+      cleanup-cron: "-"
   jpa:
     # Flyway owns the schema; Hibernate only checks that the entities match it.
     hibernate:
@@ -19,8 +37,17 @@ spring:
   flyway:
     # Portable SQL only. The `postgres` profile adds db/migration/postgresql.
     locations: classpath:db/migration/common
+# Instance admins, comma-separated (MM_ADMIN_EMAILS). Env names cannot map to "admin-emails" by
+# relaxed binding (underscores), so the variable is wired in explicitly.
+mm:
+  admin-emails: ${MM_ADMIN_EMAILS:}
 server:
   shutdown: graceful
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
 gg:
   jte:
     # Templates are compiled at build time (see build.gradle.kts). A dev profile may switch to
