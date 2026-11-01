@@ -73,7 +73,7 @@ meal-magician/
 ├── compose.yml               # local Postgres 17 + pgvector (`task up`)
 ├── .env.example              # variables for local runs (copy to .env, git-ignored)
 ├── src/main/resources/       # application.yml (+ -dev, -postgres profiles), messages_{hu,en}.properties, static/ (js/ vendored htmx + Alpine CSP, icons/, manifest, sw.js), db/migration/{common,postgresql} (Flyway)
-├── src/test/java/…           # ModularityTests, UiGuardTest (bundles + template guards), shared/web slice tests, persistence/ (H2 + Testcontainers Postgres), unit tests
+├── src/test/java/…           # guard tests (ModularityTests, UiGuardTest, EveryEndpointNeedsSignInTests, DocsToolingTests), shared/web slice tests, persistence/ (H2 + Testcontainers Postgres), unit tests
 ├── .claude/
 │   ├── agents/               # convention-reviewer (from ai-common)
 │   ├── context/              # workflow, PR checklist, issues, docs map, audit, claude-code

@@ -20,7 +20,7 @@ task build        # build the container image (meal-magician) from the Dockerfil
 task up           # start compose.yml (Postgres + pgvector) and wait until it is healthy
 task down         # stop it
 task migrate-check  # runs PostgresMigrationTests: every migration applied to a throw-away pgvector Postgres (needs Docker; CI runs it)
-task docs:check   # later (#14): docs tooling checks (CI runs it)
+task docs:check   # DocsToolingTests alone: CLAUDE.md ≤ 100 lines, router paths exist, rule globs match (part of `task test`, so CI runs it)
 ```
 
 Every Gradle build (`task test`, `./gradlew build`, `bootJar`) first runs the Tailwind CLI through

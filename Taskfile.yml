@@ -77,7 +77,6 @@ tasks:
     cmd: ./gradlew test --tests '*PostgresMigrationTests'
 
   "docs:check":
-    desc: Docs tooling checks (CI runs it)
-    cmd: |
-      echo "docs:check arrives with #14 (the docs-tooling test)." >&2
-      exit 1
+    desc: Docs tooling checks (also part of `task test`, so CI runs it)
+    # CLAUDE.md under 100 lines, router paths exist, every .claude/rules glob matches a file.
+    cmd: ./gradlew test --tests '*DocsToolingTests'

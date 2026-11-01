@@ -2,7 +2,7 @@
 
 Planned backend work, by `PLAN.md` phase. Move items to [[Current State: Backend]] when they land.
 
-- **Phase 0:** guard tests (modularity, endpoint auth: #14).
+- **Phase 0:** tenant-isolation guard test (arrives with the first household endpoint, Phase 1).
 - **Phase 1:** `household` module: households, OWNER/MEMBER, switcher, email-bound invites,
   member management, tenant isolation, allowlist admin.
 - **Phase 2:** `catalog` module: meals, tags, search, archive.
