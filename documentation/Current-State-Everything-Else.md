@@ -88,10 +88,19 @@ What exists in `main` today:
 - **CI (#16):** three workflows in `.github/workflows/`. Every job calls the same `task` targets
   a developer runs, so a green PR means "passes on a clean machine".
   - `ci.yml` has the checks **Lint & test** (`task lint`, `task test`, the 100 % gate),
-    **Migrations (Postgres)** (`task migrate-check`) and **E2E** (`task test-e2e`, then a Trivy scan
-    of the image: the table step fails the check on a fixable HIGH/CRITICAL finding, the SARIF
-    upload runs on `main` only). Actions are pinned to a commit SHA, permissions are
-    read-only, and a newer push cancels the older run.
+    **Migrations (Postgres)** (`task migrate-check`) and **E2E** (builds the image, `task test-e2e:run`,
+    then a Trivy scan of that same image: the table step fails the check on a fixable
+    HIGH/CRITICAL finding, the SARIF upload runs on `main` only). Actions are pinned to a commit
+    SHA, permissions are read-only, and a newer push cancels the older run.
+  - **Caches (#37)** keep the E2E job short, because GitHub runners start empty. The image is built
+    by `docker/build-push-action` with a BuildKit layer cache in the GitHub Actions cache
+    (`type=gha`, `mode=max`) and loaded as `meal-magician`; the job then runs `task test-e2e:run`
+    (the `test-e2e` steps without the build) and Trivy scans that image instead of building it a
+    third time. The Playwright Chromium download (`~/.cache/ms-playwright`, keyed on
+    `gradle/libs.versions.toml`) and the Tailwind CLI (`.tools/`, keyed on
+    `scripts/install-tailwind.sh`, all three jobs) are cached with `actions/cache`. The Gradle
+    cache mount inside the Dockerfile is not exported by the layer cache, so a changed source file
+    still re-downloads the dependencies in the image build.
   - `docs-check.yml` is the **Docs updated** check (`scripts/check_docs_touched.sh`). A PR must
     touch `README.md`, `CLAUDE.md` or a file under `documentation/`, `.claude/rules/` or
     `.claude/context/`; or change only Markdown; or carry the `no-docs` label *and* a

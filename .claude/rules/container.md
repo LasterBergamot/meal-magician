@@ -23,7 +23,7 @@ paths:
   the Cloud Run memory limit.
 - **compose.yml:** Postgres with pgvector for local dev. **compose.e2e.yml:** app image + Postgres
   + a stub OIDC provider (`navikt/mock-oauth2-server`, digest-pinned, config in
-  `src/e2eTest/stub-oidc/config.json`), used only by `task test-e2e`. The app discovers the stub as
+  `src/e2eTest/stub-oidc/config.json`), used only by `task test-e2e` / `task test-e2e:run`. The app discovers the stub as
   `http://oidc:18081` and Chromium maps `oidc` to `127.0.0.1` (`--host-resolver-rules`) with the
   port published under the same number, so token issuer and browser URL agree. The e2e app runs
   with the `postgres` profile, not `prod` (plain HTTP on localhost).

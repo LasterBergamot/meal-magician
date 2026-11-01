@@ -16,6 +16,7 @@ task serve:pg     # same, with profiles dev,postgres against the compose Postgre
 task test         # unit + slice + Testcontainers integration tests, JaCoCo 100 % gate (needs Docker)
 task test:fast    # skips @Tag("integration") tests (-Pfast): no Docker, no coverage gate (inner loop; CI always runs `task test`)
 task test-e2e     # build the image, start compose.e2e.yml (app + stub OIDC + Postgres), run the Playwright tests, tear down (needs Docker; the first run downloads Chromium)
+task test-e2e:run # the same without the image build (CI builds the image with a layer cache first)
 task build        # build the container image (meal-magician) from the Dockerfile
 task up           # start compose.yml (Postgres + pgvector) and wait until it is healthy
 task down         # stop it
@@ -79,6 +80,11 @@ a failure locally with the `task` target the job calls. Lint workflow edits with
 `docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:latest` before pushing. When adding an
 action, pin it to a commit SHA with the version in a trailing comment (Dependabot keeps both
 current). Dependabot is configured in `.github/dependabot.yml`.
+
+Runners are ephemeral, so `ci.yml` caches what is slow to fetch: the E2E image build uses a
+BuildKit `type=gha` layer cache (`docker/build-push-action`, then `task test-e2e:run` and the Trivy
+scan reuse that image), and `actions/cache` keeps Chromium (`~/.cache/ms-playwright`) and the
+Tailwind CLI (`.tools/`). A new cached step needs a key that changes when its input does.
 
 ## Scheduled workflows
 

@@ -34,6 +34,12 @@ jobs:
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+      # The Tailwind CLI is a pinned download (scripts/install-tailwind.sh skips it when .tools/
+      # holds the pinned version), so cache it under a key that changes with the script.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ hashFiles('scripts/install-tailwind.sh') }}
       # The Gradle build runs the Tailwind CLI first and stops if .tools/ is empty.
       - run: task install
       - run: task lint
@@ -64,6 +70,12 @@ jobs:
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+      # The Tailwind CLI is a pinned download (scripts/install-tailwind.sh skips it when .tools/
+      # holds the pinned version), so cache it under a key that changes with the script.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ hashFiles('scripts/install-tailwind.sh') }}
       - run: task install
       # Applies every Flyway migration to a throw-away pgvector Postgres: H2 can pass where
       # Postgres fails (PLAN.md §7).
@@ -87,15 +99,38 @@ jobs:
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+      # The Tailwind CLI is a pinned download (scripts/install-tailwind.sh skips it when .tools/
+      # holds the pinned version), so cache it under a key that changes with the script.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ hashFiles('scripts/install-tailwind.sh') }}
       - run: task install
-      # Builds the image, starts compose.e2e.yml and drives Chromium (Playwright downloads it on
-      # first use) through the stub-OIDC sign-in.
-      - run: task test-e2e
-      # Trivy scans the image the e2e run just used. The table step is the gate (fails on a fixable
-      # HIGH/CRITICAL finding); the SARIF step feeds GitHub's code-scanning tab and runs on `main`
-      # only, because pull requests from Dependabot and forks get a read-only token.
-      # `task test-e2e` built the image already; this is a cache hit that names it for Trivy.
-      - run: task build
+      # Playwright downloads Chromium on first use (~/.cache/ms-playwright); the browser build
+      # depends on the Playwright version, which lives in the version catalog.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+      # Builds the image here instead of through `task build` so that BuildKit can keep its layers
+      # in the GitHub Actions cache (runners are ephemeral, a local layer cache is always empty).
+      # `load: true` puts the result into the local Docker daemon as `meal-magician`, the name
+      # compose.e2e.yml and the Trivy scan use. The release workflow still builds with `task build`.
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          tags: meal-magician
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # Starts compose.e2e.yml and drives Chromium through the stub-OIDC sign-in against the image
+      # built above (`task test-e2e` would build it again).
+      - run: task test-e2e:run
+      # Trivy scans the same image: the e2e run used it, so nothing is built a second time. The
+      # table step is the gate (fails on a fixable HIGH/CRITICAL finding); the SARIF step feeds
+      # GitHub's code-scanning tab and runs on `main` only, because pull requests from Dependabot
+      # and forks get a read-only token.
       - name: Trivy scan (gate)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
