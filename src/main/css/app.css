@@ -10,14 +10,286 @@
 @source "../jte";
 @source "../resources/static/js/app.js";
 
+/* --- Self-hosted fonts (plan-ui-redesign.md §6.2; sources and hashes in static/fonts/FONTS.md).
+   Both are SIL OFL 1.1. Each file holds one unicode-range subset, so a browser downloads only the
+   subsets a page uses. Fredoka has no Latin Extended-A glyphs, so Hungarian ő and ű in headings
+   fall back to the next family in --font-display. font-display: swap shows text at once. */
+@font-face {
+  font-family: "Fredoka";
+  src: url("/fonts/fredoka-latin.woff2") format("woff2");
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Nunito";
+  src: url("/fonts/nunito-latin.woff2") format("woff2");
+  font-weight: 500 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Nunito";
+  src: url("/fonts/nunito-latin-ext.woff2") format("woff2");
+  font-weight: 500 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* --- Meal Magician design tokens (plan-ui-redesign.md, Appendix A) ----------------------------
+   Raw per-theme variables first, then the Tailwind mapping. Generated from the design-system
+   tokens; if you change a value, change the contrast test's expectations (Appendix C) with it.
+   The contrast test (ContrastTokensTest) reads these values and fails on a failing pair. */
+
+/* Moonlight (light) is the default. */
+:root {
+  --mm-surface: #f8f5ff;
+  --mm-surface-raised: #ffffff;
+  --mm-surface-sunken: #ece5fb;
+  --mm-border: #d9cff2;
+  --mm-border-strong: #7a6bb0;
+  --mm-outline: #24174d;
+  --mm-ink: #24174d;
+  --mm-ink-muted: #5b4f85;
+  --mm-brand: #6d3fe0;
+  --mm-brand-hover: #5a2dc4;
+  --mm-on-brand: #ffffff;
+  --mm-brand-soft: #e8defc;
+  --mm-brand-ink: #4a22a8;
+  --mm-accent: #ffc83d;
+  --mm-on-accent: #24174d;
+  --mm-accent-soft: #fff0c2;
+  --mm-accent-ink: #6b4300;
+  --mm-slot-breakfast: #b86e00;
+  --mm-slot-breakfast-soft: #ffe9a8;
+  --mm-slot-breakfast-ink: #6b4300;
+  --mm-slot-lunch: #0a8a67;
+  --mm-slot-lunch-soft: #c9f5e4;
+  --mm-slot-lunch-ink: #0b5a44;
+  --mm-slot-dinner: #2f64e6;
+  --mm-slot-dinner-soft: #d5e4ff;
+  --mm-slot-dinner-ink: #17398f;
+  --mm-slot-snack: #d12a8f;
+  --mm-slot-snack-soft: #ffd6ee;
+  --mm-slot-snack-ink: #8a1360;
+  --mm-success-soft: #c9f5e4;
+  --mm-success-ink: #0b5a44;
+  --mm-warning-soft: #fff0c2;
+  --mm-warning-ink: #6b4300;
+  --mm-danger: #c01a42;
+  --mm-on-danger: #ffffff;
+  --mm-danger-soft: #ffd9e0;
+  --mm-danger-ink: #8a0f2e;
+  --mm-info-soft: #d5e4ff;
+  --mm-info-ink: #17398f;
+  --mm-focus-ring: #0b5bd3;
+  --mm-scrim: #24174dcc;
+  --mm-shadow-1: 0 2px 0 #24174d;
+  --mm-shadow-2: 3px 3px 0 #24174d;
+  --mm-shadow-3: 5px 5px 0 #24174d;
+  --mm-touch: 44px;
+  --mm-bottom-bar: 64px;
+  --mm-sidebar: 248px;
+  --mm-sidebar-collapsed: 72px;
+  --mm-content: 1200px;
+  --mm-reading: 720px;
+  --mm-duration-fast: 120ms;
+  --mm-duration-base: 200ms;
+  --mm-duration-slow: 320ms;
+}
+
+/* Midnight (dark), chosen explicitly. */
+:root[data-theme="dark"] {
+  --mm-surface: #130c2e;
+  --mm-surface-raised: #1d1442;
+  --mm-surface-sunken: #0d0820;
+  --mm-border: #34296b;
+  --mm-border-strong: #8f86c8;
+  --mm-outline: #9b8cf0;
+  --mm-ink: #f4efff;
+  --mm-ink-muted: #b9b0e0;
+  --mm-brand: #a98bff;
+  --mm-brand-hover: #c1a9ff;
+  --mm-on-brand: #1a0b4d;
+  --mm-brand-soft: #2b1d66;
+  --mm-brand-ink: #d4c6ff;
+  --mm-accent: #ffd04d;
+  --mm-on-accent: #24174d;
+  --mm-accent-soft: #4a3a0f;
+  --mm-accent-ink: #ffe08a;
+  --mm-slot-breakfast: #ffc247;
+  --mm-slot-breakfast-soft: #4a3710;
+  --mm-slot-breakfast-ink: #ffe3a0;
+  --mm-slot-lunch: #4fe0b3;
+  --mm-slot-lunch-soft: #0f4a3a;
+  --mm-slot-lunch-ink: #b5f5dc;
+  --mm-slot-dinner: #7aa8ff;
+  --mm-slot-dinner-soft: #1a2f6b;
+  --mm-slot-dinner-ink: #c3d6ff;
+  --mm-slot-snack: #ff7cc4;
+  --mm-slot-snack-soft: #5a1a44;
+  --mm-slot-snack-ink: #ffc2e3;
+  --mm-success-soft: #0f4a3a;
+  --mm-success-ink: #b5f5dc;
+  --mm-warning-soft: #4a3710;
+  --mm-warning-ink: #ffe3a0;
+  --mm-danger: #ff7d96;
+  --mm-on-danger: #3a0612;
+  --mm-danger-soft: #591527;
+  --mm-danger-ink: #ffc2cd;
+  --mm-info-soft: #1a2f6b;
+  --mm-info-ink: #c3d6ff;
+  --mm-focus-ring: #ffd04d;
+  --mm-scrim: #05020fb3;
+  --mm-shadow-1: 0 2px 0 #05020f;
+  --mm-shadow-2: 3px 3px 0 #05020f;
+  --mm-shadow-3: 5px 5px 0 #05020f;
+}
+
+/* Midnight when the user has not chosen (theme "system"). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    --mm-surface: #130c2e;
+    --mm-surface-raised: #1d1442;
+    --mm-surface-sunken: #0d0820;
+    --mm-border: #34296b;
+    --mm-border-strong: #8f86c8;
+    --mm-outline: #9b8cf0;
+    --mm-ink: #f4efff;
+    --mm-ink-muted: #b9b0e0;
+    --mm-brand: #a98bff;
+    --mm-brand-hover: #c1a9ff;
+    --mm-on-brand: #1a0b4d;
+    --mm-brand-soft: #2b1d66;
+    --mm-brand-ink: #d4c6ff;
+    --mm-accent: #ffd04d;
+    --mm-on-accent: #24174d;
+    --mm-accent-soft: #4a3a0f;
+    --mm-accent-ink: #ffe08a;
+    --mm-slot-breakfast: #ffc247;
+    --mm-slot-breakfast-soft: #4a3710;
+    --mm-slot-breakfast-ink: #ffe3a0;
+    --mm-slot-lunch: #4fe0b3;
+    --mm-slot-lunch-soft: #0f4a3a;
+    --mm-slot-lunch-ink: #b5f5dc;
+    --mm-slot-dinner: #7aa8ff;
+    --mm-slot-dinner-soft: #1a2f6b;
+    --mm-slot-dinner-ink: #c3d6ff;
+    --mm-slot-snack: #ff7cc4;
+    --mm-slot-snack-soft: #5a1a44;
+    --mm-slot-snack-ink: #ffc2e3;
+    --mm-success-soft: #0f4a3a;
+    --mm-success-ink: #b5f5dc;
+    --mm-warning-soft: #4a3710;
+    --mm-warning-ink: #ffe3a0;
+    --mm-danger: #ff7d96;
+    --mm-on-danger: #3a0612;
+    --mm-danger-soft: #591527;
+    --mm-danger-ink: #ffc2cd;
+    --mm-info-soft: #1a2f6b;
+    --mm-info-ink: #c3d6ff;
+    --mm-focus-ring: #ffd04d;
+    --mm-scrim: #05020fb3;
+    --mm-shadow-1: 0 2px 0 #05020f;
+    --mm-shadow-2: 3px 3px 0 #05020f;
+    --mm-shadow-3: 5px 5px 0 #05020f;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --mm-duration-fast: 0ms;
+    --mm-duration-base: 0ms;
+    --mm-duration-slow: 0ms;
+  }
+}
+
+/* Tailwind utilities: bg-surface, text-ink, border-outline, bg-brand, text-slot-ink, shadow-sticker-2, ... */
+@theme inline {
+  --color-surface: var(--mm-surface);
+  --color-surface-raised: var(--mm-surface-raised);
+  --color-surface-sunken: var(--mm-surface-sunken);
+  --color-border: var(--mm-border);
+  --color-border-strong: var(--mm-border-strong);
+  --color-outline: var(--mm-outline);
+  --color-ink: var(--mm-ink);
+  --color-ink-muted: var(--mm-ink-muted);
+  --color-brand: var(--mm-brand);
+  --color-brand-hover: var(--mm-brand-hover);
+  --color-on-brand: var(--mm-on-brand);
+  --color-brand-soft: var(--mm-brand-soft);
+  --color-brand-ink: var(--mm-brand-ink);
+  --color-accent: var(--mm-accent);
+  --color-on-accent: var(--mm-on-accent);
+  --color-accent-soft: var(--mm-accent-soft);
+  --color-accent-ink: var(--mm-accent-ink);
+  --color-slot-breakfast: var(--mm-slot-breakfast);
+  --color-slot-breakfast-soft: var(--mm-slot-breakfast-soft);
+  --color-slot-breakfast-ink: var(--mm-slot-breakfast-ink);
+  --color-slot-lunch: var(--mm-slot-lunch);
+  --color-slot-lunch-soft: var(--mm-slot-lunch-soft);
+  --color-slot-lunch-ink: var(--mm-slot-lunch-ink);
+  --color-slot-dinner: var(--mm-slot-dinner);
+  --color-slot-dinner-soft: var(--mm-slot-dinner-soft);
+  --color-slot-dinner-ink: var(--mm-slot-dinner-ink);
+  --color-slot-snack: var(--mm-slot-snack);
+  --color-slot-snack-soft: var(--mm-slot-snack-soft);
+  --color-slot-snack-ink: var(--mm-slot-snack-ink);
+  --color-success-soft: var(--mm-success-soft);
+  --color-success-ink: var(--mm-success-ink);
+  --color-warning-soft: var(--mm-warning-soft);
+  --color-warning-ink: var(--mm-warning-ink);
+  --color-danger: var(--mm-danger);
+  --color-on-danger: var(--mm-on-danger);
+  --color-danger-soft: var(--mm-danger-soft);
+  --color-danger-ink: var(--mm-danger-ink);
+  --color-info-soft: var(--mm-info-soft);
+  --color-info-ink: var(--mm-info-ink);
+  --color-focus-ring: var(--mm-focus-ring);
+  --color-scrim: var(--mm-scrim);
+  --shadow-sticker-1: var(--mm-shadow-1);
+  --shadow-sticker-2: var(--mm-shadow-2);
+  --shadow-sticker-3: var(--mm-shadow-3);
+  --color-slot: var(--slot);
+  --color-slot-soft: var(--slot-soft);
+  --color-slot-ink: var(--slot-ink);
+}
+
+/* Not themed: shapes and fonts. Spacing needs nothing (Tailwind's 4 px scale matches). */
 @theme {
-  /* The brand green; --color-brand-700 is also the manifest's theme_color. */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --font-display: "Fredoka", "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --font-sans: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* One set of utilities for the four meal types: bg-slot-soft text-slot-ink ... */
+@layer components {
+  .slot-breakfast { --slot: var(--mm-slot-breakfast); --slot-soft: var(--mm-slot-breakfast-soft); --slot-ink: var(--mm-slot-breakfast-ink); }
+  .slot-lunch { --slot: var(--mm-slot-lunch); --slot-soft: var(--mm-slot-lunch-soft); --slot-ink: var(--mm-slot-lunch-ink); }
+  .slot-dinner { --slot: var(--mm-slot-dinner); --slot-soft: var(--mm-slot-dinner-soft); --slot-ink: var(--mm-slot-dinner-ink); }
+  .slot-snack { --slot: var(--mm-slot-snack); --slot-soft: var(--mm-slot-snack-soft); --slot-ink: var(--mm-slot-snack-ink); }
+}
+
+/* The brand green of the old shell. Kept only until R5 has restyled every page (plan §6.1);
+   R5d deletes this scale and the stone-* classes together. */
+@theme {
   --color-brand-50: #f0fdf4;
   --color-brand-100: #dcfce7;
   --color-brand-600: #16a34a;
   --color-brand-700: #15803d;
   --color-brand-800: #166534;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 @layer base {
@@ -26,9 +298,16 @@
     display: none !important;
   }
 
-  /* A visible keyboard focus everywhere (web-ui.md: accessibility). */
+  /* The focus ring changes colour and is blue/gold per theme. A visible keyboard focus everywhere
+     (web-ui.md: accessibility). */
   :focus-visible {
-    outline: 3px solid var(--color-brand-600);
+    outline: 3px solid var(--mm-focus-ring);
     outline-offset: 2px;
+  }
+  body {
+    background-color: var(--mm-surface);
+    background-image: radial-gradient(var(--mm-border) 1.5px, transparent 1.5px);
+    background-size: 28px 28px;
+    color: var(--mm-ink);
   }
 }
