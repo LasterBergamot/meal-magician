@@ -30,6 +30,12 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | htmx npm package (vendored file source) | https://www.npmjs.com/package/htmx.org |
 | `@alpinejs/csp` npm package (vendored file source) | https://www.npmjs.com/package/@alpinejs/csp |
 | Tailwind CSS v4 (`@theme`, `@source`) | https://tailwindcss.com/docs/functions-and-directives |
+| Fredoka (display face, self-hosted `woff2`, OFL 1.1) | https://fonts.google.com/specimen/Fredoka · source: https://github.com/google/fonts/tree/main/ofl/fredoka |
+| Nunito (body face, self-hosted `woff2`, OFL 1.1) | https://fonts.google.com/specimen/Nunito · source: https://github.com/google/fonts/tree/main/ofl/nunito |
+| SIL Open Font License 1.1 (licence of both faces; texts in `static/fonts/OFL-*.txt`) | https://openfontlicense.org/ · https://scripts.sil.org/OFL |
+| `@font-face`, `font-display`, `unicode-range` | https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face |
+| WCAG 2 contrast ratio (the formula in `ContrastTokensTest`) | https://www.w3.org/TR/WCAG21/#dfn-contrast-ratio |
+| `fontTools` (instancing and WOFF2 subsetting of the font files) | https://fonttools.readthedocs.io/ |
 | Content-Security-Policy | https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP |
 | Service Worker API | https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API |
 | Web app manifest (installability, maskable icons) | https://web.dev/articles/add-manifest |
