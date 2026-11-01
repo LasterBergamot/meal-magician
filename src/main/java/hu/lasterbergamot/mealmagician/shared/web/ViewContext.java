@@ -13,8 +13,9 @@ import hu.lasterbergamot.mealmagician.shared.i18n.Messages;
  * @param messages the translation helper
  * @param csrf the CSRF token for htmx, or {@code null} while there is no token source
  * @param household the household for the header, or {@code null} when there is none to show
+ * @param admin whether the person is an instance admin, which adds the allowlist link to the header
  */
-public record ViewContext(Messages messages, CsrfMeta csrf, HouseholdNav household) {
+public record ViewContext(Messages messages, CsrfMeta csrf, HouseholdNav household, boolean admin) {
 
   /**
    * Translates a key; shorthand for {@code messages().t(...)} so templates read {@code

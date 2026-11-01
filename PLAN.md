@@ -162,7 +162,11 @@ Sub-issues filed 2026-11-01: #41 → #42, #43, #44 (blocked by #41); #45 stands 
       Mutation-checked: dropping the household scoping in `InviteService.revoke` fails it. An
       endpoint with no id in its path always acts on the caller's own household, so only the
       "person in no household" check applies to it.)*
-- [ ] #45 Admin page for the allowlist (instance admins only).
+- [x] #45 Admin page for the allowlist (instance admins only). *(PR #56. `/admin/allowlist` lists the
+      bootstrap admins (fixed) and the `allowed_email` rows, adds and removes addresses. The
+      `/admin/**` rule in `SecurityConfig` (`hasRole("ADMIN")`) gives non-admins 403; admins get a
+      header link. Removing an address blocks the next sign-in only: a live session lasts up to 30
+      days, so ending it is an open follow-up.)*
 
 ### Phase 2 — Meal library (`M1`, epic #3)
 - [ ] Meal CRUD: name, notes, recipe URL, tags, which occasion types it suits, archive.
@@ -409,3 +413,4 @@ meal-magician/
 | 2026-11-01 | Phase 1 started: sub-issues #41–#45 filed under epic #2. Households (#41): `household`/`membership` tables (V4), `HouseholdService` with the 404/403 rules, the session-based `CurrentHouseholdResolver` and `CurrentHousehold` controller parameter, the `/households` page (create, rename, switch), the current household in the header. Also confirmed with Cloud Monitoring that the Cloud Run service had scaled to zero ~15 min after the v0.1.0 deploy (Neon suspend still the owner's to confirm). | #18, #41, #46 |
 | 2026-11-01 | Tenant guard (#44): `TenantIsolationTests` + `TenantEndpoints` registry + `TenantWorld` fixture (two households, four people); unregistered and stale registrations fail, and the decision logic is tested on leaky stubs. `tests.md` explains how to register an endpoint. | #44, #53 |
 | 2026-11-01 | UI redesign planned: a design system agreed with the owner (storybook look: violet, gold, outlines, sparkles; Moonlight and Midnight themes; bottom tab bar on phone, sidebar on desktop) and written down as `plan-ui-redesign.md` with phases R0–R9. No code changed yet. | #55 |
+| 2026-11-01 | Allowlist admin page (#45): `AllowlistAdminController`/`AllowlistAdminService` in `identity/internal`, `/admin/**` restricted to `ROLE_ADMIN`, bootstrap admins shown but not removable, `ViewContext.admin` for the header link. Phase 1 is complete. | #45, #56 |

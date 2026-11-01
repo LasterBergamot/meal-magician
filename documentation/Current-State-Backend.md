@@ -53,7 +53,7 @@ the first part of the `household` module (create, rename, switch); no other busi
     itself, so it can show up in access logs of whatever sits in front of the app (and, briefly, in
     the session's saved request while someone signs in). That is why it expires and is single use.
     It is never logged by the app.
-  - **Revoking** keeps the address on the allowlist (removing it is the admin page, #45).
+  - **Revoking** keeps the address on the allowlist (removing it is the admin page, #45, below).
   - `/join/**` needs a session like every page: an anonymous visitor is sent to `/login` and
   Spring Security returns them to the link after Google sign-in. Not rate limited yet (Phase 6).
 - **Members (#43), module `household`:** `MemberService` is the public entry point. `list` (any
@@ -109,8 +109,20 @@ the first part of the `household` module (create, rename, switch); no other busi
   - **Allowlist:** after Google confirms who someone is, `AllowlistedOidcUserService` checks that
     their e-mail is in `MM_ADMIN_EMAILS` (instance admins, from the environment) or in the
     `allowed_email` table. Otherwise they get a **403** and **no `app_user` row** is created. E-mails
-    are compared lower-case. Changing the table needs no redeploy; the admin page for it comes
-    in Phase 1.
+    are compared lower-case. Changing the table needs no redeploy: instance admins use the admin
+    page below.
+  - **Allowlist admin page (#45):** `/admin/allowlist` (`identity/internal/AllowlistAdminController`
+    and `AllowlistAdminService`). `SecurityConfig` lets only people with `ROLE_ADMIN` reach
+    `/admin/**`, so a signed-in non-admin gets 403 and an anonymous visitor goes to `/login`; the
+    service itself does not check who asks and is package-private. The list shows the bootstrap
+    admins from `MM_ADMIN_EMAILS` first (fixed: a remove is refused with 409, because only a
+    redeploy can change configuration), then the `allowed_email` rows with their source (`ADMIN` =
+    added here, `INVITE` = added by a household invite). Adding normalizes the address and rejects
+    one that is badly shaped or already allowed (422); removing deletes the row, so the person's
+    **next sign-in** is refused. A session they already have keeps working until it expires (30
+    days): sessions are not tied back to the allowlist. Removing an address does not touch
+    households, memberships or the person's data. The admin flag is read at sign-in, so a change of
+    `MM_ADMIN_EMAILS` reaches a signed-in admin only at their next sign-in.
   - **Users:** `app_user` (Google `sub`, e-mail, name, UI locale `hu`/`en`, created at). The e-mail
     and name are refreshed at every sign-in. The principal that controllers receive is
     `identity.SignedInUser` (public API of the module): `@AuthenticationPrincipal SignedInUser user`

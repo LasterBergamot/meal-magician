@@ -7,7 +7,8 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
 ## Pages and templates
 
 - `src/main/jte/layout/base.jte` is the frame of every page: header (brand, the current household as a link
-  to `/households`, the HU/EN language links), `<main>` with an empty `#error-slot`, footer.
+  to `/households`, an "Allowlist" link to `/admin/allowlist` for instance admins only (`ctx.admin()`,
+  from `request.isUserInRole("ADMIN")`), the HU/EN language links), `<main>` with an empty `#error-slot`, footer.
   On a phone the header collapses behind a menu button (an Alpine component); from the `md`
   breakpoint (768 px) it is shown in full. Touch targets are at least 44 px.
 - `hello/page.jte` + `hello/_greeting.jte`: the temporary home page `/`. The "Refresh" button
@@ -44,6 +45,12 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   swap the whole `#members` section. A refused action (the last owner leaving, an owner naming
   themselves) answers 409 with the same section and a red message; a successful leave sends the
   browser to `/households` with `HX-Redirect`.
+- `admin/allowlist.jte` and `admin/_allowlist.jte` (#45): the page at `/admin/allowlist`, admins
+  only. An add form (one e-mail field) and the list of addresses with where each came from and when
+  it was added; every row except the bootstrap admins has a Remove button (its own small form with
+  the address in a hidden field, so no JSON is built in an attribute, plus `hx-confirm`). Posts swap
+  the whole `#allowlist` section; a refused change answers 422 (add) or 409 (remove) with the same
+  section and a red message.
 
 ## Styling: Tailwind
 

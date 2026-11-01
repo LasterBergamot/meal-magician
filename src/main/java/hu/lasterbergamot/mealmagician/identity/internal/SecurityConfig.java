@@ -49,6 +49,12 @@ class SecurityConfig {
   };
 
   /**
+   * Paths only instance admins may open (the allowlist page, #45). A signed-in person without the
+   * admin role gets 403, an anonymous visitor is sent to the login page.
+   */
+  static final String ADMIN_PATHS = "/admin/**";
+
+  /**
    * Builds the one filter chain.
    *
    * @param http Spring Security's builder
@@ -66,7 +72,13 @@ class SecurityConfig {
       SessionCleanupOnSignIn successHandler)
       throws Exception {
     return http.authorizeHttpRequests(requests ->
-            requests.requestMatchers(PUBLIC_PATHS).permitAll().anyRequest().authenticated())
+            requests
+                .requestMatchers(PUBLIC_PATHS)
+                .permitAll()
+                .requestMatchers(ADMIN_PATHS)
+                .hasRole("ADMIN")
+                .anyRequest()
+                .authenticated())
         .oauth2Login(login ->
             login
                 .loginPage(LOGIN_URL)

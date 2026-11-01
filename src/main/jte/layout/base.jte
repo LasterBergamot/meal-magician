@@ -54,6 +54,9 @@
             <a href="/households" class="inline-flex min-h-11 items-center underline">${ctx.household().name() != null ? ctx.household().name() : ctx.t("household.create.link")}</a>
           @endif
         </div>
+        @if(ctx.admin())
+          <a href="/admin/allowlist" class="inline-flex min-h-11 items-center text-sm text-brand-100 underline">${ctx.t("admin.link")}</a>
+        @endif
         <nav class="flex gap-1" aria-label="${ctx.t("lang.label")}">
           @template.layout._lang_link(ctx = ctx, code = "hu", label = ctx.t("lang.hu.short"), name = ctx.t("lang.hu.name"))
           @template.layout._lang_link(ctx = ctx, code = "en", label = ctx.t("lang.en.short"), name = ctx.t("lang.en.name"))
