@@ -1,0 +1,30 @@
+# Dependency updates, weekly, opened against `main` (the only branch). Minor and patch bumps of an
+# ecosystem arrive as ONE grouped PR to keep the review load small; majors stay separate because
+# they are the ones that need a human decision (see .claude/context/pr-checklist.md).
+# Not tracked by Dependabot: the Tailwind CLI pin in scripts/install-tailwind.sh (bump by hand).
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule: {interval: weekly, day: monday, time: "06:00", timezone: Europe/Budapest}
+    labels: [dependencies]
+    groups:
+      gradle-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: {interval: weekly, day: monday, time: "06:00", timezone: Europe/Budapest}
+    labels: [dependencies]
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
+  # compose.yml pins the pgvector Postgres image by digest.
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule: {interval: weekly, day: monday, time: "06:00", timezone: Europe/Budapest}
+    labels: [dependencies]
+  # The Dockerfile lands with #15; until then Dependabot finds nothing to update here.
+  - package-ecosystem: docker
+    directory: /
+    schedule: {interval: weekly, day: monday, time: "06:00", timezone: Europe/Budapest}
+    labels: [dependencies]

@@ -5,8 +5,9 @@ this file says which docs this repo has and the steps that are specific to it.
 
 ## Where the docs are
 
-- `documentation/` is the source of the GitHub wiki. `wiki-sync.yml` (Phase 0) mirrors it on
-  every push to `main` that touches `documentation/**`. Never edit the wiki directly.
+- `documentation/` is the source of the GitHub wiki. `wiki-sync.yml` mirrors it on
+  every push to `main` that touches `documentation/**` (`scripts/sync-wiki.sh`; the wiki's git repo
+  exists only after its first page is created in the web UI). Never edit the wiki directly.
 - `README.md`: what the app is, prerequisites, tasks, and the **only** copy of the project
   structure tree.
 - `CLAUDE.md` is a router (keep it under 100 lines). Detail lives in `.claude/rules/` and

@@ -65,7 +65,7 @@ meal-magician/
 ├── README.md
 ├── apm.yml, apm.lock.yaml    # shared Claude Code skills from ai-common (via APM)
 ├── build.gradle.kts, settings.gradle.kts, gradle/libs.versions.toml, gradlew   # build (Gradle wrapper pins Gradle 9.8.2)
-├── Taskfile.yml, scripts/    # task entry point; doctor.sh (tool check), install-tailwind.sh (pinned CLI download), serve.sh (app + Tailwind watch), generate-icons.sh
+├── Taskfile.yml, scripts/    # task entry point; doctor.sh (tool check), install-tailwind.sh (pinned CLI download), serve.sh (app + Tailwind watch), generate-icons.sh, check_docs_touched.sh (CI docs check), sync-wiki.sh (CI wiki mirror)
 ├── lombok.config, config/checkstyle/   # Lombok settings; Checkstyle Javadoc rules
 ├── src/main/java/hu/lasterbergamot/mealmagician/   # app class + one package per module (identity, household, catalog, planning, feedback, sharing, shared); shared/i18n (translations), shared/web (layout plumbing, CSP filter, error + hello pages)
 ├── src/main/jte/             # JTE templates: layout/, hello/, error/ (fragments are _*.jte)
@@ -80,7 +80,7 @@ meal-magician/
 │   ├── rules/                # path-scoped conventions (Java modules, persistence, security, UI, tests, container, docs)
 │   ├── skills/               # create-pr, new-issue, … (from ai-common, don't edit here)
 │   └── settings.json
-├── .github/pull_request_template.md
+├── .github/                  # workflows/ (ci, docs-check, wiki-sync), dependabot.yml, pull_request_template.md
 └── documentation/            # mirrored to the GitHub wiki (Home, Setup, Current-State-*, Roadmap-*, …)
 ```
 

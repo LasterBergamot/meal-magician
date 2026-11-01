@@ -51,12 +51,11 @@ Explore and Plan subagents load neither this file nor the rules: put the rule fi
 - **Outward-facing actions need the owner's OK first:** GitHub repo settings, labels, issues
   outside the plan, Google Cloud or Neon changes, anything not in `PLAN.md`.
   **Standing permission (D22):** for issues in `PLAN.md`, push the feature branch, open the PR
-  and merge it (merge commit) once all required checks are green; until CI exists (#16), once
-  `task lint` and `task test` pass locally. Never push or force-push `main`.
+  and merge it (merge commit) once all required checks are green. Never push or force-push `main`.
 - On **every** change, check `README.md`, the rule/context file for the area you touched
   (`.claude/context/claude-code.md` has the map) and the matching `documentation/` page(s);
   update whatever the change makes stale. A PR has a docs diff, or a `No doc impact: <reason>`
-  line plus the `no-docs` label (CI enforces it once `docs-check.yml` exists).
+  line plus the `no-docs` label (`docs-check.yml` enforces it).
 - **Javadoc is documentation too.** Every new or changed public class, record and method under
   `src/main/java` needs Javadoc that says what it is *for*, the non-obvious *why* and what it
   throws or returns when the signature doesn't show it. Audience: a junior developer new to the

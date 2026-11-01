@@ -66,6 +66,15 @@ Postgres URL is missing.
   `/actuator/health` (`documentation/Hosting-Setup.md`). Flyway migrates at startup, so
   migrations must stay compatible with the previous release (expand/contract).
 
+## CI
+
+`.github/workflows/`: `ci.yml` (checks `Lint & test`, `Migrations (Postgres)`, `E2E`),
+`docs-check.yml` (`Docs updated`, `scripts/check_docs_touched.sh`) and `wiki-sync.yml`. Reproduce
+a failure locally with the `task` target the job calls. Lint workflow edits with
+`docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:latest` before pushing. When adding an
+action, pin it to a commit SHA with the version in a trailing comment (Dependabot keeps both
+current). Dependabot is configured in `.github/dependabot.yml`.
+
 ## Scheduled workflows
 
 `db-backup.yml` (Phase 6): scheduled `pg_dump` → `age`-encrypted artifact. Nothing periodic runs

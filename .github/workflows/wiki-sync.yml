@@ -1,0 +1,55 @@
+# Mirrors documentation/ into the GitHub wiki after every merge to `main` that touches it.
+# Never edit the wiki by hand: the next sync overwrites it. The logic lives in
+# scripts/sync-wiki.sh; this file holds the PAGE MAP, the one place that says which file becomes
+# which wiki page. A new file in documentation/ must be added here (the script fails if one is
+# missing) and linked from Home.md.
+#
+# Prerequisite (one time, owner): the wiki git repo only exists after the first page is created
+# in the web UI (repo > Wiki > "Create the first page"). Until then the sync stops with a message.
+name: Wiki sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "documentation/**"
+      - ".github/workflows/wiki-sync.yml"
+      - "scripts/sync-wiki.sh"
+  workflow_dispatch:
+
+# `contents: write` is what lets GITHUB_TOKEN push to the repo's wiki.
+permissions:
+  contents: write
+
+# Syncs queue, they never cancel each other, so the last merge always wins.
+concurrency:
+  group: wiki-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync the wiki
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Copy documentation/ to the wiki
+        env:
+          WIKI_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          # One page per line: `<file in documentation/>|<wiki page title>`. The title is what
+          # `[[Wiki Links]]` use; the wiki file name is the title with spaces turned into hyphens.
+          PAGE_MAP: |
+            Home.md|Home
+            Setup.md|Setup
+            Newcomer-Guide.md|Newcomer Guide
+            References.md|References
+            Auth-Setup.md|Auth Setup
+            Hosting-Setup.md|Hosting Setup
+            Current-State-Backend.md|Current State: Backend
+            Current-State-Frontend.md|Current State: Frontend
+            Current-State-Everything-Else.md|Current State: Everything Else
+            Roadmap-Backend.md|Roadmap: Backend
+            Roadmap-Frontend.md|Roadmap: Frontend
+            Roadmap-Everything-Else.md|Roadmap: Everything Else
+        run: bash scripts/sync-wiki.sh
