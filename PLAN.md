@@ -127,6 +127,10 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       3 migrations on Neon, the app started in 6.7 s on its first start. Still open, owner:
       sign in on a phone; and confirm scale to zero (Cloud Run has no minimum instance, Neon
       suspends after ~5 idle minutes; the instance count after idle is not checked yet).)*
+- [ ] #37 CI: make the E2E job faster (was ~3m20s per PR): BuildKit `type=gha` layer cache for the
+      image, Playwright Chromium and Tailwind CLI caches, Trivy scans the image the e2e run used.
+      *(Owner added it to the plan 2026-11-01. Docs-only E2E skipping is left out: it changes how
+      branch protection treats a required check, decide separately.)*
 
 ### Phase 1 — Households (`M1 – Core planner`, epic #2)
 - [ ] Create a household (the creator becomes OWNER), rename it, switch between households

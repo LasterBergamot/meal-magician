@@ -54,6 +54,11 @@ tasks:
     desc: Build the image, start compose.e2e.yml (app + Postgres + stub OIDC), run the Playwright tests, tear down
     cmds:
       - task: build
+      - task: test-e2e:run
+
+  test-e2e:run:
+    desc: Like test-e2e, but uses the meal-magician image that already exists (CI builds it with a layer cache)
+    cmds:
       # Tears the stack down (and drops its database volume) even when a step below fails.
       - defer: docker compose -f compose.e2e.yml down --volumes
       - docker compose -f compose.e2e.yml up --detach --wait
