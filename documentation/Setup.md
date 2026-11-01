@@ -99,3 +99,17 @@ task lint && task test
 
 **Expected:** both pass; coverage 100 %. `task test` needs Docker once Testcontainers tests
 exist; `task test:fast` skips them and the coverage gate for a quick check without Docker.
+
+## Optional: build the image and run the end-to-end tests
+
+```bash
+task test-e2e
+```
+
+This builds the container image, starts `compose.e2e.yml` (the app, Postgres and a stub sign-in
+provider), signs in with a Chromium browser at phone and desktop size and tears everything down.
+
+**Expected:** the build succeeds. The first run takes a few minutes: it downloads the Gradle and
+Tailwind tools into the image build and Playwright's Chromium into `~/.cache/ms-playwright`. Ports
+18080 and 18081 must be free. On a distribution Playwright does not support (such as Arch) it
+prints a warning and falls back to the Ubuntu build, which works.

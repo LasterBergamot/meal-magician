@@ -23,7 +23,7 @@ updates:
     directory: /
     schedule: {interval: weekly, day: monday, time: "06:00", timezone: Europe/Budapest}
     labels: [dependencies]
-  # The Dockerfile lands with #15; until then Dependabot finds nothing to update here.
+  # The Dockerfile pins both Temurin images by digest; Dependabot proposes new digests.
   - package-ecosystem: docker
     directory: /
     schedule: {interval: weekly, day: monday, time: "06:00", timezone: Europe/Budapest}

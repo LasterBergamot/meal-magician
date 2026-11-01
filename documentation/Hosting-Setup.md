@@ -205,7 +205,9 @@ It then polls `/actuator/health`. Record the final command here when #17 lands.
 ## Scale to zero
 
 - Cloud Run: min instances 0, so no instance runs (or costs) between requests; the first request
-  after idle pays the cold start (measure it and note it here, D17).
+  after idle pays the cold start. The image's AOT cache makes the app itself start in about
+  1.3-1.6 s on a laptop (2.9 s without the cache); the real Cloud Run number is measured at the
+  first deploy (#18) and noted here (D17).
 - Neon: suspends the compute after ~5 idle minutes; the first query wakes it (well under a second).
 - If either never goes idle: look for outbound traffic (Hikari idle connections, telemetry, a
   monitor pinging the app).

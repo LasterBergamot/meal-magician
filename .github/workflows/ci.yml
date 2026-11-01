@@ -78,35 +78,25 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # The Dockerfile and compose.e2e.yml arrive with #15. Until then this job passes without
-      # doing anything, so the required check can already be switched on; #15 removes the
-      # `hashFiles` conditions below and makes every step unconditional.
-      - name: Note that E2E is not set up yet
-        if: hashFiles('Dockerfile', 'compose.e2e.yml') == ''
-        run: 'echo "::notice::E2E and the Trivy scan arrive with #15 (Dockerfile, compose.e2e.yml, Playwright)."'
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
-        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
         with:
           distribution: temurin
           java-version: "25"
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
       - uses: arduino/setup-task@c0bc642852239c2689f73f4ea6459c29405f3c52 # v3.0.0
-        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: task install
-        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
+      # Builds the image, starts compose.e2e.yml and drives Chromium (Playwright downloads it on
+      # first use) through the stub-OIDC sign-in.
       - run: task test-e2e
-        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
       # Trivy scans the image the e2e run just used. The table step is the gate (fails on a fixable
       # HIGH/CRITICAL finding); the SARIF step feeds GitHub's code-scanning tab and runs on `main`
       # only, because pull requests from Dependabot and forks get a read-only token.
+      # `task test-e2e` built the image already; this is a cache hit that names it for Trivy.
       - run: task build
-        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
       - name: Trivy scan (gate)
-        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: meal-magician
@@ -115,7 +105,7 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
       - name: Trivy scan (SARIF)
-        if: hashFiles('Dockerfile', 'compose.e2e.yml') != '' && github.event_name == 'push'
+        if: github.event_name == 'push'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: meal-magician
@@ -124,7 +114,7 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
       - name: Upload SARIF
-        if: hashFiles('Dockerfile', 'compose.e2e.yml') != '' && github.event_name == 'push'
+        if: github.event_name == 'push'
         uses: github/codeql-action/upload-sarif@793b778da9c9275a0f276522b27cb5fc14bba279 # v4
         with:
           sarif_file: trivy.sarif

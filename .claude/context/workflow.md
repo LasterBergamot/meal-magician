@@ -2,8 +2,7 @@
 
 Run the tasks from anywhere in the repo (`task`, or `go-task` where `task` is only a shell
 alias). `Taskfile.yml` is the single entry point (#10); keep this list and the Taskfile in sync.
-Tasks marked *later* already exist but stop with a message naming the issue that makes them real;
-`build` needs the `Dockerfile` and says so until it lands.
+Tasks marked *later* already exist but stop with a message naming the issue that makes them real.
 
 ## Tasks
 
@@ -16,8 +15,8 @@ task serve        # bootRun with the dev profile on in-memory H2 (no Docker need
 task serve:pg     # same, with profiles dev,postgres against the compose Postgres (run `task up` first)
 task test         # unit + slice + Testcontainers integration tests, JaCoCo 100 % gate (needs Docker)
 task test:fast    # skips @Tag("integration") tests (-Pfast): no Docker, no coverage gate (inner loop; CI always runs `task test`)
-task test-e2e     # later (#15): build image, start compose.e2e.yml (app + stub OIDC + Postgres), Playwright tests, tear down
-task build        # build the container image (meal-magician); needs the Dockerfile (#15)
+task test-e2e     # build the image, start compose.e2e.yml (app + stub OIDC + Postgres), run the Playwright tests, tear down (needs Docker; the first run downloads Chromium)
+task build        # build the container image (meal-magician) from the Dockerfile
 task up           # start compose.yml (Postgres + pgvector) and wait until it is healthy
 task down         # stop it
 task migrate-check  # runs PostgresMigrationTests: every migration applied to a throw-away pgvector Postgres (needs Docker; CI runs it)

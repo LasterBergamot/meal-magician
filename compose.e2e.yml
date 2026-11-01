@@ -1,0 +1,59 @@
+# The stack `task test-e2e` runs the Playwright tests against (PLAN.md §3 Phase 0, tests.md):
+# the production image, a Postgres with pgvector and a stub OIDC provider that stands in for
+# Google. Test-only: the credentials are public on purpose and every port is bound to localhost.
+#
+# The browser and the app must see the identity provider under the SAME address, because the ID
+# token's issuer has to match the one the app discovered. The app reaches it as `oidc:18081` inside
+# the Compose network; the tests start Chromium with `--host-resolver-rules="MAP oidc 127.0.0.1"`
+# and the port is published under the same number, so `http://oidc:18081` works from both sides.
+services:
+  app:
+    image: meal-magician
+    depends_on:
+      postgres:
+        condition: service_healthy
+      oidc:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mealmagician
+      SPRING_DATASOURCE_USERNAME: mealmagician
+      SPRING_DATASOURCE_PASSWORD: mealmagician
+      GOOGLE_CLIENT_ID: e2e-client
+      GOOGLE_CLIENT_SECRET: e2e-secret
+      MM_ADMIN_EMAILS: e2e@example.test
+      # Point the "google" registration at the stub. Setting an issuer makes Spring Security read
+      # the endpoints from its discovery document; the scopes are not part of that, so repeat them.
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_GOOGLE_ISSUER_URI: http://oidc:18081/default
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_SCOPE: openid,profile,email
+    ports:
+      - "127.0.0.1:18080:8080"
+
+  postgres:
+    image: pgvector/pgvector:pg17@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d
+    environment:
+      POSTGRES_DB: mealmagician
+      POSTGRES_USER: mealmagician
+      POSTGRES_PASSWORD: mealmagician
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mealmagician -d mealmagician"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # navikt/mock-oauth2-server: a small OIDC provider. With interactiveLogin off it answers the
+  # authorization request at once; the token callback in the config file decides who signs in.
+  oidc:
+    image: ghcr.io/navikt/mock-oauth2-server@sha256:647dd8c78a54f0e6fcd58d79c884e612f8f998a0662276f3e1db22e464a50192
+    environment:
+      SERVER_PORT: "18081"
+      JSON_CONFIG_PATH: /config/config.json
+    volumes:
+      - ./src/e2eTest/stub-oidc:/config:ro
+    ports:
+      - "127.0.0.1:18081:18081"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:18081/default/.well-known/openid-configuration"]
+      interval: 3s
+      timeout: 3s
+      retries: 20

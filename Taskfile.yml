@@ -51,17 +51,17 @@ tasks:
     cmd: ./gradlew test -Pfast
 
   test-e2e:
-    desc: Build the image, start compose.e2e.yml, run the Playwright tests, tear down
-    cmd: |
-      echo "test-e2e arrives with #15 (Dockerfile, compose.e2e.yml, Playwright)." >&2
-      exit 1
+    desc: Build the image, start compose.e2e.yml (app + Postgres + stub OIDC), run the Playwright tests, tear down
+    cmds:
+      - task: build
+      # Tears the stack down (and drops its database volume) even when a step below fails.
+      - defer: docker compose -f compose.e2e.yml down --volumes
+      - docker compose -f compose.e2e.yml up --detach --wait
+      - ./gradlew e2eTest
 
   build:
     desc: Build the container image (meal-magician)
-    preconditions:
-      - sh: test -f Dockerfile
-        msg: "The Dockerfile arrives with #15."
-    cmd: docker build -t meal-magician .
+    cmd: docker build --tag meal-magician .
 
   up:
     desc: Start compose.yml (Postgres + pgvector)
