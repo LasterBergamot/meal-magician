@@ -93,21 +93,21 @@ class HouseholdController {
    * Makes a household the one the person works in.
    *
    * @param user the signed-in person
-   * @param id the household to switch to
+   * @param householdId the household to switch to
    * @param request the current request
    * @param response the response
    * @return a redirect to the home page
    * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException (404) if the person
    *     is not a member
    */
-  @PostMapping("/{id}/switch")
+  @PostMapping("/{householdId}/switch")
   String switchTo(
       @AuthenticationPrincipal SignedInUser user,
-      @PathVariable long id,
+      @PathVariable long householdId,
       HttpServletRequest request,
       HttpServletResponse response) {
-    households.require(id, user.userId());
-    resolver.select(request, id);
+    households.require(householdId, user.userId());
+    resolver.select(request, householdId);
     return Htmx.redirect(request, response, "/");
   }
 
@@ -115,7 +115,7 @@ class HouseholdController {
    * Renames a household. Owners only.
    *
    * @param user the signed-in person
-   * @param id the household to rename
+   * @param householdId the household to rename
    * @param name the wanted name
    * @param request the current request
    * @param response the response
@@ -127,16 +127,16 @@ class HouseholdController {
    * @throws hu.lasterbergamot.mealmagician.household.OwnerOnlyException (403) if they are not an
    *     owner
    */
-  @PostMapping("/{id}/rename")
+  @PostMapping("/{householdId}/rename")
   String rename(
       @AuthenticationPrincipal SignedInUser user,
-      @PathVariable long id,
+      @PathVariable long householdId,
       @RequestParam(defaultValue = "") String name,
       HttpServletRequest request,
       HttpServletResponse response,
       Model model) {
     try {
-      households.rename(id, user.userId(), name);
+      households.rename(householdId, user.userId(), name);
       return Htmx.redirect(request, response, "/households");
     } catch (InvalidHouseholdNameException e) {
       response.setStatus(HttpServletResponse.SC_UNPROCESSABLE_CONTENT);

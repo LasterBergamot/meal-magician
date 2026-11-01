@@ -24,11 +24,20 @@ paths:
     (Gradle task `e2eTest`, outside `task test` and the coverage gate). The app greets in Hungarian
     whatever the browser's language, so assert the Hungarian text or switch the language first.
 - Always-present guard tests: `ModularityTests` (Modulith verify + docs),
-  `EveryEndpointNeedsSignInTests` (endpoint-auth walk), tenant isolation (other household → 404;
-  first covered by `HouseholdPagesTest`, the reusable guard is #44), `UiGuardTest` (message bundles have equal keys, no
+  `EveryEndpointNeedsSignInTests` (endpoint-auth walk), `TenantIsolationTests` (tenant isolation, below), `UiGuardTest` (message bundles have equal keys, no
   hard-coded template text), `DocsToolingTests` (router paths exist, rule globs match,
   `CLAUDE.md` ≤ 100 lines; `task docs:check`). Every guard has tests that run it on a
   deliberately broken example, so it cannot silently stop guarding.
+- **A new household-scoped endpoint must be registered with the tenant guard (#44).** Any
+  controller method with a `CurrentHousehold` parameter or a `{householdId}` path variable makes
+  `TenantIsolationTests` fail until you add one line to `TenantEndpoints.ALL` (test sources,
+  package `tenant`): `TenantEndpoint.ownerOnly(POST, "<mapping as declared>", w -> Map.of("mealId", w.homeMealId()))`
+  (or `forMembers`). The map gives the path variables that point at the *home* household's
+  resource; if the `TenantWorld` fixture has no such resource yet, add a field to it and create
+  it in `TenantIsolationTests.buildWorld`. The guard then checks 404 for a person in no household,
+  404 for the owner of another household on any path with ids, 403 for a plain member on
+  `ownerOnly` endpoints, and that the home owner gets neither (so the path is real). Remove a
+  registration when its endpoint goes away: a stale one fails too.
 - Spring Session keeps sessions in the database: to carry a session across MockMvc requests, send
   back the `SESSION` cookie of the first response, not a `MockHttpSession` (see `HouseholdPagesTest`).
 - The `@WebMvcTest` slices (`WebSliceTest`) leave the `household` package out, because its web
