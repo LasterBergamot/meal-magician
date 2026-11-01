@@ -83,4 +83,17 @@ paths:
   the message in `error` and the typed value (or the chosen option) passed back. Callers pass
   translated text from `ctx.t`; the components carry no text of their own. The style guide
   `dev/_forms.jte` shows every state.
+- **Content and status components (`ui/`, R2b):** `ui/_badge.jte` (`tone`: neutral, brand, accent,
+  success, warning, danger, info; a span, never a control), `ui/_chip.jte` (a filter button with
+  `aria-pressed`; selected is a fill plus a check), `ui/_slot_chip.jte` and `ui/_slot_dot.jte`
+  (`slot` = `BREAKFAST`, `LUNCH`, `DINNER` or `SNACK`; the word comes from `ctx.t("slot.*")` and
+  is passed in as `label`, and a chip always shows its icon). `ui/_card.jte` (`variant` default,
+  accent or selected), `ui/_row.jte` (an `li` for a list in a `ul`), `ui/_avatar.jte` (initials
+  passed in, decorative), `ui/_alert.jte` (`kind` success, info, warning or danger; warning and
+  danger are `role="alert"`), `ui/_empty.jte` and `ui/_skeleton_rows.jte` (`aria-busy`, a
+  screen-reader label). Every fragment takes its texts from the caller (`ctx.t` at the call site),
+  so the templates need no `ViewContext`. Use the design tokens only: `ContentComponentsPageTest`
+  fails on a raw palette class (`brand-700`, `stone-100`) in these fragments and in
+  `dev/_content.jte`, and it reads each state from `/dev/ui`, so add a state to the test when you
+  add one there.
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.
