@@ -86,6 +86,13 @@ BuildKit `type=gha` layer cache (`docker/build-push-action`, then `task test-e2e
 scan reuse that image), and `actions/cache` keeps Chromium (`~/.cache/ms-playwright`) and the
 Tailwind CLI (`.tools/`). A new cached step needs a key that changes when its input does.
 
+The `E2E` job always starts, so the required check always reports. A PR that changes only
+documentation (Markdown outside `src/`, `documentation/`, `.claude/`) makes `scripts/e2e_needed.sh`
+answer `run=false` and the expensive steps carry `if: steps.scope.outputs.run == 'true'`. A new
+step in that job needs the same `if`, or it runs on docs-only PRs too. Never skip the job itself
+(`if:` on the job, or `paths:` on the workflow): a skipped required check blocks the merge or
+passes silently.
+
 ## Scheduled workflows
 
 `db-backup.yml` (Phase 6): scheduled `pg_dump` → `age`-encrypted artifact. Nothing periodic runs

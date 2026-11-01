@@ -101,6 +101,14 @@ What exists in `main` today:
     `scripts/install-tailwind.sh`, all three jobs) are cached with `actions/cache`. The Gradle
     cache mount inside the Dockerfile is not exported by the layer cache, so a changed source file
     still re-downloads the dependencies in the image build.
+  - **Docs-only PRs skip the E2E work (#37).** The **E2E** job still starts and reports, so the
+    required check is never pending or skipped (branch protection is unchanged). Its first step,
+    `scripts/e2e_needed.sh`, compares the PR with its base; when every changed file is Markdown
+    outside `src/`, or under `documentation/` or `.claude/`, the image build, Playwright and Trivy
+    steps are skipped and the job passes in about 15 seconds. Anything else, an empty diff or a
+    push to `main` runs everything, and a failure of the script itself fails the job. Edits to
+    `ci.yml`, the Dockerfile, the compose files or the script count as code. The trade-off: a
+    docs-only PR gets no fresh Trivy scan; `main` still gets one on every push.
   - `docs-check.yml` is the **Docs updated** check (`scripts/check_docs_touched.sh`). A PR must
     touch `README.md`, `CLAUDE.md` or a file under `documentation/`, `.claude/rules/` or
     `.claude/context/`; or change only Markdown; or carry the `no-docs` label *and* a
