@@ -5,8 +5,9 @@ Planned UI work (JTE + htmx + Alpine + Tailwind), by `PLAN.md` phase. Move items
 
 - **Phase 0 (rest):** a sign-out button in the header and applying the stored per-user language
   (`app_user.locale` exists, nothing uses it yet); real PWA artwork comes in Phase 5.
-- **Phase 1:** invite and member screens, allowlist admin page (household create/switch/rename
-  landed in #41; a switcher inside the header is still open).
+- **Phase 1:** member screens, allowlist admin page (household create/switch/rename landed in #41, the invite
+  section and join page in #42; a switcher inside the header and a "copy link" button are still
+  open).
 - **Phase 2:** meal library list/search, meal form, phone quick-add.
 - **Phase 3:** week view (grid on desktop, day list on phone), slot editing, week navigation,
   conflict messages.

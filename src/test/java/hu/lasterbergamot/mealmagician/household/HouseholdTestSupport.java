@@ -46,9 +46,24 @@ public final class HouseholdTestSupport {
    * @return the principal
    */
   public static SignedInUser signedIn(long userId) {
+    return signedIn(userId, "user" + userId + "@example.com");
+  }
+
+  /**
+   * A signed-in person with a known Google e-mail, which the invite flow compares with the invited
+   * address.
+   *
+   * @param userId the {@code app_user} id
+   * @param email the verified e-mail Google reported
+   * @return the principal
+   */
+  public static SignedInUser signedIn(long userId, String email) {
     var token =
         new OidcIdToken(
-            "token", Instant.now(), Instant.now().plusSeconds(60), Map.of("sub", "sub-" + userId));
+            "token",
+            Instant.now(),
+            Instant.now().plusSeconds(60),
+            Map.of("sub", "sub-" + userId, "email", email));
     return new SignedInUser(userId, "hu", false, token, null);
   }
 
@@ -59,7 +74,21 @@ public final class HouseholdTestSupport {
    * @return the request post-processor
    */
   public static RequestPostProcessor signedInAs(long userId) {
-    SignedInUser user = signedIn(userId);
+    return signedInAs(signedIn(userId));
+  }
+
+  /**
+   * Makes a MockMvc request come from a signed-in person with a known e-mail.
+   *
+   * @param userId the {@code app_user} id
+   * @param email the verified e-mail Google reported
+   * @return the request post-processor
+   */
+  public static RequestPostProcessor signedInAs(long userId, String email) {
+    return signedInAs(signedIn(userId, email));
+  }
+
+  private static RequestPostProcessor signedInAs(SignedInUser user) {
     return authentication(new OAuth2AuthenticationToken(user, user.getAuthorities(), "google"));
   }
 }

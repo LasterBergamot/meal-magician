@@ -33,6 +33,8 @@ allowlisted emails get in; households are shared through email-bound invite link
 - **Template:** a saved day or week of slots that can be applied to new dates.
 - **Occasion:** a dated event (birthday, Christmas) with its own menu.
 - **Allowlist:** emails allowed to sign in at all; invites add to it.
+- **Invite:** an owner's single-use, expiring `/join/<code>` link for one e-mail address; only the
+  code's hash is stored.
 
 ## One request through the layers
 

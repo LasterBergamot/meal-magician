@@ -1,6 +1,5 @@
 package hu.lasterbergamot.mealmagician.household.internal;
 
-import hu.lasterbergamot.mealmagician.household.CurrentHousehold;
 import hu.lasterbergamot.mealmagician.household.HouseholdService;
 import hu.lasterbergamot.mealmagician.household.HouseholdSummary;
 import hu.lasterbergamot.mealmagician.household.InvalidHouseholdNameException;
@@ -34,10 +33,13 @@ class HouseholdController {
 
   private final HouseholdService households;
   private final CurrentHouseholdResolver resolver;
+  private final HouseholdsPageFactory pages;
 
-  HouseholdController(HouseholdService households, CurrentHouseholdResolver resolver) {
+  HouseholdController(
+      HouseholdService households, CurrentHouseholdResolver resolver, HouseholdsPageFactory pages) {
     this.households = households;
     this.resolver = resolver;
+    this.pages = pages;
   }
 
   /**
@@ -55,7 +57,7 @@ class HouseholdController {
       HttpServletRequest request,
       HttpServletResponse response,
       Model model) {
-    fill(model, user, request, "", null, null, null);
+    model.addAttribute("page", pages.page(user, request));
     return Htmx.view(request, response, "household/_content", "household/page");
   }
 
@@ -82,7 +84,7 @@ class HouseholdController {
       return Htmx.redirect(request, response, "/households");
     } catch (InvalidHouseholdNameException e) {
       response.setStatus(HttpServletResponse.SC_UNPROCESSABLE_CONTENT);
-      fill(model, user, request, name, NAME_INVALID, null, null);
+      model.addAttribute("page", pages.page(user, request).withCreateError(name, NAME_INVALID));
       return Htmx.view(request, response, "household/_create", "household/page");
     }
   }
@@ -138,32 +140,11 @@ class HouseholdController {
       return Htmx.redirect(request, response, "/households");
     } catch (InvalidHouseholdNameException e) {
       response.setStatus(HttpServletResponse.SC_UNPROCESSABLE_CONTENT);
-      fill(model, user, request, "", null, name, NAME_INVALID);
+      model.addAttribute("page", pages.page(user, request).withRenameError(name, NAME_INVALID));
     } catch (OptimisticLockingFailureException e) {
       response.setStatus(HttpServletResponse.SC_CONFLICT);
-      fill(model, user, request, "", null, name, CONFLICT);
+      model.addAttribute("page", pages.page(user, request).withRenameError(name, CONFLICT));
     }
     return Htmx.view(request, response, "household/_rename", "household/page");
-  }
-
-  private void fill(
-      Model model,
-      SignedInUser user,
-      HttpServletRequest request,
-      String createName,
-      String createError,
-      String renameName,
-      String renameError) {
-    CurrentHousehold current = resolver.resolve(request).orElse(null);
-    String shownRename = renameName != null ? renameName : current == null ? "" : current.name();
-    model.addAttribute(
-        "page",
-        new HouseholdsPage(
-            households.listFor(user.userId()),
-            current,
-            createName,
-            createError,
-            shownRename,
-            renameError));
   }
 }

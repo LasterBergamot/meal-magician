@@ -6,8 +6,8 @@ occasions like birthdays or Christmas. Reuse meals, single days and whole weeks;
 ate. A later AI assistant will learn the household's preferences and draft plans.
 
 > **Status:** Phase 0 (foundation) is deployed (v0.1.0) and Phase 1 (households) has started: you
-> can sign in, create, rename and switch households. Invites, members and the planner itself
-> are still to come. The plan, decisions and phases are in
+> can sign in, create, rename and switch households, and invite people by e-mail link. Member
+> management and the planner itself are still to come. The plan, decisions and phases are in
 > [`PLAN.md`](PLAN.md).
 
 ## Stack

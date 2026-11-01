@@ -82,7 +82,7 @@ class SignInE2ETest {
    */
   @ParameterizedTest(name = "{0} ({1}x{2})")
   @CsvSource({"phone, 390, 844", "desktop, 1280, 800"})
-  void creatingAndRenamingAHouseholdWorks(String device, int width, int height) {
+  void creatingRenamingAndInvitingWorks(String device, int width, int height) {
     try (BrowserContext context =
         browser.newContext(new Browser.NewContextOptions().setViewportSize(width, height))) {
       Page page = context.newPage();
@@ -100,6 +100,14 @@ class SignInE2ETest {
       page.locator("#rename-name").fill("E2E " + device + " új");
       page.locator("#rename-form button[type=submit]").click();
       page.locator("#households li:has-text('E2E " + device + " új')").waitFor();
+
+      // The owner invites an address: the link is shown once, then the invite can be revoked.
+      page.locator("#invite-email").fill("e2e-" + device + "@example.com");
+      page.locator("#invites form button[type=submit]").click();
+      page.locator("#invite-link").waitFor();
+      assertThat(page.locator("#invite-link").inputValue()).contains("/join/");
+      page.locator("#invites li button").click();
+      page.locator("#invites li:has-text('Visszavonva')").waitFor();
 
       assertThat(
               (Boolean)
