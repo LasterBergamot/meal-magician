@@ -122,8 +122,11 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       `documentation/Auth-Setup.md`.
 - [ ] #18 `release.yml` → first deploy **v0.1.0**: sign in on a phone and see the hello page.
       Confirm that the app and the database really scale to zero when idle. *(Workflow written
-      in PR #34, checked with actionlint only; it has not run. Still open: run it for 0.1.0 and
-      verify sign-in, the cold start and scale to zero.)*
+      in PR #34; the first run failed on an env-var delimiter, fixed in PR #35; the second run
+      deployed **v0.1.0** (2026-11-01): health 200, `/` redirects to `/login`, Flyway applied the
+      3 migrations on Neon, the app started in 6.7 s on its first start. Still open, owner:
+      sign in on a phone; and confirm scale to zero (Cloud Run has no minimum instance, Neon
+      suspends after ~5 idle minutes; the instance count after idle is not checked yet).)*
 
 ### Phase 1 — Households (`M1 – Core planner`, epic #2)
 - [ ] Create a household (the creator becomes OWNER), rename it, switch between households
@@ -367,3 +370,4 @@ meal-magician/
 | 2026-11-01 | Guard tests: `EveryEndpointNeedsSignInTests` (calls every mapped endpoint anonymously) and `DocsToolingTests` (`CLAUDE.md` ≤ 100 lines, router paths, rule globs with a `NOT_YET` list that fails when stale); each also runs on a broken example. `task docs:check` made real. | #14, #33 |
 | 2026-11-01 | `release.yml` written (manual, main only: version + CI-green check, version bump on a detached commit, image to Artifact Registry, `gcloud run deploy` through Workload Identity Federation, health poll, tag last). Not run yet; the v0.1.0 run is the rest of #18. | #17, #18, #34 |
 | 2026-11-01 | First `release.yml` run (0.1.0) failed at the deploy step, before any tag: the env-var delimiter `@` clashed with the emails in `MM_ADMIN_EMAILS`; changed to `\|`. WIF login and the image push worked. | #18, #35 |
+| 2026-11-01 | **v0.1.0 deployed** to Cloud Run (`europe-west3`, max 1, no minimum) against Neon: `release.yml` run 2 passed (run 1 failed on the `@` delimiter, PR #35). Health 200; Flyway applied V1–V3; first start 6.7 s. Sign-in on a phone and scale to zero still to confirm. | #18, #36 |
