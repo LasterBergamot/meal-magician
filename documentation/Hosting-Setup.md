@@ -142,6 +142,10 @@ finish. If Cloud Shell asks to **Authorize**, allow it.
      the **password** (shown in the connection string, or **Roles → Reset password**).
 4. Nothing else to do in Neon: the app's first start creates the tables and the `vector`
    extension itself (Flyway). Neon suspends the database after a few idle minutes on its own.
+5. Optional, on your own machine: install the Neon CLI (`neon`, npm package `neonctl`, see
+   <https://neon.com/docs/reference/neon-cli>) and run `neon auth` once. Like `gcloud`, it lets you
+   look at the deployed side (projects, branches, connection details) from the terminal without
+   opening the console; `task doctor` reports whether it is installed.
 
 ## Part 5: the database password into Secret Manager (1 minute)
 

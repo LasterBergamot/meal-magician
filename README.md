@@ -30,7 +30,8 @@ ate. A later AI assistant will learn the household's preferences and draft plans
 - [Task](https://taskfile.dev). On Arch the binary is `go-task`, and `task` is often only a
   shell alias.
 - Docker + Docker Compose (Testcontainers, local Postgres, e2e)
-- `gh` (GitHub CLI), optionally the Google Cloud CLI (`gcloud`)
+- `gh` (GitHub CLI), optionally the Google Cloud CLI (`gcloud`) and the Neon CLI (`neon`, npm package
+  `neonctl`; <https://neon.com/docs/reference/neon-cli>), for looking at the deployed app and database
 - For Claude Code work: the [APM](https://github.com/microsoft/apm) CLI (only to update the shared skills)
 
 Step-by-step setup: [`documentation/Setup.md`](documentation/Setup.md).
