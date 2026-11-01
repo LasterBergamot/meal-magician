@@ -17,6 +17,9 @@ paths:
 - **H2 runs in PostgreSQL mode** (in memory, `dev` profile) for fast tests and `task serve`; Testcontainers Postgres is the
   source of truth and runs in CI. If something only works on H2, it's a bug.
 - **Tenant scoping:** every table with household data has `household_id NOT NULL` + FK + index.
+  A join table (`meal_tag`) carries `household_id` too, with composite foreign keys
+  `(…_id, household_id)` to each side; the parent table gets a `unique (id, household_id)` for
+  that. The database then refuses a link across households, whatever the code does.
   Repository methods take the household id explicitly (`findByIdAndHouseholdId`), and a missing
   row means 404 — never fetch by id alone and check afterwards.
 - Aggregates that users edit concurrently (`meal`, `meal_slot`, `plan_template`, `occasion`,

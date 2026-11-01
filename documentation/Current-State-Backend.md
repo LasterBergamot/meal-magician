@@ -1,13 +1,14 @@
 # Current State: Backend
 
 What exists in `main` today: the build skeleton, the database, the `identity` module (sign-in) and
-the first part of the `household` module (create, rename, switch); no other business modules yet.
+the first part of the `household` module (create, rename, switch) and the services of the `catalog`
+module (the meal library, without pages yet); no other business modules yet.
 
 - **Application class** `MealMagicianApplication` starts Spring Boot; everything lives below its
   package `hu.lasterbergamot.mealmagician`.
 - **Modules** (Spring Modulith): `identity`, `household`, `catalog`, `planning`, `feedback`,
   `sharing` and the open shared kernel `shared`. Each has a `package-info.java` that says what the
-  module owns; `catalog`, `planning`, `feedback` and `sharing` are still empty. The rule: a module's root package is
+  module owns; `catalog` has its services; `planning`, `feedback` and `sharing` are still empty. The rule: a module's root package is
   its public API, everything else goes in `internal/` and other modules may not import it.
   `ModularityTests` fails the build on a violation and writes module docs to
   `build/spring-modulith-docs`.
@@ -77,6 +78,33 @@ the first part of the `household` module (create, rename, switch); no other busi
   - **Losing access** needs no code: `CurrentHouseholdResolver` re-checks the membership on every
     request, so a removed person's next request for that household is 404 (or falls back to their
     other household).
+- **Meal library (#66), module `catalog`:** `MealService` is the public entry point: `create`,
+  `quickAdd` (name only, for a phone), `edit`, `archive` and `restore`, `find`, `search` (part of
+  the name and/or a tag, ignoring case, archived meals left out unless asked for) and `tagNames`.
+  Every method takes the asking person's id and the household id, and first checks membership
+  through `HouseholdService.require`, so a stranger gets 404. A meal of another household is 404
+  as well, because every meal lookup is scoped by household. Every member may use the library, so
+  nothing here is owner-only and nothing answers 403.
+  - **Data (V6):** `meal` (name up to 200 characters, notes and recipe link up to 2000, `archived`,
+    `version` for optimistic locking), `tag` (one set per household; `name_key` is the lower-case
+    name, so "Vegan" and "vegan" are one tag) and `meal_tag`. Each `meal_tag` row carries
+    `household_id` too, and two composite foreign keys require its meal and its tag to belong to
+    that household, so the database itself refuses a link across households.
+  - **Rules** (`MealRules`, package-private): a name is required; a recipe link must be `http` or
+    `https`, because the link is shown as a clickable anchor and a `javascript:` link would run
+    code; blank notes or links are stored as "none"; a tag is 1 to 50 characters. A refused input
+    throws `InvalidMealException` with a `MealProblem` and nothing is written (not even a tag). The
+    pages will choose the message for each problem.
+  - **Edits** replace the whole tag set by difference: a tag that stays keeps its link row, so the
+    database only sees the links that were added or dropped. A tag created by an edit is created
+    for the household, and a tag no meal uses any more is not offered by `tagNames`.
+  - **Events:** each create, edit, archive and restore publishes `MealChanged(householdId,
+    mealId)` in the same transaction. Reads publish nothing. Nothing listens yet; the assistant
+    (Phase 7) will re-index on it.
+  - **Known gaps:** two people creating the same new tag name at the same moment can make one of
+    their saves fail with a database constraint error (a rare race, not yet retried). The occasion
+    types a meal suits (PLAN §4.2) are not in V6 yet, and "recently used first" needs `meal_slot`
+    (the planning backend). The meal pages come later.
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
   "today" instead of calling `LocalDate.now()`, so tests can fix the date.
 - **Config:** `application.yml` turns on virtual threads and graceful shutdown, and tells JTE to
@@ -93,8 +121,10 @@ the first part of the `household` module (create, rename, switch); no other busi
     runs on H2 and Postgres; `postgresql/` holds Postgres-only SQL. Version numbers are shared by
     both folders. Today: `V1__init.sql` (an empty baseline), `postgresql/V2__pgvector.sql`
     (`CREATE EXTENSION vector`, ready for the Phase 7 assistant) and `V3__identity.sql`
-    (`app_user`, `allowed_email` and the Spring Session tables) and `V4__household.sql`
-    (`household` with a `version` column, and `membership` with the role OWNER or MEMBER).
+    (`app_user`, `allowed_email` and the Spring Session tables), `V4__household.sql`
+    (`household` with a `version` column, and `membership` with the role OWNER or MEMBER),
+    `V5__invite.sql` (`invite`, which stores only the hash of its code) and `V6__catalog.sql`
+    (`meal`, `tag` and `meal_tag`, see the meal library below).
   - **Profiles:** `dev` points at in-memory H2 in PostgreSQL mode; `postgres` points at the
     compose Postgres (override with `SPRING_DATASOURCE_URL`/`_USERNAME`/`_PASSWORD`) and adds the
     `postgresql/` folder. Use them together as `dev,postgres`. With no profile there is no
