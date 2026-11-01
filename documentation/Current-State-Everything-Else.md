@@ -121,9 +121,10 @@ What exists in `main` today:
     after the first page is created in the web UI.
   - `.github/dependabot.yml` opens weekly update PRs against `main` for Gradle, GitHub Actions
     and Docker/Compose, with minor and patch bumps of Gradle and Actions grouped in one PR each.
-  - `release.yml` (#18) is the manual release: version in, image in Artifact Registry, new
-    Cloud Run revision, health check, tag. It is the only workflow that can deploy or push a tag,
-    and it starts only when someone runs it. Details and the variables it needs:
+  - `release.yml` (#18, #51) is the release: a `plan` job decides whether and as which version
+    (`scripts/next_release.sh`), then image in Artifact Registry, new Cloud Run revision, health
+    check, tag, GitHub Release. It is the only workflow that can deploy or push a tag. It starts
+    by itself when CI succeeds on `main` (not for docs/CI-only merges) and can still be run by hand. Details and the variables it needs:
     [[Hosting Setup]]. **v0.1.0** was released with it on 2026-11-01 and the service
   answers on its `run.app` URL (health 200, `/` redirects to the login page, Flyway applied the migrations on Neon).
 

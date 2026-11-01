@@ -61,9 +61,12 @@ Postgres URL is missing.
   clean with `git commit --amend` / `--fixup` + `git rebase --autosquash origin/main`, then
   `git push --force-with-lease` (feature branches only).
 - **Commit subjects:** `#N - <imperative summary>`.
-- **Releases:** merging to `main` only runs CI. Start the manual `release.yml` workflow
-  (Actions → Release → Run workflow, or `gh workflow run release.yml -f version=0.1.0`; the
-  version has no `v`). It runs only on `main`, refuses a version whose tag exists or a commit
+- **Releases (#51):** merging code to `main` releases it: `release.yml` starts when CI succeeds on
+  `main`, takes the next patch version (`release:minor` / `release:major` on the PR raise the
+  other parts) and skips merges that change only Markdown, `documentation/`, `.claude/` or
+  `.github/`. A manual run (Actions → Release → Run workflow, or `gh workflow run release.yml -f
+  version=0.2.0` / `-f bump=minor`; the version has no `v`) is the fallback, for example to
+  redeploy. It runs only on `main`, refuses a version whose tag exists or a commit
   where CI is not green, bumps `version` in `build.gradle.kts` on a detached commit (`main` is
   protected and keeps the SNAPSHOT), pushes the image to Artifact Registry, deploys it to Cloud
   Run and polls `/actuator/health` for about four minutes. Only then does it push the tag

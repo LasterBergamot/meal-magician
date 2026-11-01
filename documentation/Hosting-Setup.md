@@ -201,8 +201,14 @@ not the hashed one), from a phone if you like.
 
 ## Deploys (for #17/#18)
 
-`release.yml` (#18; start it with **Actions → Release → Run workflow** and the new version, for
-example `0.1.0`, or `gh workflow run release.yml -f version=0.1.0`) authenticates with `google-github-actions/auth` (provider
+`release.yml` (#18, automatic since #51) starts by itself when CI succeeds on `main`, unless the
+merge changed only documentation or CI configuration. The version is the next patch after the
+latest `vX.Y.Z` tag; put the label `release:minor` or `release:major` on the PR to raise the
+other parts. To release by hand (or redeploy) use **Actions → Release → Run workflow** with a
+version, for example `0.2.0`, or a `bump`, or `gh workflow run release.yml -f version=0.2.0`.
+A failed run leaves no tag and the previous revision keeps serving; fix and re-run, or roll back
+with `gcloud run services update-traffic meal-magician --region europe-west3 --to-revisions=<previous revision>=100`.
+The workflow authenticates with `google-github-actions/auth` (provider
 `projects/$GCP_PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github-repo`,
 service account `mm-deployer@$GCP_PROJECT_ID.iam.gserviceaccount.com`), pushes
 `europe-west3-docker.pkg.dev/$GCP_PROJECT_ID/meal-magician/app:<version>` and runs
@@ -216,7 +222,9 @@ It then polls `/actuator/health` (16 tries, 15 s apart: the first request wakes 
 and Flyway creates the tables). Before building, the workflow checks that the version is
 `X.Y.Z`, that the tag does not exist yet and that `Lint & test`, `Migrations (Postgres)` and
 `E2E` are green on the commit. The tag `vX.Y.Z` (on a commit that only changes the version in
-`build.gradle.kts`) is pushed last, after a healthy deploy.
+`build.gradle.kts`) is pushed last, after a healthy deploy, and a GitHub Release with generated
+notes follows. Because every code merge is now a production deploy, keep migrations
+expand/contract (the previous release must still run on the new schema).
 
 The workflow has run: **v0.1.0** was released on 2026-11-01 (the first attempt failed because the
 `@` in the admin emails clashed with the env-var delimiter, which is now `|`). If a run fails, `gcloud run services logs read meal-magician --region
