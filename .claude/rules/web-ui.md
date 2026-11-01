@@ -56,4 +56,16 @@ paths:
 - **PWA (D5):** `manifest.webmanifest`, icons (`favicon.svg`, 192/512, maskable; `scripts/generate-icons.py` draws them), `sw.js` that only caches
   static assets — no offline data, never cache HTML pages with user data. The manifest is served
   by `ManifestController` (Tomcat does not know `.webmanifest`).
+- **Design-system components (`ui/`, R2a):** `ui/_icon.jte` draws the icons, and its names are
+  the enum `shared.web.IconName` (a typo is a compile error; add an icon there and as an
+  `@elseif` branch). `ui/_button.jte` takes `variant` (primary, secondary, ghost, danger),
+  `size` (sm, md, lg, icon), `busy` (spinner, `aria-busy`, disabled) and `attrs`, a `Map` of
+  extra attributes such as `hx-post`; pass `Map.of()` for none. JTE allows no `@for` or `@if` in
+  attribute names, so the map goes through `HtmlAttributes.render` (escapes values, refuses odd
+  names). Do not pass raw attribute text in a content block: `UiGuardTest` reads it as visible
+  text. An icon-only button keeps an `sr-only` label from `ctx.t`. `ui/_fab.jte` is the add
+  button (`floating` pins it above the phone's tab bar). Classes are written out in full in
+  these fragments. The style guide `/dev/ui` (`shared.web.DevUiController`, dev profile only, not
+  in `PUBLIC_PATHS`, so it needs a sign-in) shows every icon and button state; a new component
+  adds its section to `dev/ui.jte` or to a `dev/_<section>.jte` fragment, never a second page.
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.

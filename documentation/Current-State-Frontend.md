@@ -52,6 +52,27 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   the whole `#allowlist` section; a refused change answers 422 (add) or 409 (remove) with the same
   section and a red message.
 
+## Components and the style guide (R2a)
+
+The first pieces of the design system in `src/main/jte/ui/` (plan-ui-redesign.md §5). They use the
+colour and shape utilities of the design tokens (R1); until those land in `app.css` the classes
+do nothing, so the look is still the old one.
+- `ui/_icon.jte`: the 30 icons of Appendix B as inline SVG, one `size` and a `filled` flag (only
+  the sparkle is filled). The names are the enum `shared.web.IconName`. Icons are decorative
+  (`aria-hidden`); the text next to them, or an `sr-only` label, says what they mean.
+- `ui/_button.jte`: `primary`, `secondary`, `ghost` and `danger`, in sizes `sm` (36 px), `md`
+  (44 px), `lg` (54 px) and `icon` (44 × 44). `busy` shows a spinner and disables the button; an
+  htmx request in flight (`htmx-request` class) shows the same spinner, so a second click does
+  nothing. Extra attributes such as `hx-post` come as a map.
+- `ui/_fab.jte`: the gold add button. With `floating` it sits above the phone's bottom tab bar
+  (the tab bar itself comes in R4) and is hidden from `md` up.
+- `dev/ui.jte` (`DevUiController`, `/dev/ui`): the living style guide. It shows every icon, every
+  button variant in every size and state, and the add button in both forms. It exists only in the
+  `dev` profile (`task serve`), it needs a sign-in like every page, and production answers 404.
+  The sections `dev/_content.jte`, `_forms.jte` and `_overlays.jte` are empty until R2b, R2c and
+  R3 fill them. To see both themes, switch the browser between light and dark (the theme
+  preference comes with R6).
+
 ## Styling: Tailwind
 
 The standalone CLI (no Node) compiles `src/main/css/app.css` into
