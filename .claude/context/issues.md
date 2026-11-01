@@ -20,6 +20,8 @@ The skill holds the procedure; this file holds the project's values.
   ui, db, infra, ci, tooling, docs.
 - One `priority:*`: `p0` fix now, `p1` next up, `p2` when convenient.
 - `no-docs`: the PR has no doc impact (docs gate).
+- `release:minor` / `release:major`: on a PR, the automatic release (`release.yml`, #51) raises the
+  minor or major version instead of the patch. Without either, the patch rises.
 - `dependencies`: Dependabot PRs.
 
 ## Milestones
