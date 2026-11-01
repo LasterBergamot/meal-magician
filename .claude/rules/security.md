@@ -13,7 +13,12 @@ paths:
   and require `email_verified=true`.
 - **Allowlist (PLAN.md D6):** after sign-in, the email must be in `allowed_email` or in
   `MM_ADMIN_EMAILS`; otherwise 403 and **no** `app_user` row is created. Admin emails are
-  instance admins (admin page for the allowlist).
+  instance admins.
+- **Allowlist admin page (#45):** `/admin/allowlist`, guarded by `SecurityConfig.ADMIN_PATHS`
+  (`hasRole("ADMIN")`: 403 for a non-admin), not by checks in the controller. Any new `/admin/**`
+  page is covered by that one rule. `AllowlistAdminService` is package-private and does not check
+  the caller. Bootstrap admins can be listed but never removed. Removing an address blocks the
+  *next* sign-in only; live sessions (30 days) are not ended.
 - **Invites (D9):** email-bound; creating one adds the email to the allowlist (source `INVITE`).
   Store only the SHA-256 hash of the code (generated with `SecureRandom`, ≥ 128 bits); check
   expiry, revocation and that the signed-in email matches. Share links follow the same token rules.

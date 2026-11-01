@@ -39,7 +39,8 @@ public class ViewContextAdvice {
    *
    * @param request the current request
    * @return the context, with {@code csrf == null} when there is no token source or no token, and
-   *     {@code household == null} when there is no household to show
+   *     {@code household == null} when there is no household to show; {@code admin} is {@code true}
+   *     for instance admins
    */
   @ModelAttribute("ctx")
   public ViewContext viewContext(HttpServletRequest request) {
@@ -48,6 +49,8 @@ public class ViewContextAdvice {
     return new ViewContext(
         messages,
         source == null ? null : source.from(request),
-        households == null ? null : households.from(request));
+        households == null ? null : households.from(request),
+        // Answered by Spring Security's request wrapper ("ROLE_" is added); false when anonymous.
+        request.isUserInRole("ADMIN"));
   }
 }
