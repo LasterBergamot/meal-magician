@@ -30,3 +30,6 @@ apm_modules/
 
 # Claude Code sub-agent worktrees (local, never committed)
 .claude/worktrees/
+
+# Neon CLI context (which org/project neonctl uses on this machine)
+.neon
