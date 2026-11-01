@@ -35,7 +35,8 @@ class PwaAssetsTest {
     JsonNode manifest = new ObjectMapper().readTree(body);
     assertThat(manifest.get("display").asText()).isEqualTo("standalone");
     assertThat(manifest.get("start_url").asText()).isEqualTo("/");
-    assertThat(manifest.get("theme_color").asText()).isEqualTo("#15803d");
+    assertThat(manifest.get("theme_color").asText()).isEqualTo("#6d3fe0");
+    assertThat(manifest.get("background_color").asText()).isEqualTo("#f8f5ff");
     List<String> purposes = new ArrayList<>();
     for (JsonNode icon : manifest.get("icons")) {
       purposes.add(icon.get("sizes").asText() + " " + icon.get("purpose").asText());
@@ -62,7 +63,20 @@ class PwaAssetsTest {
   void serviceWorkerCachesStaticFilesOnly() throws Exception {
     String worker = mvc.perform(get("/sw.js")).andReturn().getResponse().getContentAsString();
 
-    assertThat(worker).contains("css|js|icons").doesNotContain("text/html");
+    assertThat(worker).contains("css|js|icons|fonts").doesNotContain("text/html");
+  }
+
+  @Test
+  void servesTheFontsTheStylesheetLoads() throws Exception {
+    for (String path :
+        List.of(
+            "/fonts/fredoka-latin.woff2",
+            "/fonts/nunito-latin.woff2",
+            "/fonts/nunito-latin-ext.woff2")) {
+      mvc.perform(get(path))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType("font/woff2"));
+    }
   }
 
   @Test

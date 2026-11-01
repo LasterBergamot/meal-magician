@@ -6,8 +6,10 @@
 // Strategy "stale-while-revalidate": answer from the cache at once, refresh the cache in the
 // background, so a changed file shows up on the next load. In development, hold Shift while
 // reloading or tick "Disable cache" / "Update on reload" in the browser's dev tools.
-const CACHE = 'mm-static-v1';
-const STATIC_PATHS = /^\/(css|js|icons)\/|^\/manifest\.webmanifest$/;
+// v2 (R1): the self-hosted fonts joined the cached paths. A new name makes the activate step drop
+// the v1 cache, so nothing stale survives an update.
+const CACHE = 'mm-static-v2';
+const STATIC_PATHS = /^\/(css|js|icons|fonts)\/|^\/manifest\.webmanifest$/;
 
 self.addEventListener('install', () => self.skipWaiting());
 
