@@ -8,11 +8,19 @@
      Rules for everything in here: no inline <script>, no onclick= style handlers and no style=
      attributes (the CSP forbids them; a test checks), and no literal text (use ctx.t("key")). --%>
 <!DOCTYPE html>
-<html lang="${ctx.language()}" class="h-full">
+<%-- data-theme drives the colour tokens in app.css: "system" (follow the OS) until R6 reads the
+     mm_theme cookie (UI-D8). Moonlight is :root, Midnight is [data-theme="dark"]. --%>
+<html lang="${ctx.language()}" data-theme="system" class="h-full">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#15803d">
+  <%-- The browser-chrome colour follows the OS theme; the values match the Moonlight brand and the
+       Midnight stage (app.css). --%>
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#6d3fe0">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#130c2e">
+  <%-- The two fonts used above the fold (plan §6.2); the @font-face rules are in app.css. --%>
+  <link rel="preload" href="/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
   <title>${title} · ${ctx.t("app.name")}</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">

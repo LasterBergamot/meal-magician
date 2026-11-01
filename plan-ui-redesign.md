@@ -1,6 +1,6 @@
 # Plan: Meal Magician UI redesign — a storybook look for the whole app
 
-Status: **Planned, not started; split into waves for parallel subagents (§7)** · Written: 2026-11-01 · Owner: @LasterBergamot
+Status: **Wave 1 under way (R1 landed); split into waves for parallel subagents (§7)** · Written: 2026-11-01 · Owner: @LasterBergamot
 
 This file is the working plan for giving Meal Magician a new look and a new way to move around:
 a design system (colours, type, shapes, components), an app shell (a bottom tab bar on phones, a
@@ -337,7 +337,7 @@ R7's rest moved into R1, and each Alpine component and shared template has one o
 
 **Wave 1: start now.**
 
-- [ ] **R1 Tokens, fonts and base CSS** *(everything depends on it).* Appendix A into `app.css`;
+- [x] **R1 Tokens, fonts and base CSS** *(everything depends on it; PR #69).* Appendix A into `app.css`;
       fonts and `@font-face` (§6.2); the page background pattern; `[data-theme]` selection; the
       `@source` lines unchanged. In `layout/base.jte` only the `<head>` and the `<html>` tag change:
       `data-theme`, the light and dark `theme-color` metas and the font preloads. `sw.js`: `fonts`
@@ -557,6 +557,7 @@ not depend on the redesign and runs beside it (`PLAN.md` §9).
 | 2026-11-01 | Epic #57 filed and made the next item in `PLAN.md` (before Phase 2); sub-issues are filed as each item starts. | #57 |
 | 2026-11-01 | UI-D11: the wizard is the brand mark inside the app too (owner); §3.4 and §8 updated. | #57, #61 |
 | 2026-11-01 | §7 reorganised into five waves for parallel subagents at the owner's request: R2 split into R2a/R2b/R2c and R5 into R5a–R5d (the admin page from #45 added as R5c), R7 ticked (icons landed in PR #61) and its rest (manifest colours, `theme-color` metas, `sw.js` v2) moved to R1, §6.2 amended for the wizard icon, the `shell`/`theme` Alpine components moved from R3 to R4/R6, a file-ownership table and the coordinator rules (§7.1). R0 ticked. Docs only. | #57 |
+| 2026-11-01 | Wave 1 started (D24): sub-issues #64 (R1) and #65 (R2a) filed under #57. **R1 landed** (#64, PR #69): Appendix A tokens in `app.css`, `data-theme` and the light/dark `theme-color` metas, self-hosted Fredoka and Nunito, `sw.js` v2, the manifest colours and `ContrastTokensTest` (all 53 Appendix C pairs in both themes, and it fails on a bad token). **Open for the owner:** Fredoka has no Latin Extended-A glyphs (no ő/ű), so UI-D4's assumption does not hold; neither font has `tnum`. R1 left the font unchanged. | #57, #64, #69 |
 
 ---
 

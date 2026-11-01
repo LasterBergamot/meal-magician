@@ -63,5 +63,10 @@ paths:
   `HX-Redirect` rule. Register entry points only as mappings.
 - Session clean-up is not scheduled (D11): `SessionCleanupOnSignIn` deletes expired sessions at
   sign-in. `SessionStoreTests` fails if a timer ever appears.
+- **A new static folder must be added to `PUBLIC_PATHS`** (`/css`, `/js`, `/icons`, `/fonts`, …).
+  Spring Security remembers the last request it turned away and redirects there after sign-in, so
+  a font or image requested by the login page would send the person to that file instead of `/`
+  (it broke the sign-in E2E tests in #64). `SecurityRulesTests.everyStaticFileIsServedWithoutSigningIn`
+  requests every file under `static/` anonymously and fails on a redirect.
 - A test walks every mapped endpoint and fails if any non-public one is reachable anonymously;
   keep the public list (`/login`, static assets, `/actuator/health`) explicit. `/join/**` is not on it.

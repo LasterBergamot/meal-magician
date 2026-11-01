@@ -26,6 +26,13 @@ paths:
   minifies. The output `static/css/app.css` is generated and ignored by Git: don't edit it.
   Class names are only found in `src/main/jte` and `static/js/app.js`, so write them out in
   full (no `"bg-" + color`).
+- **Colours and fonts (R1, #64):** use the design tokens (`bg-surface`, `text-ink`,
+  `border-outline`, `bg-brand`, `text-slot-ink`, `shadow-sticker-2`), never a raw palette class
+  such as `stone-*` or `green-*` in new code. The `--mm-*` values live in `app.css`, per theme,
+  and `ContrastTokensTest` checks every Appendix C pair in both themes, so a new token pair
+  needs a row there. Fonts are self-hosted in `static/fonts/` (see its `FONTS.md`); a new font
+  file needs its licence text and hash there, and a `@font-face` in `app.css`. The old
+  `brand-*` scale is kept until R5d, so `brand-700` still works for now.
 - **Templates and `ViewContext`:** every template declares `@param ViewContext ctx` (translations,
   CSRF token; `ViewContextAdvice` adds it to every model) and wraps pages in
   `@template.layout.base(ctx = ctx, title = ..., content = @`...`)`. A URL that serves a page and
