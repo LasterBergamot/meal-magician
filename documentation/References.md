@@ -61,7 +61,7 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | Task | https://taskfile.dev/ |
 | Tailwind standalone CLI (releases and `sha256sums.txt`) | https://github.com/tailwindlabs/tailwindcss/releases |
 | APM | https://github.com/microsoft/apm |
-| ImageMagick (only `scripts/generate-icons.sh`) | https://imagemagick.org/script/command-line-processing.php |
+| Pillow and resvg-py (only `scripts/generate-icons.py`) | https://pillow.readthedocs.io/ · https://pypi.org/project/resvg-py/ |
 
 ## Services
 

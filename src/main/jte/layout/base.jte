@@ -15,6 +15,7 @@
   <meta name="theme-color" content="#15803d">
   <title>${title} · ${ctx.t("app.name")}</title>
   <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <%-- htmx under a strict CSP: no eval, no inline <script> in swapped content, no injected <style>

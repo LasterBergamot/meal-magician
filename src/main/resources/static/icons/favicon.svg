@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><title>Meal Magician: a cartoon wizard</title><rect x="12" y="12" width="488" height="488" rx="112" fill="#ffc83d" stroke="#24174d" stroke-width="14"/><path d="M86 84 L93.8 104.2 L114 112 L93.8 119.8 L86 140 L78.2 119.8 L58 112 L78.2 104.2 Z" fill="#fff" stroke="#24174d" stroke-width="6" stroke-linejoin="round"/><path d="M430 133 L434.8 145.2 L447 150 L434.8 154.8 L430 167 L425.2 154.8 L413 150 L425.2 145.2 Z" fill="#fff" stroke="#24174d" stroke-width="5" stroke-linejoin="round"/><path d="M436 386 L442.2 401.8 L458 408 L442.2 414.2 L436 430 L429.8 414.2 L414 408 L429.8 401.8 Z" fill="#fff" stroke="#24174d" stroke-width="6" stroke-linejoin="round"/><g transform="translate(256 256) scale(0.9) translate(-256 -277)">
+  <defs><clipPath id="hat"><path d="M148 266 C176 196 208 122 252 66 C262 52 286 54 292 70 C296 84 284 92 294 114 C316 162 346 214 366 266 Z"/></clipPath></defs>
+  <circle cx="256" cy="318" r="92" fill="#ffd7b5" stroke="#24174d" stroke-width="12"/>
+  <circle cx="196" cy="352" r="15" fill="#ff8fb8"/>
+  <circle cx="316" cy="352" r="15" fill="#ff8fb8"/>
+  <ellipse cx="220" cy="332" rx="12" ry="17" fill="#24174d"/>
+  <ellipse cx="292" cy="332" rx="12" ry="17" fill="#24174d"/>
+  <circle cx="224" cy="325" r="4.5" fill="#fff"/>
+  <circle cx="296" cy="325" r="4.5" fill="#fff"/>
+  <circle cx="256" cy="356" r="17" fill="#ffb98f" stroke="#24174d" stroke-width="8"/>
+  <path d="M170 350 C160 430 196 496 256 502 C316 496 352 430 342 350 C320 376 292 384 256 384 C220 384 192 376 170 350 Z"
+        fill="#fff" stroke="#24174d" stroke-width="12" stroke-linejoin="round"/>
+  <ellipse cx="231" cy="386" rx="31" ry="15" transform="rotate(-12 231 386)" fill="#fff" stroke="#24174d" stroke-width="9"/>
+  <ellipse cx="281" cy="386" rx="31" ry="15" transform="rotate(12 281 386)" fill="#fff" stroke="#24174d" stroke-width="9"/>
+  <path d="M148 266 C176 196 208 122 252 66 C262 52 286 54 292 70 C296 84 284 92 294 114 C316 162 346 214 366 266 Z" fill="#6d3fe0"/>
+  <g clip-path="url(#hat)">
+    <rect x="100" y="206" width="320" height="42" fill="#ffc83d"/>
+    <path d="M100 206H420M100 248H420" stroke="#24174d" stroke-width="8"/>
+  </g>
+  <path d="M148 266 C176 196 208 122 252 66 C262 52 286 54 292 70 C296 84 284 92 294 114 C316 162 346 214 366 266 Z" fill="none" stroke="#24174d" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M246 126 L252.2 141.8 L268 148 L252.2 154.2 L246 170 L239.8 154.2 L224 148 L239.8 141.8 Z" fill="#ffc83d" stroke="#24174d" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M294 164 L297.4 172.6 L306 176 L297.4 179.4 L294 188 L290.6 179.4 L282 176 L290.6 172.6 Z" fill="#ffc83d" stroke="#24174d" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="214" cy="178" r="6" fill="#ffc83d" stroke="#24174d" stroke-width="4"/>
+  <ellipse cx="256" cy="262" rx="150" ry="30" fill="#5a2dc4" stroke="#24174d" stroke-width="12"/>
+</g></svg>

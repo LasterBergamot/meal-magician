@@ -46,7 +46,7 @@ paths:
   locale's formatter; weeks start Monday. The language is the cookie `mm_lang`, set by
   `?lang=hu|en` (per user in the DB from #12); the browser's `Accept-Language` is ignored on
   purpose. Brand names and `HU`/`EN` come from the bundles too.
-- **PWA (D5):** `manifest.webmanifest`, icons (192/512, maskable), `sw.js` that only caches
+- **PWA (D5):** `manifest.webmanifest`, icons (`favicon.svg`, 192/512, maskable; `scripts/generate-icons.py` draws them), `sw.js` that only caches
   static assets — no offline data, never cache HTML pages with user data. The manifest is served
   by `ManifestController` (Tomcat does not know `.webmanifest`).
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.
