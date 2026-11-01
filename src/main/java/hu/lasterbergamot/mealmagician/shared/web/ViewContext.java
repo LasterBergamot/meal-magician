@@ -7,13 +7,14 @@ import hu.lasterbergamot.mealmagician.shared.i18n.Messages;
  * {@code @param ViewContext ctx} instead of a growing list. {@link ViewContextAdvice} adds it to
  * the model of every controller under the name {@code ctx}.
  *
- * <p>Later additions (the signed-in user, the current household) belong here, so the layout changes
- * in one place and pages stay untouched.
+ * <p>Later additions (the signed-in user) belong here, so the layout changes in one place and pages
+ * stay untouched.
  *
  * @param messages the translation helper
  * @param csrf the CSRF token for htmx, or {@code null} while there is no token source
+ * @param household the household for the header, or {@code null} when there is none to show
  */
-public record ViewContext(Messages messages, CsrfMeta csrf) {
+public record ViewContext(Messages messages, CsrfMeta csrf, HouseholdNav household) {
 
   /**
    * Translates a key; shorthand for {@code messages().t(...)} so templates read {@code

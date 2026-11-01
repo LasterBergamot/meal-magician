@@ -14,6 +14,8 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -24,13 +26,20 @@ import org.springframework.security.web.SecurityFilterChain;
  * on its own, so this meta-annotation adds them. Time is fixed to 2026-10-31 in Budapest, which was
  * a Saturday.
  *
+ * <p>The household module's web classes are left out: they need its service and a database, and are
+ * tested end to end in {@code HouseholdPagesTest}.
+ *
  * <p>Spring Security is on the classpath, so a slice would otherwise get its default "everything
  * needs a login" chain. {@link OpenSecurity} lets every request through: these tests are about
  * templates and headers; who may enter is tested in {@code SecurityRulesTests}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@WebMvcTest
+@WebMvcTest(
+    excludeFilters =
+        @ComponentScan.Filter(
+            type = FilterType.REGEX,
+            pattern = "hu\\.lasterbergamot\\.mealmagician\\.household\\..*"))
 @ImportAutoConfiguration({JteAutoConfiguration.class, ServletJteAutoConfiguration.class})
 @Import({I18nConfig.class, WebSliceTest.FixedClock.class, WebSliceTest.OpenSecurity.class})
 @interface WebSliceTest {

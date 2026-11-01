@@ -44,4 +44,30 @@ public final class Htmx {
     response.addHeader("Vary", REQUEST_HEADER);
     return isRequest(request) ? fragmentView : pageView;
   }
+
+  /**
+   * Finishes a form post by sending the browser to another page.
+   *
+   * <p>An htmx request gets a {@code 200} with {@code HX-Redirect}, which makes htmx load the page
+   * as a normal navigation. A plain {@code 302} would not work: the browser follows it inside the
+   * fetch and htmx would swap the whole next page into the form's target. A normal request gets the
+   * usual {@code 303 See Other}, so the browser asks for the next page with GET.
+   *
+   * @param request the current request
+   * @param response the response, which this method completes
+   * @param url where to go
+   * @return always {@code null}: a handler returning it, with the response as a parameter, tells
+   *     Spring MVC that the response is already complete and no view is rendered
+   */
+  public static String redirect(
+      HttpServletRequest request, HttpServletResponse response, String url) {
+    if (isRequest(request)) {
+      response.setStatus(HttpServletResponse.SC_OK);
+      response.setHeader("HX-Redirect", url);
+    } else {
+      response.setStatus(HttpServletResponse.SC_SEE_OTHER);
+      response.setHeader("Location", url);
+    }
+    return null;
+  }
 }

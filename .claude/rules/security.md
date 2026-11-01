@@ -18,7 +18,10 @@ paths:
   Store only the SHA-256 hash of the code (generated with `SecureRandom`, ≥ 128 bits); check
   expiry, revocation and that the signed-in email matches. Share links follow the same token rules.
 - **Tenancy (D8):** another household's data → 404; owner-only action by a member → 403.
-  The current household comes from the session and is re-checked against membership on every request.
+  The current household comes from the session and is re-checked against membership on every request
+  (`household.internal.CurrentHouseholdResolver`; controllers declare a `CurrentHousehold` parameter
+  and pass `id()` to every repository call). `HouseholdService` methods take the person's id and
+  throw `HouseholdNotFoundException` (404) or `OwnerOnlyException` (403) themselves.
 - Sessions: Spring Session JDBC; cookie `Secure`, `HttpOnly`, `SameSite=Lax`. CSRF on; htmx
   sends the token from a `<meta>` tag as a header.
 - htmx + expired session: return `HX-Redirect` to the login URL instead of a 302 into a fragment.

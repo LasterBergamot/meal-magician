@@ -31,6 +31,9 @@ paths:
   `x-data="menu"` / `x-on:click="toggle"` and register `Alpine.data("menu", ...)` in
   `static/js/app.js`. `UiGuardTest` checks the templates. Vendored scripts and their SHA-256 are
   listed in `static/js/VENDORED.md`.
+- **Form posts:** success ends with `Htmx.redirect(request, response, url)` (`HX-Redirect` for htmx,
+  `303` otherwise; never a plain 302, which htmx would swap into the form). A rejected form returns
+  its own fragment with 422 (409 for an `@Version` conflict).
 - **htmx errors:** error responses are swapped (`htmx-config` meta in the layout); the server
   sends `HX-Retarget: #error-slot`. A 401/403 to htmx sends the whole page to `/` (`app.js`).
 - **i18n (D14):** every visible string uses `ctx.t("key")` (`shared.i18n.Messages`) from

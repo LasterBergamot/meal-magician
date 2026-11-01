@@ -15,27 +15,39 @@ public class ViewContextAdvice {
 
   private final Messages messages;
   private final ObjectProvider<CsrfMetaSource> csrfSource;
+  private final ObjectProvider<HouseholdNavSource> householdSource;
 
   /**
    * Creates the advice.
    *
    * @param messages the translation helper
    * @param csrfSource the CSRF token source; absent until Spring Security is configured
+   * @param householdSource the header's household source; absent in slices without the household
+   *     module
    */
-  public ViewContextAdvice(Messages messages, ObjectProvider<CsrfMetaSource> csrfSource) {
+  public ViewContextAdvice(
+      Messages messages,
+      ObjectProvider<CsrfMetaSource> csrfSource,
+      ObjectProvider<HouseholdNavSource> householdSource) {
     this.messages = messages;
     this.csrfSource = csrfSource;
+    this.householdSource = householdSource;
   }
 
   /**
    * Builds the context for one request.
    *
    * @param request the current request
-   * @return the context, with {@code csrf == null} when there is no token source or no token
+   * @return the context, with {@code csrf == null} when there is no token source or no token, and
+   *     {@code household == null} when there is no household to show
    */
   @ModelAttribute("ctx")
   public ViewContext viewContext(HttpServletRequest request) {
     CsrfMetaSource source = csrfSource.getIfAvailable();
-    return new ViewContext(messages, source == null ? null : source.from(request));
+    HouseholdNavSource households = householdSource.getIfAvailable();
+    return new ViewContext(
+        messages,
+        source == null ? null : source.from(request),
+        households == null ? null : households.from(request));
   }
 }

@@ -1,13 +1,13 @@
 # Current State: Backend
 
-What exists in `main` today: the build skeleton, the database and the `identity` module (sign-in);
-no business modules yet.
+What exists in `main` today: the build skeleton, the database, the `identity` module (sign-in) and
+the first part of the `household` module (create, rename, switch); no other business modules yet.
 
 - **Application class** `MealMagicianApplication` starts Spring Boot; everything lives below its
   package `hu.lasterbergamot.mealmagician`.
 - **Modules** (Spring Modulith): `identity`, `household`, `catalog`, `planning`, `feedback`,
-  `sharing` and the open shared kernel `shared`. Each is an empty package with a
-  `package-info.java` that says what the module will own. The rule: a module's root package is
+  `sharing` and the open shared kernel `shared`. Each has a `package-info.java` that says what the
+  module owns; `catalog`, `planning`, `feedback` and `sharing` are still empty. The rule: a module's root package is
   its public API, everything else goes in `internal/` and other modules may not import it.
   `ModularityTests` fails the build on a violation and writes module docs to
   `build/spring-modulith-docs`.
@@ -17,7 +17,22 @@ no business modules yet.
   (a new controller is covered automatically); `DocsToolingTests` checks the agent docs (see
   [[Current State: Everything Else]]); `UiGuardTest` covers templates and message bundles
   ([[Current State: Frontend]]). Each has tests that run the check on a deliberately broken example.
-  The tenant-isolation guard comes with the first household endpoint.
+  The household endpoints have their own 404/403 tests (`HouseholdPagesTest`); the reusable
+  tenant-isolation guard that every later endpoint must register with is #44.
+- **Households (#41), module `household`:** `HouseholdService` is the public entry point
+  (create, list, rename, and the membership lookup `find`/`require`). Every method takes the
+  asking person's id and checks membership itself: another household gives
+  `HouseholdNotFoundException` (404, the same answer as "does not exist", so nothing leaks) and a
+  member doing an owner-only action gives `OwnerOnlyException` (403). The creator becomes OWNER;
+  a household name is 1 to 100 characters. `CurrentHouseholdResolver` finds the household of a
+  request: the id lives in the session but is re-checked against `membership` on **every**
+  request, falling back to the person's first household. Controllers of other modules get it
+  with a `CurrentHousehold` parameter (an argument resolver; a person with no household gets
+  404) and pass `id()` to every repository call. `household/internal` holds the entities
+  (`Household` with `@Version`, `Membership`), the repositories and `HouseholdController`.
+  `shared.web.HouseholdNavSource` is how the header learns the household without `shared`
+  depending on `household` (the same trick as `CsrfMetaSource`). Invites, member management and
+  the reusable tenant guard are #42, #43 and #44.
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
   "today" instead of calling `LocalDate.now()`, so tests can fix the date.
 - **Config:** `application.yml` turns on virtual threads and graceful shutdown, and tells JTE to
@@ -34,7 +49,8 @@ no business modules yet.
     runs on H2 and Postgres; `postgresql/` holds Postgres-only SQL. Version numbers are shared by
     both folders. Today: `V1__init.sql` (an empty baseline), `postgresql/V2__pgvector.sql`
     (`CREATE EXTENSION vector`, ready for the Phase 7 assistant) and `V3__identity.sql`
-    (`app_user`, `allowed_email` and the Spring Session tables).
+    (`app_user`, `allowed_email` and the Spring Session tables) and `V4__household.sql`
+    (`household` with a `version` column, and `membership` with the role OWNER or MEMBER).
   - **Profiles:** `dev` points at in-memory H2 in PostgreSQL mode; `postgres` points at the
     compose Postgres (override with `SPRING_DATASOURCE_URL`/`_USERNAME`/`_PASSWORD`) and adds the
     `postgresql/` folder. Use them together as `dev,postgres`. With no profile there is no
