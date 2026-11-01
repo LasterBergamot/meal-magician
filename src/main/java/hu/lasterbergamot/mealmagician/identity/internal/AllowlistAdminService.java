@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.springframework.data.domain.Sort;
+import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,8 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
  * it. The list is the bootstrap admins from {@code MM_ADMIN_EMAILS} (shown, but fixed) plus the
  * rows of {@code allowed_email}.
  *
- * <p>Removing an address stops the person's <em>next</em> sign-in. A session they already have
- * keeps working until it expires (30 days), because sessions are not tied back to the allowlist.
+ * <p>Removing an address also ends that person's live sessions (#59), in the same transaction, so
+ * they are sent to sign-in on their next request instead of keeping their 30 days. Sessions are
+ * found by the principal name, which for Google sign-ins is the OIDC {@code sub}; the address is
+ * mapped to its {@code app_user} rows first.
  */
 @Service
 @Transactional
@@ -26,12 +29,30 @@ class AllowlistAdminService {
 
   private final IdentityProperties properties;
   private final AllowedEmailRepository allowedEmails;
+  private final AppUserRepository users;
+  private final FindByIndexNameSessionRepository<?> sessions;
   private final Clock clock;
 
+  /**
+   * Creates the service.
+   *
+   * @param properties the bootstrap admins from {@code MM_ADMIN_EMAILS}
+   * @param allowedEmails persistence for the allowlist table
+   * @param users persistence for users, to map an address to the Google account behind it
+   * @param sessions the Spring Session store, which can find a session by its principal name and
+   *     delete it; Spring Boot wires the JDBC store here
+   * @param clock the application clock
+   */
   AllowlistAdminService(
-      IdentityProperties properties, AllowedEmailRepository allowedEmails, Clock clock) {
+      IdentityProperties properties,
+      AllowedEmailRepository allowedEmails,
+      AppUserRepository users,
+      FindByIndexNameSessionRepository<?> sessions,
+      Clock clock) {
     this.properties = properties;
     this.allowedEmails = allowedEmails;
+    this.users = users;
+    this.sessions = sessions;
     this.clock = clock;
   }
 
@@ -90,12 +111,19 @@ class AllowlistAdminService {
   }
 
   /**
-   * Stops an address from signing in. Removing one that is not on the list does nothing, so a
-   * double click is harmless.
+   * Stops an address from signing in and ends the live sessions of the person behind it (#59).
+   * Removing one that is not on the list does nothing to the list, so a double click is harmless;
+   * the sessions are ended anyway, which also cleans up after a removal made before this rule
+   * existed.
+   *
+   * <p>Only sessions whose principal is the Google account of an {@code app_user} row with this
+   * address are deleted; other people's sessions are never looked at. The deletes share the
+   * transaction with the allowlist change, so either both happen or neither does.
    *
    * @param email the address, in any case
    * @throws AllowlistRefusedException with {@link AllowlistProblem#BOOTSTRAP_ADMIN} if the address
-   *     is named in {@code MM_ADMIN_EMAILS}
+   *     is named in {@code MM_ADMIN_EMAILS}; nothing is removed or ended then, because a bootstrap
+   *     admin keeps access
    */
   void remove(String email) {
     String normalized = Emails.normalize(email);
@@ -103,5 +131,20 @@ class AllowlistAdminService {
       throw new AllowlistRefusedException(AllowlistProblem.BOOTSTRAP_ADMIN);
     }
     allowedEmails.deleteById(normalized);
+    endSessionsOf(normalized);
+  }
+
+  /**
+   * Deletes every session whose principal is a Google account that last signed in with this
+   * address. An address without an {@code app_user} row has no sessions, so nothing happens.
+   *
+   * @param email the normalized address that was removed
+   */
+  private void endSessionsOf(String email) {
+    for (AppUser user : users.findAllByEmail(email)) {
+      for (String sessionId : sessions.findByPrincipalName(user.getGoogleSub()).keySet()) {
+        sessions.deleteById(sessionId);
+      }
+    }
   }
 }

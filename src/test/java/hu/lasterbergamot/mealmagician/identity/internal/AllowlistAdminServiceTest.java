@@ -13,20 +13,32 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Sort;
+import org.springframework.session.FindByIndexNameSessionRepository;
+import org.springframework.session.Session;
 
 class AllowlistAdminServiceTest {
 
   private static final Instant NOW = Instant.parse("2026-11-01T10:00:00Z");
 
   private final AllowedEmailRepository repository = mock(AllowedEmailRepository.class);
+  private final AppUserRepository users = mock(AppUserRepository.class);
+  private final FindByIndexNameSessionRepository<Session> sessions =
+      mock(FindByIndexNameSessionRepository.class);
   private final AllowlistAdminService service =
       new AllowlistAdminService(
           new IdentityProperties(List.of("Zed@Example.com", "boss@example.com")),
           repository,
+          users,
+          sessions,
           Clock.fixed(NOW, ZoneOffset.UTC));
+
+  private static AppUser user(String googleSub, String email) {
+    return new AppUser(googleSub, email, "Name", NOW);
+  }
 
   private static AllowedEmail row(String email, AllowedEmailSource source) {
     return AllowedEmail.builder()
@@ -119,5 +131,60 @@ class AllowlistAdminServiceTest {
             AllowlistRefusedException.class,
             e -> assertThat(e.problem()).isEqualTo(AllowlistProblem.BOOTSTRAP_ADMIN));
     verify(repository, never()).deleteById(any());
+    verify(sessions, never()).deleteById(any());
+  }
+
+  @Test
+  void removingAnAddressEndsTheLiveSessionsOfThatPerson() {
+    when(users.findAllByEmail("anna@example.com"))
+        .thenReturn(List.of(user("sub-anna", "anna@example.com")));
+    when(sessions.findByPrincipalName("sub-anna"))
+        .thenReturn(Map.of("anna-laptop", mock(Session.class), "anna-phone", mock(Session.class)));
+
+    service.remove("Anna@example.com");
+
+    verify(repository).deleteById("anna@example.com");
+    verify(sessions).deleteById("anna-laptop");
+    verify(sessions).deleteById("anna-phone");
+  }
+
+  @Test
+  void removingAnAddressLeavesOtherPeoplesSessionsAlone() {
+    when(users.findAllByEmail("anna@example.com"))
+        .thenReturn(List.of(user("sub-anna", "anna@example.com")));
+    when(sessions.findByPrincipalName("sub-anna"))
+        .thenReturn(Map.of("anna-phone", mock(Session.class)));
+
+    service.remove("anna@example.com");
+
+    verify(sessions).findByPrincipalName("sub-anna");
+    verify(sessions, never()).findByPrincipalName("sub-bela");
+    verify(sessions, never()).deleteById("bela-phone");
+    verify(sessions).deleteById("anna-phone");
+  }
+
+  @Test
+  void removingAnAddressNobodyHasSignedInWithEndsNoSessions() {
+    when(users.findAllByEmail("ghost@example.com")).thenReturn(List.of());
+
+    service.remove("ghost@example.com");
+
+    verify(repository).deleteById("ghost@example.com");
+    verify(sessions, never()).findByPrincipalName(any());
+    verify(sessions, never()).deleteById(any());
+  }
+
+  @Test
+  void endsTheSessionsOfEveryAccountThatLastSignedInWithTheAddress() {
+    when(users.findAllByEmail("shared@example.com"))
+        .thenReturn(
+            List.of(user("sub-old", "shared@example.com"), user("sub-new", "shared@example.com")));
+    when(sessions.findByPrincipalName("sub-old")).thenReturn(Map.of("old-1", mock(Session.class)));
+    when(sessions.findByPrincipalName("sub-new")).thenReturn(Map.of("new-1", mock(Session.class)));
+
+    service.remove("shared@example.com");
+
+    verify(sessions).deleteById("old-1");
+    verify(sessions).deleteById("new-1");
   }
 }

@@ -17,8 +17,14 @@ paths:
 - **Allowlist admin page (#45):** `/admin/allowlist`, guarded by `SecurityConfig.ADMIN_PATHS`
   (`hasRole("ADMIN")`: 403 for a non-admin), not by checks in the controller. Any new `/admin/**`
   page is covered by that one rule. `AllowlistAdminService` is package-private and does not check
-  the caller. Bootstrap admins can be listed but never removed. Removing an address blocks the
-  *next* sign-in only; live sessions (30 days) are not ended (open follow-up: #59).
+  the caller. Bootstrap admins can be listed but never removed. Removing an address deletes the
+  live sessions of the person behind it in the same transaction (#59): `AllowlistAdminService`
+  maps the address to its `app_user` rows, then deletes every session whose principal name is
+  their Google `sub` (`FindByIndexNameSessionRepository.findByPrincipalName`). Their next request
+  goes to sign-in. Other people's sessions are not read. A removal of an address that is not on
+  the list still ends those sessions, which cleans up removals made before #59. Keep the principal
+  name = `sub` (`OidcUser.getName()`): a change there breaks the lookup, and
+  `AllowlistRemovalEndsSessionsTest` would fail.
 - **Invites (D9):** email-bound; creating one adds the email to the allowlist (source `INVITE`).
   Store only the SHA-256 hash of the code (generated with `SecureRandom`, ≥ 128 bits); check
   expiry, revocation and that the signed-in email matches. Share links follow the same token rules.

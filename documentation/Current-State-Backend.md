@@ -119,9 +119,11 @@ the first part of the `household` module (create, rename, switch); no other busi
     redeploy can change configuration), then the `allowed_email` rows with their source (`ADMIN` =
     added here, `INVITE` = added by a household invite). Adding normalizes the address and rejects
     one that is badly shaped or already allowed (422); removing deletes the row, so the person's
-    **next sign-in** is refused. A session they already have keeps working until it expires (30
-    days): sessions are not tied back to the allowlist. Removing an address does not touch
-    households, memberships or the person's data. The admin flag is read at sign-in, so a change of
+    **next sign-in** is refused, and their live sessions end at once (#59): in the same
+    transaction the service finds the sessions whose principal is their Google `sub` (through the
+    `app_user` row with that address) and deletes them, so their next request goes to sign-in.
+    Nobody else's sessions are touched. Removing an address does not touch households, memberships
+    or the person's data. The admin flag is read at sign-in, so a change of
     `MM_ADMIN_EMAILS` reaches a signed-in admin only at their next sign-in.
   - **Users:** `app_user` (Google `sub`, e-mail, name, UI locale `hu`/`en`, created at). The e-mail
     and name are refreshed at every sign-in. The principal that controllers receive is
