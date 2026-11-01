@@ -100,7 +100,10 @@ variables are mapped into Tailwind with `@theme inline`, so the utilities exist:
 - Fonts: Fredoka (headings) and Nunito (text) are self-hosted `woff2` in `static/fonts/` (SIL
   OFL, see `FONTS.md` there). `app.css` declares them with `font-display: swap`, and
   `base.jte` preloads the two above the fold. Fredoka has no Latin Extended-A glyphs, so a
-  Hungarian ő or ű in a heading is drawn by the next family in the stack, not by Fredoka.
+  Hungarian ő or ű in a heading is drawn by the next family in `--font-display`, **Nunito** (its
+  latin-ext file), then the system faces; Fredoka draws the rest (#71). `FontFallbackTest` and
+  the E2E `FontFallbackE2ETest` prove the chain. Neither font has `tnum`, so digits are
+  proportional.
 - The page background is `surface` with a faint dot pattern (one `radial-gradient` in `app.css`).
   The dots already show on every page; the colour does not yet, because the `<body>` still carries
   the old `bg-stone-100` utility, which wins over the base rule. R4 and R5 remove it.
