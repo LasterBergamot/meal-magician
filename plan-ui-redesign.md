@@ -348,7 +348,7 @@ R7's rest moved into R1, and each Alpine component and shared template has one o
       `References.md` rows for Fredoka, Nunito and the OFL. Add the contrast test (§6.4).
       *Accept:* the app still renders; `task test` passes with the new test; both themes switch
       by editing `data-theme` in dev tools.
-- [ ] **R2a Icons, button and the `/dev/ui` page** *(written beside R1, merged after it).*
+- [x] **R2a Icons, button and the `/dev/ui` page** *(written beside R1, merged after it; PR #70).*
       `ui/_icon.jte` with every Appendix B path, `ui/_button.jte` (all variants and sizes) and
       `ui/_fab.jte`; the `/dev/ui` page (dev profile only, not in the endpoint-auth list), a living
       style guide for agents and e2e. Its template `dev/ui.jte` includes one section fragment per
@@ -558,6 +558,7 @@ not depend on the redesign and runs beside it (`PLAN.md` §9).
 | 2026-11-01 | UI-D11: the wizard is the brand mark inside the app too (owner); §3.4 and §8 updated. | #57, #61 |
 | 2026-11-01 | §7 reorganised into five waves for parallel subagents at the owner's request: R2 split into R2a/R2b/R2c and R5 into R5a–R5d (the admin page from #45 added as R5c), R7 ticked (icons landed in PR #61) and its rest (manifest colours, `theme-color` metas, `sw.js` v2) moved to R1, §6.2 amended for the wizard icon, the `shell`/`theme` Alpine components moved from R3 to R4/R6, a file-ownership table and the coordinator rules (§7.1). R0 ticked. Docs only. | #57 |
 | 2026-11-01 | Wave 1 started (D24): sub-issues #64 (R1) and #65 (R2a) filed under #57. **R1 landed** (#64, PR #69): Appendix A tokens in `app.css`, `data-theme` and the light/dark `theme-color` metas, self-hosted Fredoka and Nunito, `sw.js` v2, the manifest colours and `ContrastTokensTest` (all 53 Appendix C pairs in both themes, and it fails on a bad token). **Open for the owner:** Fredoka has no Latin Extended-A glyphs (no ő/ű), so UI-D4's assumption does not hold; neither font has `tnum`. R1 left the font unchanged. | #57, #64, #69 |
+| 2026-11-01 | **R2a landed** (#65, PR #70): `ui/_icon` (30 icons, `IconName` enum), `ui/_button` (4 variants, 4 sizes, busy/disabled), `ui/_fab`, the dev-only `/dev/ui` page with the empty `_content`, `_forms` and `_overlays` stubs, and `HtmlAttributes` for extra attributes (JTE has no `@for` in attribute-name position). R1's E2E failure (the login page's font preloads were saved as the post-sign-in redirect because `/fonts` was not in `PUBLIC_PATHS`) was fixed in PR #69, with a test that requests every static file anonymously. | #57, #65, #69, #70 |
 
 ---
 
