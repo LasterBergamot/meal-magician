@@ -2,13 +2,14 @@
 
 What exists in `main` today: the build skeleton, the database, the `identity` module (sign-in) and
 the first part of the `household` module (create, rename, switch) and the services of the `catalog`
-module (the meal library, without pages yet); no other business modules yet.
+module (the meal library) and the weekly plan's services of the `planning` module, both without
+pages yet; no other business modules yet.
 
 - **Application class** `MealMagicianApplication` starts Spring Boot; everything lives below its
   package `hu.lasterbergamot.mealmagician`.
 - **Modules** (Spring Modulith): `identity`, `household`, `catalog`, `planning`, `feedback`,
   `sharing` and the open shared kernel `shared`. Each has a `package-info.java` that says what the
-  module owns; `catalog` has its services; `planning`, `feedback` and `sharing` are still empty. The rule: a module's root package is
+  module owns; `catalog` and `planning` have their services; `feedback` and `sharing` are still empty. The rule: a module's root package is
   its public API, everything else goes in `internal/` and other modules may not import it.
   `ModularityTests` fails the build on a violation and writes module docs to
   `build/spring-modulith-docs`.
@@ -103,8 +104,45 @@ module (the meal library, without pages yet); no other business modules yet.
     (Phase 7) will re-index on it.
   - **Known gaps:** two people creating the same new tag name at the same moment can make one of
     their saves fail with a database constraint error (a rare race, not yet retried). The occasion
-    types a meal suits (PLAN §4.2) are not in V6 yet, and "recently used first" needs `meal_slot`
-    (the planning backend). The meal pages come later.
+    types a meal suits (PLAN §4.2) are not in V6 yet. "Recently used first" now has its data from
+    `PlanningService.recentlyPlannedMealIds`; the sorting itself comes with the meal pages.
+- **Weekly plan (#80), module `planning`:** `PlanningService` is the public entry point. `week`
+  returns the ISO week (Monday to Sunday) that holds any given date, with its slots ordered by date,
+  slot type (breakfast, lunch, dinner, snack) and place. `add` puts a library meal on a date and slot
+  type, at the end of that group. `move` changes the date and slot type and joins the end of the new
+  group. `reorder` moves a slot inside its group (a place below 0 or past the end is clamped).
+  `editNote` sets or clears the note, `remove` takes a slot out and `recentlyPlannedMealIds` lists the
+  meals planned on or before today, most recent first, each once. Every method checks membership
+  through `HouseholdService.require` (a stranger gets 404). A slot of another household is
+  `SlotNotFoundException` (404), and `add` asks `MealService.find`, so another household's meal is
+  `MealNotFoundException` (404).
+  - **Data (V7):** `meal_slot` has one row per planned meal: the `date`, the `slot_type`, a
+    `position` counted from 0 inside its (household, date, slot type) group, the `meal_id`, an
+    optional `note` of up to 500 characters and a `version`. The composite foreign key
+    `(meal_id, household_id)` to `meal` makes the database refuse a meal of another household, as
+    `meal_tag` does in V6. The positions stay contiguous: a move, a remove or a reorder renumbers the
+    group. They are not unique on purpose, because a reorder rewrites several rows at once; two
+    adds at the same moment can share a place, and ties are ordered by id, so the week stays
+    deterministic.
+  - **Versions and conflicts:** `move`, `reorder`, `editNote` and `remove` take the version the person
+    last saw. An older version is refused before anything is written, and so is a write the database
+    refuses because the row changed in the meantime. Both raise `PlanConflictException` (409). A
+    renumbered sibling gets a new version too, so a page showing an old week conflicts as well.
+  - **Archiving and deleting a meal:** archiving never touches the plan. A slot keeps its archived
+    meal: the week still shows it, the slot can still be moved or removed, and only the library's
+    default list stops offering the meal. A meal that is still planned cannot be deleted at all: the
+    foreign key has no `ON DELETE` clause, so the database refuses and no plan entry disappears
+    silently. Nothing in the app deletes a meal today. Deleting a whole household removes its plan and
+    its meals with it (tested on Postgres).
+  - **Events:** `SlotPlanned(householdId, slotId, date, slotType, mealId)` is published on `add`, and
+    on `move` when the slot really changes place. Reordering, editing a note and removing publish
+    nothing. Nothing listens yet, and PLAN §4.1 names no listener for it.
+  - **What the pages call:** a `SlotView` carries the meal id, not the name, so the week view calls
+    `week(...)` and gets the names from one `MealService.search(…, new MealSearch(null, null, true))`,
+    joined by meal id. "Recently used first" calls `recentlyPlannedMealIds(userId, householdId, limit)`
+    and sorts the library by that order, with meals not in the list last.
+  - **Not modelled yet:** a slot with free text instead of a library meal (PLAN §4.2 sketches a
+    `free_text` column; Phase 3 adds meals inline through the library, so it is not needed for it yet).
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
   "today" instead of calling `LocalDate.now()`, so tests can fix the date.
 - **Config:** `application.yml` turns on virtual threads and graceful shutdown, and tells JTE to
@@ -124,7 +162,8 @@ module (the meal library, without pages yet); no other business modules yet.
     (`app_user`, `allowed_email` and the Spring Session tables), `V4__household.sql`
     (`household` with a `version` column, and `membership` with the role OWNER or MEMBER),
     `V5__invite.sql` (`invite`, which stores only the hash of its code) and `V6__catalog.sql`
-    (`meal`, `tag` and `meal_tag`, see the meal library below).
+    (`meal`, `tag` and `meal_tag`, see the meal library below) and `V7__planning.sql` (`meal_slot`,
+    see the weekly plan below).
   - **Profiles:** `dev` points at in-memory H2 in PostgreSQL mode; `postgres` points at the
     compose Postgres (override with `SPRING_DATASOURCE_URL`/`_USERNAME`/`_PASSWORD`) and adds the
     `postgresql/` folder. Use them together as `dev,postgres`. With no profile there is no
