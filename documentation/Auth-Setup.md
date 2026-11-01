@@ -31,8 +31,17 @@ This is a home project, so one client (`meal-magician`) serves both places (PLAN
 | `https://meal-magician-<PROJECT_NUMBER>.europe-west3.run.app/login/oauth2/code/google` | Cloud Run |
 
 Cloud Run's URL is predictable from the project number ([[Hosting Setup]], part 1), so you can add
-both URIs at once. If
-the secret ever leaks, rotate it (bottom of this page); both places then get the new one.
+both URIs at once.
+
+> **Use the project-number address to sign in.** A Cloud Run service has **two** addresses: the
+> predictable `https://meal-magician-<PROJECT_NUMBER>.europe-west3.run.app` registered above, and a
+> hashed one such as `https://meal-magician-l6wwm546pq-ey.a.run.app` that `gcloud run services list`
+> prints as the service URL. The app builds its Google redirect URI from the address in the
+> browser, so signing in on the hashed address sends a URI that is not registered and Google
+> answers `redirect_uri_mismatch`. Open the project-number address (and bookmark it), or also add
+> the hashed address's `/login/oauth2/code/google` to the client.
+
+If the secret ever leaks, rotate it (bottom of this page); both places then get the new one.
 
 ## Step by step: the project and consent screen (once)
 
@@ -91,7 +100,7 @@ the secret ever leaks, rotate it (bottom of this page); both places then get the
 
 | What you see | Why | Fix |
 |---|---|---|
-| Google: `Error 400: redirect_uri_mismatch` | The URI in the client differs from the one the app sends | Edit the client's redirect URI to exactly `http://localhost:8080/login/oauth2/code/google`; changes can take a few minutes |
+| Google: `Error 400: redirect_uri_mismatch` | The URI in the client differs from the one the app sends | Locally: edit the client's redirect URI to exactly `http://localhost:8080/login/oauth2/code/google`; changes can take a few minutes. On the deployed app: you opened the hashed `*.a.run.app` address, so use `https://meal-magician-<PROJECT_NUMBER>.europe-west3.run.app` instead (see the note above) |
 | Google: `Error 401: invalid_client` | `.env` is empty or has the placeholder `not-configured` | Fill in `GOOGLE_CLIENT_ID`/`_SECRET`, restart `task serve` (it loads `.env` at start) |
 | Google: "Access blocked: ... has not completed verification" or "not a test user" | Audience is still *Testing* | Audience → **Publish app** |
 | App shows 403 right after you sign in with your own account | Your e-mail is not in `MM_ADMIN_EMAILS` (typo?), or Google reports it as unverified | Fix `.env`, restart. Matching ignores case but not spelling |
