@@ -365,12 +365,12 @@ R7's rest moved into R1, and each Alpine component and shared template has one o
 
 **Wave 2: after R1 and R2a are merged.**
 
-- [ ] **R2b Content and status components.** `ui/_badge`, `_chip`, `_slot_chip`, `_slot_dot`,
+- [x] **R2b Content and status components** *(PR #77).* `ui/_badge`, `_chip`, `_slot_chip`, `_slot_dot`,
       `_card`, `_row`, `_avatar`, `_alert`, `_empty`, `_skeleton_rows`; fills `dev/_content.jte`.
       *Accept:* every component and state on `/dev/ui` in both themes; `UiGuardTest` green.
-- [ ] **R2c Form components.** `ui/_field`, `_select`, `_search`, `_segmented`, including the 422
+- [x] **R2c Form components** *(PR #76).* `ui/_field`, `_select`, `_search`, `_segmented`, including the 422
       error state; fills `dev/_forms.jte`. *Accept:* as R2b.
-- [ ] **R3 Sheet and confirm dialog.** `ui/_sheet.jte`, `ui/_confirm.jte`, the Alpine `sheet`
+- [x] **R3 Sheet and confirm dialog** *(PR #78).* `ui/_sheet.jte`, `ui/_confirm.jte`, the Alpine `sheet`
       component (the only `app.js` change in this wave); focus trap, Escape, swipe-down on phone;
       fills `dev/_overlays.jte`. The `shell` and `theme` Alpine components moved to R4 and R6, so
       `app.js` has one writer per wave. *Accept:* a keyboard e2e test on `/dev/ui` opens, traps,
@@ -559,6 +559,7 @@ not depend on the redesign and runs beside it (`PLAN.md` §9).
 | 2026-11-01 | §7 reorganised into five waves for parallel subagents at the owner's request: R2 split into R2a/R2b/R2c and R5 into R5a–R5d (the admin page from #45 added as R5c), R7 ticked (icons landed in PR #61) and its rest (manifest colours, `theme-color` metas, `sw.js` v2) moved to R1, §6.2 amended for the wizard icon, the `shell`/`theme` Alpine components moved from R3 to R4/R6, a file-ownership table and the coordinator rules (§7.1). R0 ticked. Docs only. | #57 |
 | 2026-11-01 | Wave 1 started (D24): sub-issues #64 (R1) and #65 (R2a) filed under #57. **R1 landed** (#64, PR #69): Appendix A tokens in `app.css`, `data-theme` and the light/dark `theme-color` metas, self-hosted Fredoka and Nunito, `sw.js` v2, the manifest colours and `ContrastTokensTest` (all 53 Appendix C pairs in both themes, and it fails on a bad token). **The owner decided** what to do about two font findings: Fredoka has no Latin Extended-A glyphs (no ő/ű), so headings take those letters from **Nunito** (Fredoka stays the display font, not Baloo 2; fixed in #71); neither font has `tnum`, so there are no tabular numerals (UI-D4 and §3.3 amended). | #57, #64, #69, #71 |
 | 2026-11-01 | **R2a landed** (#65, PR #70): `ui/_icon` (30 icons, `IconName` enum), `ui/_button` (4 variants, 4 sizes, busy/disabled), `ui/_fab`, the dev-only `/dev/ui` page with the empty `_content`, `_forms` and `_overlays` stubs, and `HtmlAttributes` for extra attributes (JTE has no `@for` in attribute-name position). R1's E2E failure (the login page's font preloads were saved as the post-sign-in redirect because `/fonts` was not in `PUBLIC_PATHS`) was fixed in PR #69, with a test that requests every static file anonymously. | #57, #65, #69, #70 |
+| 2026-11-01 | **Wave 2 landed** (#73, #74, #75; PRs #77, #76, #78): the content and status components, the form components with the 422 state, and the sheet and confirm dialog (native `<dialog>`, Alpine `sheet`, keyboard e2e). The e2e stack now runs with profiles `dev,postgres` so the browser tests can open `/dev/ui`. Open for later: arrow keys for `ui/_segmented` need an Alpine behaviour in `app.js` (R4 or a follow-up); the htmx branch of `_segmented` is tested only through its helper until a page uses it; the avatar is a gold disc, which the first members list should check against "one gold highlight per screen"; R2b's merge commit lost its `#73 - ` subject (git treated it as a comment during a rebase). | #57, #73, #74, #75, #76, #77, #78 |
 
 ---
 
