@@ -20,7 +20,7 @@ ate. A later AI assistant will learn the household's preferences and draft plans
 | Auth | Google sign-in (Spring Security OIDC), DB allowlist, email-bound invites |
 | Data | PostgreSQL + pgvector, Flyway; H2 for fast local runs/tests |
 | AI (later) | Spring AI with a pluggable hosted model, in-process embeddings, pgvector RAG |
-| Hosting | Railway (EU), app sleeps when idle; images in GHCR; deploy on release tag |
+| Hosting | Google Cloud Run + Neon Postgres (Frankfurt), both scale to zero; images in Artifact Registry; deploy on release tag |
 | CI | GitHub Actions: lint, tests (100 % coverage), migrations on Postgres, e2e (Playwright), Trivy |
 
 ## Prerequisites
@@ -30,7 +30,7 @@ ate. A later AI assistant will learn the household's preferences and draft plans
 - [Task](https://taskfile.dev). On Arch the binary is `go-task`, and `task` is often only a
   shell alias.
 - Docker + Docker Compose (Testcontainers, local Postgres, e2e)
-- `gh` (GitHub CLI), optionally the Railway CLI
+- `gh` (GitHub CLI), optionally the Google Cloud CLI (`gcloud`)
 - For Claude Code work: the [APM](https://github.com/microsoft/apm) CLI (only to update the shared skills)
 
 Step-by-step setup: [`documentation/Setup.md`](documentation/Setup.md).

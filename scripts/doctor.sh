@@ -76,7 +76,7 @@ check required "docker compose" 2.24 docker compose version
 
 echo "Optional:"
 check optional gh 2 gh --version
-check optional railway "" railway --version
+check optional gcloud "" gcloud --version
 check optional apm "" apm --version
 
 # Installed by `task install`; reported here so a missing one is easy to spot.

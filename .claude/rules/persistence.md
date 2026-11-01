@@ -25,4 +25,4 @@ paths:
 - Timestamps: `timestamptz` / `Instant`; dates of the plan: `date` / `LocalDate`.
 - Migrations must be compatible with the previous release (expand/contract), since Flyway
   runs at startup during a deploy (PLAN.md D13).
-- Hikari: small pool, `minimumIdle: 0`, so idle connections don't keep Railway awake (D11).
+- Hikari: small pool, `minimumIdle: 0`, so idle connections don't keep Neon awake (D11).

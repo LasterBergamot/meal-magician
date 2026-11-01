@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * Refuses to start the app in production with a half-configured security setup ("fail closed",
  * PLAN.md §4.4).
  *
- * <p>Without this, a forgotten Railway variable would not crash anything obvious: the app would
+ * <p>Without this, a forgotten Cloud Run variable would not crash anything obvious: the app would
  * come up pointing at {@code localhost}, or with nobody able to sign in, or behind the proxy with
  * wrong redirect URLs. Failing at startup with one message that lists <em>every</em> problem is far
  * easier to fix than discovering them one deploy at a time.
@@ -70,7 +70,7 @@ class ProductionConfigGuard implements BeanFactoryPostProcessor {
     }
     if (!"framework".equals(environment.getProperty("server.forward-headers-strategy"))) {
       problems.add(
-          "server.forward-headers-strategy must be 'framework' (Railway's proxy terminates TLS)");
+          "server.forward-headers-strategy must be 'framework' (the hosting proxy terminates TLS)");
     }
     return problems;
   }

@@ -27,7 +27,7 @@ bash scripts/doctor.sh      # the same check as `task doctor`, for when Task its
 - Java 17+: any JDK that can run Gradle; the wrapper's toolchain downloads Temurin 25 by itself (PLAN.md D21).
 - Task 3.x.
 - Docker with a running daemon, and Docker Compose 2.24+.
-- Optional, only reported: `gh` 2.x (needed for issues and PRs), the Railway CLI, `apm`, and the
+- Optional, only reported: `gh` 2.x (needed for issues and PRs), the Google Cloud CLI (`gcloud`), `apm`, and the
   Tailwind CLI (`skip` until step 3).
 
 **If not:** a `FAIL` line names the tool and the problem. Install the missing tool (README →

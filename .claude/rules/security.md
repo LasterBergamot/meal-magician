@@ -31,7 +31,7 @@ paths:
 - **Fail closed in prod:** the `prod` profile refuses to start without the Google client,
   `MM_ADMIN_EMAILS`, a Postgres datasource and `server.forward-headers-strategy=framework`.
 - Never log tokens, invite codes, session ids or full emails at INFO; secrets only via env
-  (Railway variables / GitHub secrets).
+  (Secret Manager / GitHub secrets).
 - Where it lives: `identity/internal/SecurityConfig` (the one filter chain and `PUBLIC_PATHS`),
   `AllowlistedOidcUserService` (the allowlist gate), `ProductionConfigGuard` (a
   `BeanFactoryPostProcessor`, so it fails before Flyway or the datasource start). Controllers get

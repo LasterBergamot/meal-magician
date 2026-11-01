@@ -41,11 +41,11 @@ client id/secret; use a separate dev OAuth client (`documentation/Auth-Setup.md`
 
 | Variable | Used for |
 |---|---|
-| `SPRING_PROFILES_ACTIVE` | `dev` (local), `prod` (Railway) |
+| `SPRING_PROFILES_ACTIVE` | `dev` (local), `prod` (Cloud Run) |
 | `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` | Postgres; unset in dev → H2 |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OIDC client (`documentation/Auth-Setup.md`) |
 | `MM_ADMIN_EMAILS` | comma-separated bootstrap instance admins (always allowlisted) |
-| `JAVA_TOOL_OPTIONS` | memory flags on Railway (`-XX:MaxRAMPercentage=75`) |
+| `JAVA_TOOL_OPTIONS` | memory flags on Cloud Run (`-XX:MaxRAMPercentage=75`) |
 
 Under the `prod` profile startup **fails closed** when the Google client, `MM_ADMIN_EMAILS` or a
 Postgres URL is missing.
@@ -56,18 +56,18 @@ Postgres URL is missing.
   no force-push). Feature branches: `feat/<issue>-…`, `fix/<issue>-…`, `chore/<issue>-…`,
   `docs/…`, cut from `main` and PR'd back.
 - **Who merges:** for issues in `PLAN.md` the agent merges its own PR once all required checks
-  are green (PLAN.md D22); repo settings, Railway, Google Cloud and unplanned work need the owner.
+  are green (PLAN.md D22); repo settings, Google Cloud, Neon and unplanned work need the owner.
 - **Merge commits only** (`gh pr merge <n> --merge`), never squash or rebase. Keep branch history
   clean with `git commit --amend` / `--fixup` + `git rebase --autosquash origin/main`, then
   `git push --force-with-lease` (feature branches only).
 - **Commit subjects:** `#N - <imperative summary>`.
 - **Releases:** merging to `main` only runs CI. The manual `release.yml` workflow bumps the
-  version, tags `vX.Y.Z`, pushes the image to GHCR and deploys it to Railway, then polls
-  `/actuator/health` (`documentation/Railway-Setup.md`). Flyway migrates at startup, so
+  version, tags `vX.Y.Z`, pushes the image to Artifact Registry and deploys it to Cloud Run, then polls
+  `/actuator/health` (`documentation/Hosting-Setup.md`). Flyway migrates at startup, so
   migrations must stay compatible with the previous release (expand/contract).
 
 ## Scheduled workflows
 
 `db-backup.yml` (Phase 6): scheduled `pg_dump` → `age`-encrypted artifact. Nothing periodic runs
-inside the app, so Railway's sleeping mode can kick in. GitHub disables scheduled workflows after
+inside the app, so Cloud Run and Neon can scale to zero. GitHub disables scheduled workflows after
 60 days without repo activity; check the Actions tab after a long break.

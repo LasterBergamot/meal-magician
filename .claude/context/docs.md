@@ -23,7 +23,7 @@ this file says which docs this repo has and the steps that are specific to it.
 | `Newcomer-Guide.md` | Junior-developer walkthrough: tools and why, glossary, one request through the layers, first change |
 | `References.md` | Official docs for every library, tool, service and spec |
 | `Auth-Setup.md` | Google Cloud OAuth client runbook |
-| `Railway-Setup.md` | Railway project, Postgres + pgvector, variables, deploys, sleeping, backups |
+| `Hosting-Setup.md` | owner's one-session setup: Google Cloud (Cloud Run, Artifact Registry, WIF, secrets), Neon, GitHub variables; deploys, scale to zero, backups |
 | `Current-State-Backend.md` | Modules, data model, endpoints as they exist today |
 | `Current-State-Frontend.md` | Templates, htmx/Alpine patterns, i18n, PWA as they exist today |
 | `Current-State-Everything-Else.md` | Container, hosting, CI, dev workflow, conventions |

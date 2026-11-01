@@ -22,7 +22,7 @@ allowlisted emails get in; households are shared through email-bound invite link
 | Gradle + Taskfile | build, and one command surface for people, agents and CI: type `task --list` to see every command, `task doctor` to check your machine. The `gradlew` wrapper pins the Gradle version; a *toolchain* downloads Java 25 itself, so your machine's JDK doesn't matter |
 | Spotless, Checkstyle, JaCoCo | the quality gates: formatting, "every public method has Javadoc", and 100 % test coverage. `./gradlew build` runs all three |
 | Lombok | removes getter/builder boilerplate from JPA entities (later); its output is marked so coverage ignores it |
-| Railway | hosting with no server to manage; app sleeps when idle |
+| Cloud Run + Neon | hosting with no server to manage: the app (Cloud Run) and the database (Neon) both scale to zero when idle |
 
 ## Glossary
 
