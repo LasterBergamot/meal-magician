@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "hu.lasterbergamot"
-version = "0.0.1-SNAPSHOT"
+version = "0.1.8"
 
 java {
     // PLAN.md D21: never rely on the machine's default JDK. The foojay resolver (settings.gradle.kts)
