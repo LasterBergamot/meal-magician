@@ -2,8 +2,8 @@
 
 Runbook for hosting on **Google Cloud Run + Neon Postgres** (PLAN.md D11, D13, D17, D23) and the
 owner's **one setup session**: every console step is done once, up front, so agents can build,
-deploy and verify the rest from CI. **Status:** the setup session is pending; the app is deployed
-from #17/#18 on.
+deploy and verify the rest from CI. **Status:** the setup session was done by hand on 2026-11-01
+(parts 1–8); the app is deployed from #17/#18 on. A script that can check or recreate it is #27.
 
 **What goes where:**
 
