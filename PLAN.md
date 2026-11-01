@@ -150,9 +150,14 @@ Sub-issues filed 2026-11-01: #41 → #42, #43, #44 (blocked by #41); #45 stands 
       who is in charge lock the household row first, so two owners leaving at once cannot both
       pass the check. A removed member needs no extra step to lose access: the household is
       re-checked against `membership` on every request. The page is `/households/members`.)*
-- [ ] #44 Tenant-isolation test (404 for another household's data), plus 403 tests for owner-only
-      actions. *(The household endpoints already have theirs in `HouseholdPagesTest`; #44 is the
-      reusable guard that every later endpoint registers with.)*
+- [x] #44 Tenant-isolation test (404 for another household's data), plus 403 tests for owner-only
+      actions. *(PR #53. `TenantIsolationTests` finds every controller method with a
+      `CurrentHousehold` parameter or a `{householdId}` path variable and fails if it is missing from
+      `TenantEndpoints`; each registered endpoint is then called as four people of a two-household
+      fixture. The household routes' `{id}` was renamed `{householdId}` so they are detected.
+      Mutation-checked: dropping the household scoping in `InviteService.revoke` fails it. An
+      endpoint with no id in its path always acts on the caller's own household, so only the
+      "person in no household" check applies to it.)*
 - [ ] #45 Admin page for the allowlist (instance admins only).
 
 ### Phase 2 — Meal library (`M1`, epic #3)
@@ -396,3 +401,4 @@ meal-magician/
 | 2026-11-01 | Members (#43): `MemberService` (list, remove, leave, hand over ownership; the household row is locked while the owner changes), `identity.UserDirectory` for names and addresses, the `/households/members` page with confirm dialogs, a link to it on `/households`. | #43, #50 |
 | 2026-11-01 | Invites (#42): `invite` table (V5, hash only), `InviteService` (create, list, revoke, preview, join; single use by a guarded `UPDATE`), `identity.AllowlistEditor` so an invited address may sign in, the owner's invite section on `/households` and the `/join/<code>` page. v0.1.1 (households) released to Cloud Run the same day. | #18, #42, #49 |
 | 2026-11-01 | Phase 1 started: sub-issues #41–#45 filed under epic #2. Households (#41): `household`/`membership` tables (V4), `HouseholdService` with the 404/403 rules, the session-based `CurrentHouseholdResolver` and `CurrentHousehold` controller parameter, the `/households` page (create, rename, switch), the current household in the header. Also confirmed with Cloud Monitoring that the Cloud Run service had scaled to zero ~15 min after the v0.1.0 deploy (Neon suspend still the owner's to confirm). | #18, #41, #46 |
+| 2026-11-01 | Tenant guard (#44): `TenantIsolationTests` + `TenantEndpoints` registry + `TenantWorld` fixture (two households, four people); unregistered and stale registrations fail, and the decision logic is tested on leaky stubs. `tests.md` explains how to register an endpoint. | #44, #53 |

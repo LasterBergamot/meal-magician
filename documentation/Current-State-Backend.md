@@ -17,8 +17,12 @@ the first part of the `household` module (create, rename, switch); no other busi
   (a new controller is covered automatically); `DocsToolingTests` checks the agent docs (see
   [[Current State: Everything Else]]); `UiGuardTest` covers templates and message bundles
   ([[Current State: Frontend]]). Each has tests that run the check on a deliberately broken example.
-  The household endpoints have their own 404/403 tests (`HouseholdPagesTest`); the reusable
-  tenant-isolation guard that every later endpoint must register with is #44.
+  `TenantIsolationTests` (#44) is the tenant guard: it finds every controller method that takes a
+  `CurrentHousehold` (or a `{householdId}` path variable) and fails if it is not registered in
+  `TenantEndpoints`; for each registered endpoint it then checks that a person in no household gets
+  404, that the owner of *another* household gets 404 for ids that are not theirs, that a plain
+  member gets 403 on owner-only actions and that the real owner is let through (so the path is
+  real). The household endpoints keep their detailed behaviour tests (`HouseholdPagesTest`).
 - **Households (#41), module `household`:** `HouseholdService` is the public entry point
   (create, list, rename, and the membership lookup `find`/`require`). Every method takes the
   asking person's id and checks membership itself: another household gives
@@ -31,7 +35,7 @@ the first part of the `household` module (create, rename, switch); no other busi
   404) and pass `id()` to every repository call. `household/internal` holds the entities
   (`Household` with `@Version`, `Membership`), the repositories and `HouseholdController`.
   `shared.web.HouseholdNavSource` is how the header learns the household without `shared`
-  depending on `household` (the same trick as `CsrfMetaSource`). The reusable tenant guard is #44.
+  depending on `household` (the same trick as `CsrfMetaSource`).
 - **Invites (#42), module `household`:** an owner invites an e-mail address and shares a
   `/join/<code>` link through any messenger (no e-mail is sent). `InviteService` is the public entry
   point: `create` (owner only; validates the address, adds it to the allowlist with source `INVITE`
