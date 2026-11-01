@@ -1,6 +1,7 @@
-# The manual release (PLAN.md D13): bump the version, build the image, push it to Artifact
-# Registry, deploy it to Cloud Run and check that it is healthy. Merging to `main` only runs CI;
-# nothing deploys until someone starts this workflow ("Run workflow", input: the new version).
+# The release (PLAN.md D13, amended for #51): after CI passes on a push to `main`, work out the next
+# version, build the image, push it to Artifact Registry, deploy it to Cloud Run and check that it
+# is healthy. A merge that changes only documentation or CI configuration is not deployed. It can
+# also be started by hand ("Run workflow") with a version or a bump, for example to redeploy.
 #
 # Setup it needs (done once by the owner, runbook: documentation/Hosting-Setup.md): the GitHub
 # repository variables GCP_PROJECT_ID, GCP_PROJECT_NUMBER, GCP_REGION, GOOGLE_CLIENT_ID,
@@ -10,12 +11,24 @@
 name: Release
 
 on:
+  # Runs from this file on `main` with write access, so it must only ever check out a commit CI
+  # passed on `main` (see the `if:` of the plan job); never code from a pull request.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       version:
-        description: "New version without the v, for example 0.1.0 (the tag becomes v0.1.0)"
-        required: true
+        description: "Exact version without the v, for example 0.2.0 (empty: computed from `bump`)"
+        required: false
         type: string
+      bump:
+        description: "Which part to raise when no version is typed"
+        required: false
+        type: choice
+        options: [patch, minor, major]
+        default: patch
 
 # Releases queue behind each other and are never cancelled half way: a cancelled deploy would
 # leave an image pushed and a version half rolled out.
@@ -38,27 +51,80 @@ env:
   IMAGE_NAME: app
 
 jobs:
-  release:
-    name: Build, deploy and tag
-    # Only the default branch is ever released.
-    if: github.ref == 'refs/heads/main'
+  # Cheap and decisive: should this commit be released, and as which version? The version is worked
+  # out here, inside the queued run, so it already counts the release that ran just before.
+  plan:
+    name: Plan the release
+    # Only a push to `main` whose CI run succeeded, or a manual run on `main`. `event == 'push'`
+    # keeps pull-request CI runs (which also report "completed") out.
+    if: >-
+      github.ref == 'refs/heads/main' && (
+        github.event_name == 'workflow_dispatch' || (
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main'))
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 5
+    outputs:
+      release: ${{ steps.plan.outputs.release }}
+      version: ${{ steps.plan.outputs.version }}
+      sha: ${{ steps.target.outputs.sha }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Check the version and that CI is green on this commit
+      - name: Pick the commit to release
+        id: target
         env:
-          VERSION: ${{ inputs.version }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: echo "sha=$SHA" >>"$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.target.outputs.sha }}
+          fetch-depth: 0 # the script reads tags and history
+
+      # The labels of the merged PR choose the bump. Looked up from the commit, so a squash or a
+      # merge commit both work. Labels reach the script only through the environment.
+      - name: Find the labels of the merged pull request
+        id: labels
+        if: github.event_name == 'workflow_run'
+        env:
           GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.sha }}
+          SHA: ${{ steps.target.outputs.sha }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Version must look like 0.1.0 (digits only, no v), got '$VERSION'"
-            exit 1
-          fi
+          labels=$(gh api "repos/$REPO/commits/$SHA/pulls" --jq '[.[].labels[].name] | join(",")')
+          echo "labels=$labels" >>"$GITHUB_OUTPUT"
+
+      - name: Decide
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SHA: ${{ steps.target.outputs.sha }}
+          LABELS: ${{ steps.labels.outputs.labels }}
+          VERSION_INPUT: ${{ inputs.version }}
+          BUMP_INPUT: ${{ inputs.bump }}
+        run: bash scripts/next_release.sh
+
+  release:
+    name: Build, deploy and tag
+    needs: plan
+    if: needs.plan.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VERSION: ${{ needs.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+
+      - name: Check the version and that CI is green on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.plan.outputs.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
           if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1; then
             echo "::error::Tag v$VERSION already exists; pick a new version"
             exit 1
@@ -78,8 +144,6 @@ jobs:
       # `main` is protected, so the bump is committed on this detached checkout and only the tag is
       # pushed (at the very end). `main` keeps the SNAPSHOT version; the tag shows what shipped.
       - name: Bump the version (tag is pushed after a healthy deploy)
-        env:
-          VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           sed -i -E "s/^version = \".*\"$/version = \"$VERSION\"/" build.gradle.kts
@@ -112,7 +176,6 @@ jobs:
         env:
           REGION: ${{ vars.GCP_REGION }}
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           image="$REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_REPO/$IMAGE_NAME"
@@ -127,7 +190,6 @@ jobs:
         env:
           REGION: ${{ vars.GCP_REGION }}
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          VERSION: ${{ inputs.version }}
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
           MM_ADMIN_EMAILS: ${{ vars.MM_ADMIN_EMAILS }}
           DB_URL: ${{ vars.DB_URL }}
@@ -182,6 +244,11 @@ jobs:
       # Last on purpose: a tag means "this version was deployed and healthy". A failed run leaves
       # no tag, so the same version can be tried again.
       - name: Push the release tag
-        env:
-          VERSION: ${{ inputs.version }}
         run: git push origin "refs/tags/v$VERSION"
+
+      # After the tag, so a release page always points at a deployed, healthy version. The tag is
+      # on the version-bump commit; the notes list the pull requests merged since the last tag.
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v$VERSION" --verify-tag --generate-notes --title "v$VERSION"

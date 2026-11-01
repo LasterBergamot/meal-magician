@@ -20,7 +20,7 @@ ate. A later AI assistant will learn the household's preferences and draft plans
 | Auth | Google sign-in (Spring Security OIDC), DB allowlist, email-bound invites |
 | Data | PostgreSQL + pgvector, Flyway; H2 for fast local runs/tests |
 | AI (later) | Spring AI with a pluggable hosted model, in-process embeddings, pgvector RAG |
-| Hosting | Google Cloud Run + Neon Postgres (Frankfurt), both scale to zero; images in Artifact Registry; deploy on release tag |
+| Hosting | Google Cloud Run + Neon Postgres (Frankfurt), both scale to zero; images in Artifact Registry; automatic release on merge to `main` |
 | CI | GitHub Actions: lint, tests (100 % coverage), migrations on Postgres, e2e (Playwright), Trivy |
 
 ## Prerequisites
