@@ -208,8 +208,8 @@ and Flyway creates the tables). Before building, the workflow checks that the ve
 `E2E` are green on the commit. The tag `vX.Y.Z` (on a commit that only changes the version in
 `build.gradle.kts`) is pushed last, after a healthy deploy.
 
-The workflow is written (#18) but has **not run yet**: the first run is the v0.1.0 release and
-is what verifies this part. If it fails, `gcloud run services logs read meal-magician --region
+The workflow has run: **v0.1.0** was released on 2026-11-01 (the first attempt failed because the
+`@` in the admin emails clashed with the env-var delimiter, which is now `|`). If a run fails, `gcloud run services logs read meal-magician --region
 europe-west3` shows why; the usual causes are a missing GitHub variable (the step prints an
 empty value), a missing IAM right or a wrong `DB_URL`.
 
@@ -217,8 +217,9 @@ empty value), a missing IAM right or a wrong `DB_URL`.
 
 - Cloud Run: min instances 0, so no instance runs (or costs) between requests; the first request
   after idle pays the cold start. The image's AOT cache makes the app itself start in about
-  1.3-1.6 s on a laptop (2.9 s without the cache); the real Cloud Run number is measured at the
-  first deploy (#18) and noted here (D17).
+  1.3-1.6 s on a laptop (2.9 s without the cache); on Cloud Run the first
+  start of v0.1.0 took 6.7 s, but that included Flyway creating the schema on Neon for the first
+  time; a typical cold start is not measured yet (D17).
 - Neon: suspends the compute after ~5 idle minutes; the first query wakes it (well under a second).
 - If either never goes idle: look for outbound traffic (Hikari idle connections, telemetry, a
   monitor pinging the app).

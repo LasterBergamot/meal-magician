@@ -107,6 +107,7 @@ What exists in `main` today:
   - `release.yml` (#18) is the manual release: version in, image in Artifact Registry, new
     Cloud Run revision, health check, tag. It is the only workflow that can deploy or push a tag,
     and it starts only when someone runs it. Details and the variables it needs:
-    [[Hosting Setup]]. It has not run yet; the first run is the v0.1.0 release.
+    [[Hosting Setup]]. **v0.1.0** was released with it on 2026-11-01 and the service
+  answers on its `run.app` URL (health 200, `/` redirects to the login page, Flyway applied the migrations on Neon).
 
-Not yet: the first deploy — see [[Roadmap: Everything Else]].
+Not yet confirmed: sign-in on a phone and scale to zero — see [[Roadmap: Everything Else]].
