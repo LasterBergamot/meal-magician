@@ -61,6 +61,14 @@ Postgres URL is missing.
   clean with `git commit --amend` / `--fixup` + `git rebase --autosquash origin/main`, then
   `git push --force-with-lease` (feature branches only).
 - **Commit subjects:** `#N - <imperative summary>`.
+- **Parallel subagents (PLAN.md D24):** one subagent per issue, each started with
+  `isolation: "worktree"` so it has its own checkout and branch, editing only the files its item
+  owns (`plan-ui-redesign.md` §7.1 has the table). The coordinating session files the issues,
+  merges the PRs one at a time and keeps the checklists and logs. Branch protection does not
+  require an up-to-date branch, so rebase on `origin/main` and wait for green again when `main`
+  moved since CI ran. `task lint` and `task test` run side by side in worktrees; `task test-e2e`
+  does not (`compose.e2e.yml` binds ports 18080/18081), so leave it to CI or run one at a time.
+  Run `task serve` on another port per worktree with `SERVER_PORT=8081 task serve`.
 - **Releases (#51):** merging code to `main` releases it: `release.yml` starts when CI succeeds on
   `main`, takes the next patch version (`release:minor` / `release:major` on the PR raise the
   other parts) and skips merges that change only Markdown, `documentation/`, `.claude/` or

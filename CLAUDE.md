@@ -19,7 +19,8 @@ RAG, pluggable provider) drafts plans from that history.
 - Hosted on Google Cloud Run, database on Neon (both scale to zero).
 
 All decisions are in `PLAN.md` §2. **Status:** Phase 0 is done except owner checks (#16–#18); Phase 1 is done: households (#41), invites (#42), member management (#43), the tenant guard (#44) and the allowlist admin page (#45). **Next: the UI redesign (epic #57,
-`plan-ui-redesign.md`), before Phase 2.** Next steps are in `PLAN.md` §9.
+`plan-ui-redesign.md`) in waves of parallel subagents, with the Phase 2/3 backend beside it (D24).**
+Next steps are in `PLAN.md` §9.
 
 ## Router: working on X → read Y
 
