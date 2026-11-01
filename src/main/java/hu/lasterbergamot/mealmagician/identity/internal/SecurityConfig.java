@@ -43,6 +43,7 @@ class SecurityConfig {
     "/js/**",
     "/images/**",
     "/icons/**",
+    "/fonts/**",
     "/favicon.ico",
     "/manifest.webmanifest",
     "/sw.js"

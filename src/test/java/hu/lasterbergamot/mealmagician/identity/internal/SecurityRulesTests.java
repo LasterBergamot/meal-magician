@@ -1,5 +1,6 @@
 package hu.lasterbergamot.mealmagician.identity.internal;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -9,6 +10,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,6 +53,30 @@ class SecurityRulesTests {
   @Test
   void staticAssetPathsAreNotBehindTheLogin() throws Exception {
     mvc.perform(get("/css/no-such-file.css")).andExpect(status().isNotFound());
+  }
+
+  /**
+   * A static file behind the login does more harm than a broken image: Spring Security remembers
+   * the last request it turned away and sends the person there after signing in, so an anonymous
+   * font request on the login page would land them on the font file instead of the home page (what
+   * broke the sign-in E2E tests when {@code /fonts} was added without being public).
+   */
+  @Test
+  void everyStaticFileIsServedWithoutSigningIn() throws Exception {
+    Path root = Path.of("src/main/resources/static");
+    List<String> paths;
+    try (Stream<Path> files = Files.walk(root)) {
+      paths =
+          files
+              .filter(Files::isRegularFile)
+              .map(file -> "/" + root.relativize(file).toString().replace('\\', '/'))
+              .toList();
+    }
+
+    assertThat(paths).contains("/fonts/fredoka-latin.woff2", "/icons/favicon.svg", "/js/app.js");
+    for (String path : paths) {
+      mvc.perform(get(path)).andExpect(status().isOk());
+    }
   }
 
   @Test
