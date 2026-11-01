@@ -220,6 +220,11 @@ Also split (D24, §9): **B3 planning backend** (the `planning` module, Flyway **
 with a foreign key to `meal`, so after B2; the seven-date week query, add/move/reorder/remove a
 slot, the note, `@Version` with a typed conflict exception the page turns into 409, `SlotPlanned`;
 no controllers or templates) and **the week view** (after R4 and the Phase 2 pages).
+- [x] #80 **B3 planning backend** *(PR #81; backend only, no pages)*: V7 `meal_slot` (composite
+      foreign key to `meal`), `PlanningService` (week query, add, move, reorder, note, remove,
+      `recentlyPlannedMealIds` for "recently used first"), `@Version` with `PlanConflictException`
+      (409), `SlotPlanned`, tenant-scoped. Archiving a meal leaves its slots alone; a still-planned
+      meal cannot be hard-deleted.
 - [ ] Week view: a grid on desktop, a list of days on phone; ISO-week navigation; today highlighted.
 - [ ] Slots: BREAKFAST / LUNCH / DINNER / SNACK. Add a meal from the library or create one inline;
       a note per slot; reorder and move slots.
@@ -295,7 +300,9 @@ support. Other modules may only use the root package; the Modulith test enforces
 - `household(id, name, created_at, version)`; `membership(household_id, user_id, role)`
 - `invite(id, household_id, email, code_hash, expires_at, revoked_at, used_at, created_by)`
 - `meal(id, household_id, name, notes, recipe_url, occasion_types, archived, version)`, `tag`, `meal_tag`
-- `meal_slot(id, household_id, date, slot_type, position, meal_id NULL, free_text NULL, note, version)`.
+- `meal_slot(id, household_id, date, slot_type, position, meal_id, note, version)`. *(Amended 2026-11-01;
+  was: `meal_id NULL, free_text NULL`. B3 (#80) shipped `meal_id NOT NULL` and no `free_text`: Phase 3
+  adds a meal inline through the library, so free text is not needed yet.)*
   The plan is stored **per date**. A "week" is just a query over its seven dates, which keeps
   copying a day or a week trivial.
 - `plan_template(id, household_id, name, scope DAY|WEEK)`, `plan_template_item(template_id, day_offset, slot_type, position, meal_id, note)`
@@ -490,3 +497,4 @@ meal-magician/
 | 2026-11-01 | Planned the work for parallel subagents at the owner's request (D24): the redesign split into five waves with a file-ownership table (`plan-ui-redesign.md` §7), Phase 2 and 3 each split into a backend part that starts now (B2, B3; Flyway V6/V7 reserved) and pages that wait for R4, and a three-track schedule in §9. Docs only. | #57 |
 | 2026-11-01 | Wave 1 started (D24): sub-issues #64 (R1), #65 (R2a, blocked by #64) and #66 (B2 catalog backend, under #3) filed; one worktree subagent each, plus #59. #59 landed: removing an address from the allowlist now ends that person's live sessions. | #57, #59, #64, #65, #66, #67 |
 | 2026-11-01 | Catalog backend (#66, B2): the `catalog` module with Flyway V6, `MealService` and the `MealChanged` event, tenant-scoped, 100 % covered, no controllers or templates. Occasion types on a meal are not in V6 (open decision). Known gap: two people creating the same new tag at the same instant can get a constraint error on one save. | #3, #66, #68 |
+| 2026-11-01 | Wave 3 started (D24): sub-issues #79 (R4 shell, under #57) and #80 (B3 planning backend, under #4) filed. **B3 landed** (#80, PR #81): the `planning` module with Flyway V7 `meal_slot`, `PlanningService`, the 409 conflict exception and `SlotPlanned`, 100 % covered, no controllers or templates. `meal_slot` has no `free_text` and `meal_id` is `NOT NULL` (§4.2 amended). | #4, #79, #80, #81 |
