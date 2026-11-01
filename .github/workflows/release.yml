@@ -1,0 +1,186 @@
+# The manual release (PLAN.md D13): bump the version, build the image, push it to Artifact
+# Registry, deploy it to Cloud Run and check that it is healthy. Merging to `main` only runs CI;
+# nothing deploys until someone starts this workflow ("Run workflow", input: the new version).
+#
+# Setup it needs (done once by the owner, runbook: documentation/Hosting-Setup.md): the GitHub
+# repository variables GCP_PROJECT_ID, GCP_PROJECT_NUMBER, GCP_REGION, GOOGLE_CLIENT_ID,
+# MM_ADMIN_EMAILS, DB_URL and DB_USERNAME; the Workload Identity Federation provider `github-repo`
+# and service account `mm-deployer` (no keys); the secrets `google-client-secret` and
+# `db-password` in Secret Manager.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New version without the v, for example 0.1.0 (the tag becomes v0.1.0)"
+        required: true
+        type: string
+
+# Releases queue behind each other and are never cancelled half way: a cancelled deploy would
+# leave an image pushed and a version half rolled out.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+# `contents: write` pushes the tag, `id-token: write` lets Google verify who the workflow is,
+# `checks: read` lets the first step see that CI passed on the commit being released.
+permissions:
+  contents: write
+  id-token: write
+  checks: read
+
+env:
+  SERVICE: meal-magician
+  RUNTIME_ACCOUNT: mm-runtime
+  DEPLOY_ACCOUNT: mm-deployer
+  REGISTRY_REPO: meal-magician
+  IMAGE_NAME: app
+
+jobs:
+  release:
+    name: Build, deploy and tag
+    # Only the default branch is ever released.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check the version and that CI is green on this commit
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must look like 0.1.0 (digits only, no v), got '$VERSION'"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag v$VERSION already exists; pick a new version"
+            exit 1
+          fi
+          # The three required CI jobs must have succeeded on exactly this commit.
+          for job in "Lint & test" "Migrations (Postgres)" "E2E"; do
+            result=$(gh api "repos/$REPO/commits/$SHA/check-runs" --paginate \
+              --jq "[.check_runs[] | select(.name == \"$job\")] | map(.conclusion) | if length == 0 then \"missing\" elif all(. == \"success\") then \"success\" else \"not green\" end" \
+              | sort -u | head -n 1)
+            echo "$job: $result"
+            if [ "$result" != "success" ]; then
+              echo "::error::'$job' is not green on $SHA; wait for CI on main or fix it first"
+              exit 1
+            fi
+          done
+
+      # `main` is protected, so the bump is committed on this detached checkout and only the tag is
+      # pushed (at the very end). `main` keeps the SNAPSHOT version; the tag shows what shipped.
+      - name: Bump the version (tag is pushed after a healthy deploy)
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          sed -i -E "s/^version = \".*\"$/version = \"$VERSION\"/" build.gradle.kts
+          grep -q "^version = \"$VERSION\"$" build.gradle.kts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --all --message "Release v$VERSION"
+          git tag --annotate "v$VERSION" --message "Release v$VERSION"
+
+      - uses: arduino/setup-task@c0bc642852239c2689f73f4ea6459c29405f3c52 # v3.0.0
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Signs in before the long build so that a wrong variable fails in seconds.
+      - name: Sign in to Google Cloud (Workload Identity Federation, no key)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: projects/${{ vars.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github/providers/github-repo
+          service_account: mm-deployer@${{ vars.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Let Docker push to Artifact Registry
+        env:
+          REGION: ${{ vars.GCP_REGION }}
+        run: gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+
+      - name: Build and push the image
+        env:
+          REGION: ${{ vars.GCP_REGION }}
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          image="$REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_REPO/$IMAGE_NAME"
+          task build
+          docker tag meal-magician "$image:$VERSION"
+          docker push "$image:$VERSION"
+
+      # Environment variables are joined with "@" (the "^@^" prefix) because MM_ADMIN_EMAILS may
+      # itself contain commas. Secrets are mounted from Secret Manager, never passed as text.
+      - name: Deploy to Cloud Run
+        env:
+          REGION: ${{ vars.GCP_REGION }}
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          VERSION: ${{ inputs.version }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          MM_ADMIN_EMAILS: ${{ vars.MM_ADMIN_EMAILS }}
+          DB_URL: ${{ vars.DB_URL }}
+          DB_USERNAME: ${{ vars.DB_USERNAME }}
+        run: |
+          set -euo pipefail
+          image="$REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_REPO/$IMAGE_NAME:$VERSION"
+          environment="^@^SPRING_PROFILES_ACTIVE=prod"
+          environment+="@SPRING_DATASOURCE_URL=$DB_URL"
+          environment+="@SPRING_DATASOURCE_USERNAME=$DB_USERNAME"
+          environment+="@GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID"
+          environment+="@MM_ADMIN_EMAILS=$MM_ADMIN_EMAILS"
+          environment+="@JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75"
+          gcloud run deploy "$SERVICE" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --image "$image" \
+            --service-account "$RUNTIME_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com" \
+            --port 8080 \
+            --min-instances 0 \
+            --max-instances 1 \
+            --memory 1Gi \
+            --cpu-boost \
+            --allow-unauthenticated \
+            --set-env-vars "$environment" \
+            --set-secrets "GOOGLE_CLIENT_SECRET=google-client-secret:latest,SPRING_DATASOURCE_PASSWORD=db-password:latest" \
+            --quiet
+
+      # The first request wakes the app (cold start) and Neon, and Flyway migrates on the first
+      # start, so allow about four minutes before calling the release failed.
+      - name: Wait for /actuator/health
+        env:
+          REGION: ${{ vars.GCP_REGION }}
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          url=$(gcloud run services describe "$SERVICE" \
+            --project "$PROJECT_ID" --region "$REGION" --format 'value(status.url)')
+          echo "Service URL: $url"
+          for attempt in $(seq 1 16); do
+            body=$(curl --silent --show-error --max-time 30 "$url/actuator/health" || true)
+            echo "attempt $attempt: ${body:-no answer}"
+            if [[ "$body" == *'"status":"UP"'* ]]; then
+              echo "Healthy."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::$url/actuator/health did not report UP; read the logs with: gcloud run services logs read $SERVICE --region $REGION"
+          exit 1
+
+      # Last on purpose: a tag means "this version was deployed and healthy". A failed run leaves
+      # no tag, so the same version can be tried again.
+      - name: Push the release tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: git push origin "refs/tags/v$VERSION"

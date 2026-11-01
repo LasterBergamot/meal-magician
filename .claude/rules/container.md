@@ -31,10 +31,12 @@ paths:
   workflow; third-party actions pinned to a commit SHA; `concurrency` set; Gradle cache via
   `gradle/actions/setup-gradle`. Required checks report on every PR (no path filters on them).
   Labels and PR titles reach scripts only through `env:` (no `${{ }}` inside `run:`).
-- **Release (D13):** `release.yml` is `workflow_dispatch` only: bump version → tag → build +
-  push to Artifact Registry → `gcloud run deploy` (auth by Workload Identity Federation, no
-  keys; config from GitHub variables, secrets via `--set-secrets`) → poll `/actuator/health`.
-  Runs queue, never cancel.
+- **Release (D13):** `release.yml` is `workflow_dispatch` only (input `version`, main only):
+  check version + green CI → bump version on a detached commit → build + push to Artifact
+  Registry → `gcloud run deploy` (auth by Workload Identity Federation, no keys; config from
+  GitHub variables, secrets via `--set-secrets`, env vars joined with `^@^` because
+  `MM_ADMIN_EMAILS` may contain commas) → poll `/actuator/health` → push the `vX.Y.Z` tag last.
+  Runs queue, never cancel. It is the one workflow with `contents: write` and `id-token: write`.
 - **Cloud Run + Neon (D11):** min 0 / max 1 instances, request-based billing; nothing in the app
   or CI may ping the app or the database periodically. Secrets in Secret Manager, config in
   GitHub variables, never in the repo. Runbook: `documentation/Hosting-Setup.md`.

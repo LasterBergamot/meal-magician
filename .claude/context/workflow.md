@@ -60,10 +60,16 @@ Postgres URL is missing.
   clean with `git commit --amend` / `--fixup` + `git rebase --autosquash origin/main`, then
   `git push --force-with-lease` (feature branches only).
 - **Commit subjects:** `#N - <imperative summary>`.
-- **Releases:** merging to `main` only runs CI. The manual `release.yml` workflow bumps the
-  version, tags `vX.Y.Z`, pushes the image to Artifact Registry and deploys it to Cloud Run, then polls
-  `/actuator/health` (`documentation/Hosting-Setup.md`). Flyway migrates at startup, so
-  migrations must stay compatible with the previous release (expand/contract).
+- **Releases:** merging to `main` only runs CI. Start the manual `release.yml` workflow
+  (Actions → Release → Run workflow, or `gh workflow run release.yml -f version=0.1.0`; the
+  version has no `v`). It runs only on `main`, refuses a version whose tag exists or a commit
+  where CI is not green, bumps `version` in `build.gradle.kts` on a detached commit (`main` is
+  protected and keeps the SNAPSHOT), pushes the image to Artifact Registry, deploys it to Cloud
+  Run and polls `/actuator/health` for about four minutes. Only then does it push the tag
+  `vX.Y.Z`, so a tag always means "deployed and healthy" and a failed run can be retried with
+  the same version. Needs the GitHub variables listed in `documentation/Hosting-Setup.md`.
+  Flyway migrates at startup, so migrations must stay compatible with the previous release
+  (expand/contract).
 
 ## CI
 

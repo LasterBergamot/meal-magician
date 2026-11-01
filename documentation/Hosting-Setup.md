@@ -191,16 +191,27 @@ until the first deploy (#18), when you sign in once on the `run.app` URL, from a
 
 ## Deploys (for #17/#18)
 
-`release.yml` authenticates with `google-github-actions/auth` (provider
+`release.yml` (#18; start it with **Actions → Release → Run workflow** and the new version, for
+example `0.1.0`, or `gh workflow run release.yml -f version=0.1.0`) authenticates with `google-github-actions/auth` (provider
 `projects/$GCP_PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github-repo`,
 service account `mm-deployer@$GCP_PROJECT_ID.iam.gserviceaccount.com`), pushes
 `europe-west3-docker.pkg.dev/$GCP_PROJECT_ID/meal-magician/app:<version>` and runs
 `gcloud run deploy meal-magician` with: `--service-account mm-runtime@…`, `--min-instances 0`,
-`--max-instances 1`, `--cpu-boost`, `--port 8080`, `--allow-unauthenticated` (the app does its own
+`--max-instances 1`, `--memory 1Gi` (512 Mi is tight for a JVM with `MaxRAMPercentage=75`),
+`--cpu-boost`, `--port 8080`, `--allow-unauthenticated` (the app does its own
 sign-in), env vars `SPRING_PROFILES_ACTIVE=prod`, `SPRING_DATASOURCE_URL`, `_USERNAME`,
 `GOOGLE_CLIENT_ID`, `MM_ADMIN_EMAILS`, `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75`, and
 `--set-secrets GOOGLE_CLIENT_SECRET=google-client-secret:latest,SPRING_DATASOURCE_PASSWORD=db-password:latest`.
-It then polls `/actuator/health`. Record the final command here when #17 lands.
+It then polls `/actuator/health` (16 tries, 15 s apart: the first request wakes the app and Neon
+and Flyway creates the tables). Before building, the workflow checks that the version is
+`X.Y.Z`, that the tag does not exist yet and that `Lint & test`, `Migrations (Postgres)` and
+`E2E` are green on the commit. The tag `vX.Y.Z` (on a commit that only changes the version in
+`build.gradle.kts`) is pushed last, after a healthy deploy.
+
+The workflow is written (#18) but has **not run yet**: the first run is the v0.1.0 release and
+is what verifies this part. If it fails, `gcloud run services logs read meal-magician --region
+europe-west3` shows why; the usual causes are a missing GitHub variable (the step prints an
+empty value), a missing IAM right or a wrong `DB_URL`.
 
 ## Scale to zero
 
