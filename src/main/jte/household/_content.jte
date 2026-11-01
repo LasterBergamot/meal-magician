@@ -34,5 +34,9 @@
     @template.household._rename(ctx = ctx, page = page)
   @endif
 
+  @if(page.invites() != null)
+    @template.household._invites(ctx = ctx, page = page)
+  @endif
+
   @template.household._create(ctx = ctx, page = page)
 </section>

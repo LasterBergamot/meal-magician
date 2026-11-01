@@ -32,6 +32,11 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   the browser on with `Htmx.redirect` (`HX-Redirect`, because a plain 302 would be followed
   inside htmx's fetch and swap a whole page into the form). A header dropdown for switching is
   not built: switching happens on this page.
+- `household/_invites.jte` (#42): the owner-only "Invite someone" section of that page, an e-mail
+  field, a lifetime select, the list of invites with status and a Revoke button. Posts swap the
+  whole `#invites` section (`hx-target="#invites"`); the new link appears in a read-only field in
+  that response only. `household/join.jte` is the page an invite link opens: the household name and
+  a Join button, or the reason the link was refused (the status code is 404, 403 or 410).
 
 ## Styling: Tailwind
 

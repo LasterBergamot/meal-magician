@@ -31,8 +31,28 @@ the first part of the `household` module (create, rename, switch); no other busi
   404) and pass `id()` to every repository call. `household/internal` holds the entities
   (`Household` with `@Version`, `Membership`), the repositories and `HouseholdController`.
   `shared.web.HouseholdNavSource` is how the header learns the household without `shared`
-  depending on `household` (the same trick as `CsrfMetaSource`). Invites, member management and
-  the reusable tenant guard are #42, #43 and #44.
+  depending on `household` (the same trick as `CsrfMetaSource`). Member management and the
+  reusable tenant guard are #43 and #44.
+- **Invites (#42), module `household`:** an owner invites an e-mail address and shares a
+  `/join/<code>` link through any messenger (no e-mail is sent). `InviteService` is the public entry
+  point: `create` (owner only; validates the address, adds it to the allowlist with source `INVITE`
+  through `identity.AllowlistEditor`, returns the raw code once), `list`, `revoke`, `preview` and
+  `join`. The owner picks a lifetime of 2 hours, 24 hours (default) or 3 days.
+  - **Why it is safe:** the code is 256 random bits (`SecureRandom`); the `invite` table (V5) stores
+    only its SHA-256 (`CodeHasher`), so a leaked row is no link. Joining needs the signed-in Google
+    e-mail to equal the invited one (checked first, so a link that is not yours reveals nothing
+    else). An invite works once: `markUsed` is a guarded `UPDATE` that reports how many rows it
+    changed, so two simultaneous clicks cannot both win.
+  - **Refusals:** unknown code 404, other Google account 403, revoked, used or expired 410; each has
+    its own message on the page. Owner-only actions give 403 to members and 404 to strangers, and
+    another household's invite id is 404.
+  - **Where the code appears:** only in the one response that creates the invite and in the link
+    itself, so it can show up in access logs of whatever sits in front of the app (and, briefly, in
+    the session's saved request while someone signs in). That is why it expires and is single use.
+    It is never logged by the app.
+  - **Revoking** keeps the address on the allowlist (removing it is the admin page, #45).
+  - `/join/**` needs a session like every page: an anonymous visitor is sent to `/login` and
+  Spring Security returns them to the link after Google sign-in. Not rate limited yet (Phase 6).
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
   "today" instead of calling `LocalDate.now()`, so tests can fix the date.
 - **Config:** `application.yml` turns on virtual threads and graceful shutdown, and tells JTE to

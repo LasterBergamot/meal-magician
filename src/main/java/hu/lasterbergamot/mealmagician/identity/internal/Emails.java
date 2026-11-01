@@ -2,8 +2,12 @@ package hu.lasterbergamot.mealmagician.identity.internal;
 
 import java.util.Locale;
 
-/** E-mail address helpers. */
-final class Emails {
+/**
+ * E-mail address helpers. Public only so {@link
+ * hu.lasterbergamot.mealmagician.identity.AllowlistEditor} (the module's public API) can use it;
+ * other modules cannot see the {@code internal} package.
+ */
+public final class Emails {
 
   private Emails() {}
 
@@ -17,7 +21,7 @@ final class Emails {
    * @param email the raw address, may be {@code null}
    * @return the normalized address, or an empty string for {@code null}
    */
-  static String normalize(String email) {
+  public static String normalize(String email) {
     return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
   }
 }

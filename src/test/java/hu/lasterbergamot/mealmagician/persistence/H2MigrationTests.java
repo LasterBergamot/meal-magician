@@ -22,7 +22,7 @@ class H2MigrationTests {
   void appliesOnlyThePortableMigrations() {
     assertThat(flyway.info().applied())
         .extracting(migration -> migration.getVersion().getVersion())
-        .containsExactly("1", "3", "4");
+        .containsExactly("1", "3", "4", "5");
     assertThat(flyway.info().pending()).isEmpty();
   }
 

@@ -17,7 +17,7 @@ class PostgresMigrationTests extends AbstractPostgresIntegrationTest {
   void appliesPortableAndPostgresOnlyMigrations() {
     assertThat(flyway.info().applied())
         .extracting(migration -> migration.getVersion().getVersion())
-        .containsExactly("1", "2", "3", "4");
+        .containsExactly("1", "2", "3", "4", "5");
     assertThat(flyway.info().pending()).isEmpty();
     flyway.validate();
   }
