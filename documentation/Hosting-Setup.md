@@ -46,6 +46,11 @@ project. The two redirect URIs are:
 Cloud Run's service URL is predictable (`<service>-<project number>.<region>.run.app`), so the
 second URI can be added before the first deploy. Keep the client id and secret at hand.
 
+The service also gets a second, hashed address (`https://meal-magician-<hash>.a.run.app`, the one
+`gcloud run services list` prints). Only the project-number address above is registered, so always
+sign in on that one: on the hashed address Google answers `redirect_uri_mismatch` ([[Auth Setup]],
+the note under "One client, two redirect URIs").
+
 ## Part 3: Cloud Run plumbing, in Cloud Shell (about 10 minutes)
 
 Use **Cloud Shell** (the `>_` icon top right in the console): `gcloud` is installed and signed in
@@ -187,7 +192,8 @@ any change (CLAUDE.md); it uses this for reading logs and status.
 ## When you are done
 
 Tell the agent "setup done" plus the result of part 7 (no values). Nothing else is needed from you
-until the first deploy (#18), when you sign in once on the `run.app` URL, from a phone if you like.
+until the first deploy (#18), when you sign in once on the project-number `run.app` address (`https://meal-magician-<PROJECT_NUMBER>.europe-west3.run.app`,
+not the hashed one), from a phone if you like.
 
 ## Deploys (for #17/#18)
 
