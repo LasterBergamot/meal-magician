@@ -34,8 +34,8 @@ paths:
 - **Release (D13):** `release.yml` is `workflow_dispatch` only (input `version`, main only):
   check version + green CI → bump version on a detached commit → build + push to Artifact
   Registry → `gcloud run deploy` (auth by Workload Identity Federation, no keys; config from
-  GitHub variables, secrets via `--set-secrets`, env vars joined with `^@^` because
-  `MM_ADMIN_EMAILS` may contain commas) → poll `/actuator/health` → push the `vX.Y.Z` tag last.
+  GitHub variables, secrets via `--set-secrets`, env vars joined with `^|^` because
+  `MM_ADMIN_EMAILS` holds emails, so `@` would clash, and may contain commas) → poll `/actuator/health` → push the `vX.Y.Z` tag last.
   Runs queue, never cancel. It is the one workflow with `contents: write` and `id-token: write`.
 - **Cloud Run + Neon (D11):** min 0 / max 1 instances, request-based billing; nothing in the app
   or CI may ping the app or the database periodically. Secrets in Secret Manager, config in

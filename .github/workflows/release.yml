@@ -120,8 +120,9 @@ jobs:
           docker tag meal-magician "$image:$VERSION"
           docker push "$image:$VERSION"
 
-      # Environment variables are joined with "@" (the "^@^" prefix) because MM_ADMIN_EMAILS may
-      # itself contain commas. Secrets are mounted from Secret Manager, never passed as text.
+      # Environment variables are joined with "|" (the "^|^" prefix) because MM_ADMIN_EMAILS holds
+      # email addresses (so "@" would clash) and may contain commas; "|" is in none of the values.
+      # Secrets are mounted from Secret Manager, never passed as text.
       - name: Deploy to Cloud Run
         env:
           REGION: ${{ vars.GCP_REGION }}
@@ -134,12 +135,12 @@ jobs:
         run: |
           set -euo pipefail
           image="$REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_REPO/$IMAGE_NAME:$VERSION"
-          environment="^@^SPRING_PROFILES_ACTIVE=prod"
-          environment+="@SPRING_DATASOURCE_URL=$DB_URL"
-          environment+="@SPRING_DATASOURCE_USERNAME=$DB_USERNAME"
-          environment+="@GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID"
-          environment+="@MM_ADMIN_EMAILS=$MM_ADMIN_EMAILS"
-          environment+="@JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75"
+          environment="^|^SPRING_PROFILES_ACTIVE=prod"
+          environment+="|SPRING_DATASOURCE_URL=$DB_URL"
+          environment+="|SPRING_DATASOURCE_USERNAME=$DB_USERNAME"
+          environment+="|GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID"
+          environment+="|MM_ADMIN_EMAILS=$MM_ADMIN_EMAILS"
+          environment+="|JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75"
           gcloud run deploy "$SERVICE" \
             --project "$PROJECT_ID" \
             --region "$REGION" \
