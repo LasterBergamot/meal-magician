@@ -98,9 +98,11 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       htmx session-expiry handling (`HX-Redirect`). *(PR #23. Language is a cookie for now and
       the server-side `HX-Redirect` comes with #12; the client already redirects on 401/403.
       Home-screen install on a real phone is still a manual check.)*
-- [ ] #14 Tests: the Modulith verify test, an "every endpoint needs auth" test, the template
+- [x] #14 Tests: the Modulith verify test, an "every endpoint needs auth" test, the template
       hard-coded-text test, a docs-tooling test (router paths exist, rule globs match,
-      `CLAUDE.md` under 100 lines).
+      `CLAUDE.md` under 100 lines). *(PR #33. The Modulith, template and bundle guards already
+      existed from #9 and #13; this adds the endpoint walk and the docs tooling, and makes
+      `task docs:check` real. The tenant-isolation guard waits for the first household endpoint.)*
 - [x] #15 `Dockerfile` (multi-stage, pinned by digest, uid 10001, AppCDS) and `compose.e2e.yml`
       with a stub OIDC provider; one Playwright-Java e2e test (sign in → hello page) on phone
       and desktop viewports. *(PR #32. The cache is a JDK 25 AOT cache, see D17. Cold start
@@ -360,3 +362,4 @@ meal-magician/
 | 2026-11-01 | CI: `ci.yml` (Lint & test, Migrations, E2E placeholder + gated Trivy), `docs-check.yml` with `check_docs_touched.sh`, `wiki-sync.yml` with the page map and `sync-wiki.sh`, `dependabot.yml`. Scripts tested against throw-away repos; workflows pass actionlint. | #16, #29 |
 | 2026-11-01 | Owner OK'd required checks: `Lint & test`, `Migrations (Postgres)`, `E2E`, `Docs updated` are now required on `main`. Wiki sync failed its first run (no wiki git repo yet); owner will create the first page later. | #16 |
 | 2026-11-01 | `Dockerfile` (digest-pinned Temurin 25, uid 10001, JDK 25 AOT cache from a training run, bash `HEALTHCHECK`), `compose.e2e.yml` with `mock-oauth2-server` as the stub OIDC provider, `src/e2eTest` with one Playwright sign-in test at phone and desktop size, `task build` and `task test-e2e` made real, the E2E and Trivy steps in `ci.yml` made unconditional. | #15, #32 |
+| 2026-11-01 | Guard tests: `EveryEndpointNeedsSignInTests` (calls every mapped endpoint anonymously) and `DocsToolingTests` (`CLAUDE.md` ≤ 100 lines, router paths, rule globs with a `NOT_YET` list that fails when stale); each also runs on a broken example. `task docs:check` made real. | #14, #33 |

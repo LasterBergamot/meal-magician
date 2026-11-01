@@ -28,7 +28,7 @@ What exists in `main` today:
 - **Taskfile (#10):** `Taskfile.yml` is the one command surface for people, agents and CI
   (`task --list`). Working today: `install`, `doctor`, `lint`, `format`, `serve`, `test`,
   `test:fast`, `up`, `down`, `serve:pg`, `migrate-check`, `build` and `test-e2e` (#15).
-  `docs:check` exists but stops with a message naming the issue that implements it (#14). Why it exists: everyone, including CI, runs the same commands,
+  `docs:check` (#14) runs `DocsToolingTests` alone; the full `task test` runs it too. Why the tasks exist: everyone, including CI, runs the same commands,
   so "works on my machine" and "passes in CI" mean the same thing.
   - `scripts/doctor.sh` (`task doctor`) prints `ok`/`FAIL` per tool: Java 17+ (only to start
     Gradle), Task, Docker with a running daemon, Compose 2.24+; `gh`, `gcloud`, `apm` and the

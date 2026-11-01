@@ -11,6 +11,13 @@ no business modules yet.
   its public API, everything else goes in `internal/` and other modules may not import it.
   `ModularityTests` fails the build on a violation and writes module docs to
   `build/spring-modulith-docs`.
+- **Guard tests (#14)** enforce the conventions so nobody has to remember them:
+  `EveryEndpointNeedsSignInTests` calls every mapped controller endpoint anonymously and fails if
+  one outside `SecurityConfig.PUBLIC_PATHS` answers with anything but a redirect to the login page
+  (a new controller is covered automatically); `DocsToolingTests` checks the agent docs (see
+  [[Current State: Everything Else]]); `UiGuardTest` covers templates and message bundles
+  ([[Current State: Frontend]]). Each has tests that run the check on a deliberately broken example.
+  The tenant-isolation guard comes with the first household endpoint.
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
   "today" instead of calling `LocalDate.now()`, so tests can fix the date.
 - **Config:** `application.yml` turns on virtual threads and graceful shutdown, and tells JTE to

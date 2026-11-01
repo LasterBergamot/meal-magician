@@ -11,8 +11,11 @@
 
 - A rule file **without** `paths:` loads at every session start; always give it `paths:`.
 - Explore and Plan subagents load neither `CLAUDE.md` nor the rules: name the rule file in their prompt.
-- Globs are relative to the repo root. Until the code exists most globs match nothing; a docs
-  tooling test (Phase 0) should fail on dead globs, missing router paths, or `CLAUDE.md` > 100 lines.
+- Globs are relative to the repo root. Until the code exists some globs match nothing;
+  `DocsToolingTests` (`task docs:check`) fails on dead globs, missing router paths, a rule file
+  without `paths:` or not named in `CLAUDE.md`, and `CLAUDE.md` > 100 lines. A glob that matches
+  nothing yet goes into its `NOT_YET` list with a reason; the test fails once it starts matching,
+  so remove it then.
 
 Which file to update when you change something:
 
