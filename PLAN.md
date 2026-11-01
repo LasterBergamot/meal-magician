@@ -143,7 +143,12 @@ Sub-issues filed 2026-11-01: #41 → #42, #43, #44 (blocked by #41); #45 stands 
       Opening the link only shows the household; joining is a separate POST. `/join/**` is not
       public: an anonymous visitor signs in first and Spring Security brings them back. The
       address stays on the allowlist when an invite is revoked; removing it is #45.)*
-- [ ] #43 Members: list, remove (owner), leave, transfer ownership. The last owner can't leave.
+- [x] #43 Members: list, remove (owner), leave, transfer ownership. The last owner can't leave.
+      *(PR #50. Transfer is a hand-over: the chosen member becomes OWNER and the asking owner a
+      plain MEMBER, in one transaction, so "last owner" in practice means "the owner". Changes to
+      who is in charge lock the household row first, so two owners leaving at once cannot both
+      pass the check. A removed member needs no extra step to lose access: the household is
+      re-checked against `membership` on every request. The page is `/households/members`.)*
 - [ ] #44 Tenant-isolation test (404 for another household's data), plus 403 tests for owner-only
       actions. *(The household endpoints already have theirs in `HouseholdPagesTest`; #44 is the
       reusable guard that every later endpoint registers with.)*
@@ -386,5 +391,6 @@ meal-magician/
 | 2026-11-01 | **v0.1.0 deployed** to Cloud Run (`europe-west3`, max 1, no minimum) against Neon: `release.yml` run 2 passed (run 1 failed on the `@` delimiter, PR #35). Health 200; Flyway applied V1–V3; first start 6.7 s. Sign-in on a phone and scale to zero still to confirm. | #18, #36 |
 | 2026-11-01 | CI speed: BuildKit `type=gha` layer cache for the E2E image, Chromium and Tailwind caches, `task test-e2e:run`, Trivy scans the e2e image. E2E 3m19s → 2m16s warm (4m40s on the cold first run). | #37, #38 |
 | 2026-11-01 | CI: the `E2E` job skips its image build, Playwright and Trivy steps on PRs that change only documentation (`scripts/e2e_needed.sh`); the job and its check name stay, so branch protection is untouched. | #37, #39 |
+| 2026-11-01 | Members (#43): `MemberService` (list, remove, leave, hand over ownership; the household row is locked while the owner changes), `identity.UserDirectory` for names and addresses, the `/households/members` page with confirm dialogs, a link to it on `/households`. | #43, #50 |
 | 2026-11-01 | Invites (#42): `invite` table (V5, hash only), `InviteService` (create, list, revoke, preview, join; single use by a guarded `UPDATE`), `identity.AllowlistEditor` so an invited address may sign in, the owner's invite section on `/households` and the `/join/<code>` page. v0.1.1 (households) released to Cloud Run the same day. | #18, #42, #49 |
 | 2026-11-01 | Phase 1 started: sub-issues #41–#45 filed under epic #2. Households (#41): `household`/`membership` tables (V4), `HouseholdService` with the 404/403 rules, the session-based `CurrentHouseholdResolver` and `CurrentHousehold` controller parameter, the `/households` page (create, rename, switch), the current household in the header. Also confirmed with Cloud Monitoring that the Cloud Run service had scaled to zero ~15 min after the v0.1.0 deploy (Neon suspend still the owner's to confirm). | #18, #41, #46 |

@@ -2,9 +2,9 @@
 
 Planned backend work, by `PLAN.md` phase. Move items to [[Current State: Backend]] when they land.
 
-- **Phase 1:** the rest of the `household` module: member management (#43), the reusable
-  tenant-isolation guard test (#44), and the allowlist admin page (#45). Households themselves
-  (create, rename, switch, OWNER/MEMBER) landed in #41 and email-bound invites in #42.
+- **Phase 1:** the rest of the `household` module: the reusable tenant-isolation guard test (#44)
+  and the allowlist admin page (#45). Households themselves (create, rename, switch,
+  OWNER/MEMBER) landed in #41, email-bound invites in #42 and member management in #43.
 - **Phase 2:** `catalog` module: meals, tags, search, archive.
 - **Phase 3:** `planning` module: slots per date, week queries, optimistic locking.
 - **Phase 4:** copy day/week, `PlanTemplate` (DAY/WEEK), occasions and occasion templates.

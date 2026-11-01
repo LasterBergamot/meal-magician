@@ -31,8 +31,7 @@ the first part of the `household` module (create, rename, switch); no other busi
   404) and pass `id()` to every repository call. `household/internal` holds the entities
   (`Household` with `@Version`, `Membership`), the repositories and `HouseholdController`.
   `shared.web.HouseholdNavSource` is how the header learns the household without `shared`
-  depending on `household` (the same trick as `CsrfMetaSource`). Member management and the
-  reusable tenant guard are #43 and #44.
+  depending on `household` (the same trick as `CsrfMetaSource`). The reusable tenant guard is #44.
 - **Invites (#42), module `household`:** an owner invites an e-mail address and shares a
   `/join/<code>` link through any messenger (no e-mail is sent). `InviteService` is the public entry
   point: `create` (owner only; validates the address, adds it to the allowlist with source `INVITE`
@@ -53,6 +52,27 @@ the first part of the `household` module (create, rename, switch); no other busi
   - **Revoking** keeps the address on the allowlist (removing it is the admin page, #45).
   - `/join/**` needs a session like every page: an anonymous visitor is sent to `/login` and
   Spring Security returns them to the link after Google sign-in. Not rate limited yet (Phase 6).
+- **Members (#43), module `household`:** `MemberService` is the public entry point. `list` (any
+  member; owners first, then by name; names and addresses come from `identity.UserDirectory`, which
+  hands out `UserProfile` records instead of entities), `remove` (owner only), `leave` (any member)
+  and `transferOwnership` (owner only).
+  - **Rules:** the last owner cannot leave (`MemberRefusedException` with `LAST_OWNER`, HTTP 409
+    outside the page); an owner cannot remove or hand over to themselves (`SELF`, so leaving is the
+    one way out); a person who is not in the household is `MemberNotFoundException` (404), the same
+    for "never was" and "is in another household". Members get 403 on remove and transfer,
+    strangers 404.
+  - **Transfer is a hand-over:** the chosen member becomes OWNER and the asking owner a plain
+    MEMBER in one transaction, so the household is never without an owner. Co-owners can still
+    exist (the leave rule counts owners), but nothing in the app creates them.
+  - **Race safety:** each action first takes a `PESSIMISTIC_WRITE` lock on the household row
+    (`HouseholdRepository.findForUpdate`) and only then checks the caller's role, so two owners
+    leaving at the same moment run one after the other and the second is refused. The deletes and
+    role changes are bulk `UPDATE`/`DELETE` statements that report a row count (0 means "not in this
+    household"). `MemberConcurrencyTest` covers it on H2, `PostgresMemberTests` runs the queries on
+    Postgres.
+  - **Losing access** needs no code: `CurrentHouseholdResolver` re-checks the membership on every
+    request, so a removed person's next request for that household is 404 (or falls back to their
+    other household).
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
   "today" instead of calling `LocalDate.now()`, so tests can fix the date.
 - **Config:** `application.yml` turns on virtual threads and graceful shutdown, and tells JTE to
