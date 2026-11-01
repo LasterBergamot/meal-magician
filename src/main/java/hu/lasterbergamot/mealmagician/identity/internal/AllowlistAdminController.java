@@ -78,7 +78,8 @@ class AllowlistAdminController {
   }
 
   /**
-   * Stops an address from signing in; the person's next sign-in is refused.
+   * Stops an address from signing in and ends the person's live sessions, so they are sent to the
+   * sign-in page on their next request (#59).
    *
    * @param email the address to remove
    * @param request the current request

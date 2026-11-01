@@ -171,12 +171,14 @@ Sub-issues filed 2026-11-01: #41 → #42, #43, #44 (blocked by #41); #45 stands 
 - [x] #45 Admin page for the allowlist (instance admins only). *(PR #56. `/admin/allowlist` lists the
       bootstrap admins (fixed) and the `allowed_email` rows, adds and removes addresses. The
       `/admin/**` rule in `SecurityConfig` (`hasRole("ADMIN")`) gives non-admins 403; admins get a
-      header link. Removing an address blocks the next sign-in only: a live session lasts up to 30
-      days, so ending it is an open follow-up.)*
-- [ ] #59 End a person's live sessions when their address is removed from the allowlist (child
-      of #2, `type:security`, filed 2026-11-01). Delete the sessions through
-      `FindByIndexNameSessionRepository`; first check what the principal name is. The
-      alternative, checking the allowlist on every request, costs a read per request.
+      header link. Removing an address blocked only the next sign-in at first; #59 now ends the live
+      sessions too.)*
+- [x] #59 End a person's live sessions when their address is removed from the allowlist (child
+      of #2, `type:security`). *(PR #67. `AllowlistAdminService.remove` maps the address to its
+      `app_user` rows and deletes the sessions whose principal name is that person's Google `sub`
+      through `FindByIndexNameSessionRepository`, in the same transaction as the allowlist delete.
+      Known limit: a sign-in that read the allowlist just before the removal committed could still
+      create a session; the window is milliseconds.)*
 
 ### UI redesign (`M1`, epic #57) — **next, before Phase 2**
 Full plan: [`plan-ui-redesign.md`](plan-ui-redesign.md) (design system, shell, components, phases
@@ -479,3 +481,4 @@ meal-magician/
 | 2026-11-01 | App icons: a cartoon wizard favicon (`favicon.svg`, `favicon.ico`) and the PWA icon set replace the placeholder plate, drawn by `scripts/generate-icons.py` (replaces the ImageMagick script); the `<link>` for the SVG in the layout. Part of the UI redesign (R7), landed early. | #57, #61 |
 | 2026-11-01 | Backups planned (#62, child of #7): nightly encrypted `pg_dump` to a Cloud Storage bucket in Frankfurt through GitHub Actions + WIF, tested restore into Neon, after Phase 5 and before Phase 7. Owner chose the wizard as the in-app brand mark too (UI-D11). Docs only. | #62 |
 | 2026-11-01 | Planned the work for parallel subagents at the owner's request (D24): the redesign split into five waves with a file-ownership table (`plan-ui-redesign.md` §7), Phase 2 and 3 each split into a backend part that starts now (B2, B3; Flyway V6/V7 reserved) and pages that wait for R4, and a three-track schedule in §9. Docs only. | #57 |
+| 2026-11-01 | Wave 1 started (D24): sub-issues #64 (R1), #65 (R2a, blocked by #64) and #66 (B2 catalog backend, under #3) filed; one worktree subagent each, plus #59. #59 landed: removing an address from the allowlist now ends that person's live sessions. | #57, #59, #64, #65, #66, #67 |
