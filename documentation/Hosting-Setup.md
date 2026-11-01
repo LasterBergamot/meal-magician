@@ -244,9 +244,13 @@ empty value), a missing IAM right or a wrong `DB_URL`.
 
 ## Backups
 
-Neon keeps a point-in-time restore window (check the free-plan length and note it here). In
-addition, `db-backup.yml` (Phase 6) runs `pg_dump`, encrypts it with `age` and stores it; do a
-restore drill and document it. The `age` key is created by the owner in Phase 6.
+Neon's Free plan keeps a point-in-time restore window of only about 6 hours, so it covers a
+mistake noticed the same day and nothing more. Real backups are planned in #62 (Phase 6, after the
+last regular feature and before the AI assistant): a nightly `db-backup.yml` workflow dumps the
+database as a read-only role, test-restores the dump, encrypts it with `age` and uploads it to a
+Cloud Storage bucket in `europe-west3` through a create-only service account. The owner's setup
+for it (bucket, service account, Neon role, `age` key) and the restore steps will be written here
+or in their own runbook when #62 is built.
 
 ## Rotating a secret
 

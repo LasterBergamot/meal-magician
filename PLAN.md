@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phase 0 in progress** (#9–#13 done, #16 in review) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phase 1 done; UI redesign (#57) next, worked in parallel waves (§9)** · Phase 0 owner checks open (#16, #18) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -66,6 +66,7 @@ after a server.
 | D22 | **Agents may merge their own PRs for planned work.** For an issue in this plan, an agent pushes its feature branch, opens the PR and merges it (merge commit) once every required check is green (before CI exists, #16: once `task lint` and `task test` pass locally). Repo settings, Railway, Google Cloud and anything outside the plan still need the owner's OK. Goal: the owner does one setup session and then only reviews results. | Decided (2026-10-31) |
 | D23 | **One Google OAuth client** (`meal-magician`) with two redirect URIs, `localhost:8080` and the Cloud Run URL, instead of separate dev and prod clients: this is a home project, and rotating the one secret takes a minute. | Decided (2026-10-31) *(Amended 2026-11-01; was the Railway domain)* |
 | D21 | **JDK: Eclipse Temurin 25** (Adoptium's OpenJDK build), used the same way everywhere. The **Gradle wrapper** (`./gradlew`, committed) pins Gradle. The **Gradle toolchain** (`languageVersion = 25`, `vendor = ADOPTIUM`) with the foojay resolver plugin downloads the JDK automatically, so nobody installs Java 25 by hand. The container uses `eclipse-temurin:25-jdk` for the build and `eclipse-temurin:25-jre` at runtime, both pinned by digest. Railway runs our image, so production uses exactly that JRE: there's no separate host JVM to match. | Decided |
+| D24 | **Parallel work with subagents, in waves.** Work that touches different files runs at once: one subagent per issue, each in its own git worktree and branch. The session the owner talks to is the coordinator: it files a wave's issues first, gives every subagent the list of files it owns (one writer per file per wave), and merges the PRs itself, one at a time, rebasing on `main` first when `main` has moved (branch protection does not require up-to-date branches). Workers never append to the checklists or progress logs; the coordinator does. At most five subagents at once, across all tracks. Local `task test-e2e` uses fixed ports, so parallel workers leave E2E to CI. The UI waves and file table are in `plan-ui-redesign.md` §7; the tracks are in §9 below. | Decided (owner asked, 2026-11-01) |
 
 ---
 
@@ -179,20 +180,37 @@ Sub-issues filed 2026-11-01: #41 → #42, #43, #44 (blocked by #41); #45 stands 
 
 ### UI redesign (`M1`, epic #57) — **next, before Phase 2**
 Full plan: [`plan-ui-redesign.md`](plan-ui-redesign.md) (design system, shell, components, phases
-R0–R9). Epic #57 was filed 2026-11-01; its sub-issues are filed as each item starts, R1 first, and
-the `R#` ids in that file are replaced with the real numbers then.
-- [ ] R1 Tokens and base CSS, then R2 icons and `ui/` components and R3 sheet/dialog in parallel,
-      then R4 shell and navigation, then R5 restyle of the existing pages, R6 theme preference,
-      R7 PWA polish, R8 docs, R9 close-out.
-- Order: Phase 2 pages are built from these components, so Phase 2 starts once R1–R4 have landed;
-  Phase 3's week view must not start before them.
+R0–R9). Epic #57 was filed 2026-11-01; its sub-issues are filed as each wave starts, and the `R#`
+ids in that file are replaced with the real numbers then.
+- [x] R0 Plan and design agreed. *(PR #55, PR #60.)*
+- [ ] Wave 1: R1 tokens, fonts and base CSS; R2a icons, button and the `/dev/ui` page (merged after
+      R1). R7 app icons landed early (PR #61); its manifest colours moved into R1.
+- [ ] Wave 2: R2b content and status components, R2c form components, R3 sheet and confirm dialog.
+- [ ] Wave 3: R4 shell and navigation (the only UI item).
+- [ ] Wave 4: R5a sign-in/error/hello, R5b household pages, R5c admin allowlist, R6 theme preference,
+      plus the Phase 2 pages.
+- [ ] Wave 5: R5d remove the old styles, R8 docs final pass, then R9 close-out with the owner.
+- Order: Phase 2 and 3 **pages** are built from these components, so they start once R1–R4 have
+  landed (Phase 2 pages in Wave 4, Phase 3's week view after them). Their **backend** (module,
+  migrations, services, tests) does not wait: it runs beside the waves (§9). *(Amended 2026-11-01;
+  was: Phase 2 as a whole starts once R1–R4 have landed.)*
 
 ### Phase 2 — Meal library (`M1`, epic #3)
+Filed as two sub-issues so the backend can start before the redesign is done (D24, §9): **B2
+catalog backend** (the `catalog` module, Flyway **V6** `meal`/`tag`/`meal_tag`, `MealService` for
+create, quick-add, edit, archive, tags, search and filter, the `MealChanged` event, tenant-scoped
+queries, tests; no controllers or templates) and **the meal pages** (controllers, templates built
+from the `ui/` components, `TenantEndpoints` registrations, e2e; after R4). "Recently used first"
+needs `meal_slot`, so it lands with the pages once B3 is in.
 - [ ] Meal CRUD: name, notes, recipe URL, tags, which occasion types it suits, archive.
 - [ ] Tags per household; search and filter (name, tag), recently used meals first.
 - [ ] Quick-add from a phone (name only, add the details later).
 
 ### Phase 3 — Weekly plan (`M1`, epic #4)
+Also split (D24, §9): **B3 planning backend** (the `planning` module, Flyway **V7** `meal_slot`
+with a foreign key to `meal`, so after B2; the seven-date week query, add/move/reorder/remove a
+slot, the note, `@Version` with a typed conflict exception the page turns into 409, `SlotPlanned`;
+no controllers or templates) and **the week view** (after R4 and the Phase 2 pages).
 - [ ] Week view: a grid on desktop, a list of days on phone; ISO-week navigation; today highlighted.
 - [ ] Slots: BREAKFAST / LUNCH / DINNER / SNACK. Add a meal from the library or create one inline;
       a note per slot; reorder and move slots.
@@ -212,9 +230,14 @@ the `R#` ids in that file are replaced with the real numbers then.
 - [ ] PWA polish: icons, theme colour, install hint. Lighthouse check on a phone.
 
 ### Phase 6 — Hardening (`M2 – Hardening`, epic #7)
-- [ ] Backups: Neon's point-in-time restore window (check the free-plan limit), plus `db-backup.yml` (scheduled
-      `pg_dump` → encrypted with `age` → artifact or object storage). One **restore drill**,
-      documented.
+- [ ] #62 Backups: nightly `db-backup.yml` in GitHub Actions: `pg_dump` as a read-only role, a test
+      restore in the job, encrypted with `age`, uploaded through WIF by a create-only service
+      account to a Cloud Storage bucket in `europe-west3` (daily/weekly/monthly lifecycle), plus a
+      backup before each release; `task db:restore` into a new Neon branch, a new project or the
+      local Postgres; one **restore drill**, documented. Cost: under a cent a month. Neon Free's own
+      restore window is only ~6 hours, which is why this is needed. **When:** after the last regular
+      feature (Phase 5), before Phase 7 (owner, 2026-11-01). *(Amended 2026-11-01; was: target
+      "artifact or object storage", undecided. GitHub artifacts are out: the repo is public.)*
 - [ ] GDPR basics: export my data, delete my account; privacy note page.
 - [ ] Security headers and CSP review, rate limit on invite and join, request size limit.
 - [ ] `repo-audit` run; fix or file its findings.
@@ -400,9 +423,25 @@ meal-magician/
    JTE, the Gradle plugins, Testcontainers, Playwright) and pin them in the version catalog.
 6. Before building a page of Phase 2–5, check `plan-ui-redesign.md`: the shell, tokens and
    components it defines come first, so a page is not built twice.
-7. **Next up (2026-11-01):** the UI redesign, epic #57, starting with R1. File the R1 sub-issue
-   with the `new-issue` skill and link it to #57. #59 (live sessions after an allowlist removal,
-   small, `priority:p1`) can go before or beside R1. #58 (smoke test) waits for #18.
+7. **Next up (2026-11-01; amended the same day for parallel subagents, D24; was: R1 first, #59
+   before or beside it):** three tracks run at once. Each row is a wave; a wave starts when the
+   one above it in the same column has merged. The coordinator files a wave's sub-issues (UI ones
+   under #57, B2 under #3, B3 under #4) before starting its subagents.
+
+   | Wave | UI track (`plan-ui-redesign.md` §7) | Backend track | Owner (no agent can do these) |
+   |---|---|---|---|
+   | 1 (now) | R1 tokens → R2a icons/button/`/dev/ui` (merged after R1) | #59 live sessions; B2 catalog backend (V6) | #16 create the wiki's first page; #18 sign in on a phone and confirm Neon suspends |
+   | 2 | R2b, R2c, R3 | B3 planning backend (V7, after B2) | — |
+   | 3 | R4 shell (alone in the UI) | B3 if not done; #58 smoke test once #18 is closed | — |
+   | 4 | R5a + R5c (one agent), R5b, R6 | Phase 2 meal pages (uses R4 and B2) | confirm UI-D8 (theme cookie) before R6 |
+   | 5 | R5d, R8 | Phase 3 week view (uses R4, B2, B3) | R9 walk-through on a phone and a laptop |
+
+   Never more than five subagents at once. Flyway versions are reserved so parallel branches do not
+   collide: V6 = B2, V7 = B3; anything else takes the next free number after rebasing (Flyway
+   refuses two files with one version, so the tests catch a clash). #13 (PWA install on a real
+   phone) and #17 are still open on GitHub only for owner checks; the phone install is part of R9.
+   #27 stays parked. Backups (#62) come after Phase 5 and before Phase 7 (owner's choice): until
+   then only Neon's ~6-hour restore window protects the data.
 
 ---
 
@@ -438,3 +477,5 @@ meal-magician/
 | 2026-11-01 | Allowlist admin page (#45): `AllowlistAdminController`/`AllowlistAdminService` in `identity/internal`, `/admin/**` restricted to `ROLE_ADMIN`, bootstrap admins shown but not removable, `ViewContext.admin` for the header link. Phase 1 is complete. | #45, #56 |
 | 2026-11-01 | Filed three issues at the owner's request: the **UI redesign** epic #57 (made next on the list, before Phase 2), the post-deploy smoke test #58 (runs once per release in `release.yml`, before the tag; owner agreed with the placement) and #59 (end live sessions when an address leaves the allowlist, child of #2). Docs only. | #57, #58, #59 |
 | 2026-11-01 | App icons: a cartoon wizard favicon (`favicon.svg`, `favicon.ico`) and the PWA icon set replace the placeholder plate, drawn by `scripts/generate-icons.py` (replaces the ImageMagick script); the `<link>` for the SVG in the layout. Part of the UI redesign (R7), landed early. | #57, #61 |
+| 2026-11-01 | Backups planned (#62, child of #7): nightly encrypted `pg_dump` to a Cloud Storage bucket in Frankfurt through GitHub Actions + WIF, tested restore into Neon, after Phase 5 and before Phase 7. Owner chose the wizard as the in-app brand mark too (UI-D11). Docs only. | #62 |
+| 2026-11-01 | Planned the work for parallel subagents at the owner's request (D24): the redesign split into five waves with a file-ownership table (`plan-ui-redesign.md` §7), Phase 2 and 3 each split into a backend part that starts now (B2, B3; Flyway V6/V7 reserved) and pages that wait for R4, and a three-track schedule in §9. Docs only. | #57 |

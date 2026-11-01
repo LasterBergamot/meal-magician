@@ -1,6 +1,6 @@
 # Plan: Meal Magician UI redesign — a storybook look for the whole app
 
-Status: **Planned, not started** · Written: 2026-11-01 · Owner: @LasterBergamot
+Status: **Planned, not started; split into waves for parallel subagents (§7)** · Written: 2026-11-01 · Owner: @LasterBergamot
 
 This file is the working plan for giving Meal Magician a new look and a new way to move around:
 a design system (colours, type, shapes, components), an app shell (a bottom tab bar on phones, a
@@ -55,6 +55,7 @@ changes no domain logic.
 | UI-D8 | **Theme preference** is a cookie `mm_theme` (`light`\|`dark`\|`system`), like `mm_lang` (D14), read by the server so `<html data-theme>` is right on first paint (no flash). Per user in the DB comes later, together with the per-user language. | Proposed — confirm with the owner when R6 starts |
 | UI-D9 | **UI copy** stays Hungarian by default, English selectable (D14); every new string goes in both bundles. Tone: warm, short, a touch whimsical in empty states and success moments, never in errors or destructive confirmations. | Decided |
 | UI-D10 | **Accessibility is a gate, not a nice-to-have:** the contrast pairs in Appendix C are checked by a test in both themes; touch targets ≥ 44 px (the `sm` button is the one pointer-only exception); status is never colour alone; visible 3 px focus ring; `prefers-reduced-motion` turns every transition and animation off. | Decided |
+| UI-D11 | **Brand mark = the wizard.** The cartoon wizard on a gold tile (`favicon.svg`, PR #61) is both the app icon and the logo inside the app (sign-in, sidebar, top bar). | Decided (owner, 2026-11-01) *(was: a `wand` icon in a violet rounded tile)* |
 
 The visual reference is a private design-system artifact in the owner's Claude account
 (`https://claude.ai/artifact/XAHNAEX9ZGGhGpp2FwTMXU`, "Meal Magician Design System"; light/dark
@@ -154,8 +155,11 @@ the design-system names; the CSS variables carry the prefix `--mm-` (Appendix A)
 - **Today:** a gold `accent` fill (column header on desktop, number disc on the phone week strip)
   plus a "Today" badge. Gold is **never text**.
 - **Sparkles:** the filled, outlined `sparkle` icon (`text-accent` with a 1.5 px `outline` stroke),
-  on the sign-in page, empty states, the "Today" badge and occasion cards. A `wand` icon in a
-  violet rounded tile is the brand mark.
+  on the sign-in page, empty states, the "Today" badge and occasion cards. The **brand mark** is
+  the cartoon wizard on a gold tile, the same artwork as the app icon (UI-D11): on the sign-in page,
+  in the sidebar header and in the phone top bar, as `<img src="/icons/favicon.svg" alt="">` next
+  to the wordmark (it is decorative there, the wordmark carries the name). The `wand` icon stays in
+  the icon set for actions, not as the logo.
 - **No emoji** as decoration or UI, no blurred shadows, no gradients, no coloured left borders on
   cards.
 
@@ -268,10 +272,14 @@ design-system names. The behaviour column is the contract.
   `<link rel="preload" as="font" type="font/woff2" crossorigin>` for the two used above the fold.
   Record each file's source URL, licence (SIL OFL 1.1) and SHA-256 in `static/fonts/FONTS.md`
   (like `static/js/VENDORED.md`) and add the licence texts.
-- `static/sw.js`: add `fonts` to `STATIC_PATHS` and bump `CACHE` to `mm-static-v2`.
+- `static/sw.js`: add `fonts` to `STATIC_PATHS` and bump `CACHE` to `mm-static-v2` (in R1, with
+  the fonts).
 - `manifest.webmanifest`: `theme_color` → `#6d3fe0`, `background_color` → `#f8f5ff`; `<meta name="theme-color">`
-  in `base.jte` gets a light and a dark value (`media="(prefers-color-scheme: …)"`). Regenerate the
-  icons (192, 512, maskable 512, apple-touch 180) with the `wand` mark on a violet outlined tile.
+  in `base.jte` gets a light and a dark value (`media="(prefers-color-scheme: …)"`) (both in R1).
+  The icons are done: a cartoon wizard on a gold outlined tile (`favicon.svg`, `favicon.ico`, 192,
+  512, maskable 512, apple-touch 180), drawn by `scripts/generate-icons.py` (PR #61). *(Amended
+  2026-11-01; was: the `wand` mark on a violet outlined tile.)* `/favicon.ico` lies outside
+  `STATIC_PATHS`, which is fine: browsers cache it themselves.
 - `documentation/References.md`: add rows for Fredoka, Nunito and the OFL.
 
 ### 6.3 Templates, JS and CSP
@@ -317,63 +325,181 @@ sub-issues, and the `R#` ids below are replaced with the real numbers then. Bran
 agent merge its own PR for planned work once every required check is green, **once the owner has
 approved this plan** (the owner approved it by asking for it, 2026-11-01).
 
-Order matters where it says so; the rest can run in parallel on separate branches that touch
-different files.
+The items are grouped into **waves** so that several subagents can work at once (§7.1). Items in
+one wave touch different files and run in parallel, each in its own git worktree and on its own
+branch; a wave starts when the waves before it have been merged. *(Amended 2026-11-01; was: one
+list R0–R9 with R2 ∥ R3 and R5/R6/R7 as the only parallel steps. R2 and R5 are now split by file,
+R7's rest moved into R1, and each Alpine component and shared template has one owner per wave.)*
 
-- [ ] **R0 Plan and design agreed.** This file, the design-system artifact, the pointers in
-      `PLAN.md`, `CLAUDE.md`, `README.md`, `documentation/Roadmap-Frontend.md`. *(This PR.)*
-- [ ] **R1 Tokens and base CSS** *(first; everything depends on it).* Appendix A into `app.css`;
+- [x] **R0 Plan and design agreed.** This file, the design-system artifact, the pointers in
+      `PLAN.md`, `CLAUDE.md`, `README.md`, `documentation/Roadmap-Frontend.md`. *(PR #55; epic #57
+      and "next in `PLAN.md`" in PR #60.)*
+
+**Wave 1: start now.**
+
+- [ ] **R1 Tokens, fonts and base CSS** *(everything depends on it).* Appendix A into `app.css`;
       fonts and `@font-face` (§6.2); the page background pattern; `[data-theme]` selection; the
-      `@source` lines unchanged. Add the contrast test (§6.4). No template changes yet except the
-      `<html data-theme>`/theme-color metas. *Accept:* the app still renders; `task test` passes with the
-      new test; both themes switch by editing `data-theme` in dev tools.
-- [ ] **R2 Icons and the `ui/` foundation** *(after R1).* `ui/_icon.jte` with every Appendix B path;
-      `ui/_button`, `_badge`, `_chip`, `_card`, `_row`, `_avatar`, `_alert`, `_field`, `_select`,
-      `_search`, `_empty`, `_skeleton_rows`, `_slot_chip`, `_slot_dot`, `_segmented`. A throw-away
-      `/dev/ui` page (dev profile only, not in the endpoint-auth list) renders every component in
-      every state, as a living style guide for agents and e2e. *Accept:* `UiGuardTest` green; the page
-      shows all components in both themes.
-- [ ] **R3 Sheet, dialog and Alpine components** *(after R1; parallel with R2).* `ui/_sheet.jte`,
-      `ui/_confirm.jte`, Alpine `sheet`, `theme`, `shell`; focus trap and Escape; swipe-down on
-      phone. *Accept:* keyboard e2e test opens, traps, closes and restores focus.
-- [ ] **R4 Shell and navigation** *(after R2 and R3).* `layout/_shell`, `_tabbar`, `_sidebar`,
-      `_topbar`, `_household_switcher`; `ViewContext` additions; `base.jte` wraps the shell for
-      signed-in pages; hide tabs whose page does not exist yet; the household switcher in both
-      shells; sign-out button and the stored per-user language hook (the Roadmap-Frontend "Phase 0
-      rest" items, if the owner wants them in this PR). *Accept:* phone and desktop e2e show the right
+      `@source` lines unchanged. In `layout/base.jte` only the `<head>` and the `<html>` tag change:
+      `data-theme`, the light and dark `theme-color` metas and the font preloads. `sw.js`: `fonts`
+      in `STATIC_PATHS` and `mm-static-v2` (moved here from R7, because R1 adds the fonts). The
+      `manifest.webmanifest` colours (`theme_color` `#6d3fe0`, `background_color` `#f8f5ff`) and
+      the matching `PwaAssetsTest` expectation (moved here from R7, the rest of which landed early).
+      The
+      `References.md` rows for Fredoka, Nunito and the OFL. Add the contrast test (§6.4).
+      *Accept:* the app still renders; `task test` passes with the new test; both themes switch
+      by editing `data-theme` in dev tools.
+- [ ] **R2a Icons, button and the `/dev/ui` page** *(written beside R1, merged after it).*
+      `ui/_icon.jte` with every Appendix B path, `ui/_button.jte` (all variants and sizes) and
+      `ui/_fab.jte`; the `/dev/ui` page (dev profile only, not in the endpoint-auth list), a living
+      style guide for agents and e2e. Its template `dev/ui.jte` includes one section fragment per
+      later item, created here as empty stubs: `dev/_content.jte` (R2b), `dev/_forms.jte` (R2c),
+      `dev/_overlays.jte` (R3), so Wave 2 fills its own files and never edits the same template.
+      The button is here, not in R2b, because the sheet, the confirm dialog, the alert and the
+      empty state all contain buttons. The utilities it uses (`bg-brand`, `shadow-sticker-1`…) only
+      exist once R1 is merged: rebase on R1 and check the page in both themes before merging.
+      *Accept:* `UiGuardTest` green; `/dev/ui` shows every icon and button state in both themes.
+- [x] **R7 App icons** *(landed early).* The wizard favicon and the PWA icon set, with
+      `scripts/generate-icons.py` and the `<link rel="icon">` for the SVG. *(PR #61. The manifest
+      colours, the `theme-color` metas and `sw.js` v2 moved to R1, so all colour changes are in one
+      PR; the Lighthouse PWA check and "the icons look right on a real phone" moved to R9.)*
+
+**Wave 2: after R1 and R2a are merged.**
+
+- [ ] **R2b Content and status components.** `ui/_badge`, `_chip`, `_slot_chip`, `_slot_dot`,
+      `_card`, `_row`, `_avatar`, `_alert`, `_empty`, `_skeleton_rows`; fills `dev/_content.jte`.
+      *Accept:* every component and state on `/dev/ui` in both themes; `UiGuardTest` green.
+- [ ] **R2c Form components.** `ui/_field`, `_select`, `_search`, `_segmented`, including the 422
+      error state; fills `dev/_forms.jte`. *Accept:* as R2b.
+- [ ] **R3 Sheet and confirm dialog.** `ui/_sheet.jte`, `ui/_confirm.jte`, the Alpine `sheet`
+      component (the only `app.js` change in this wave); focus trap, Escape, swipe-down on phone;
+      fills `dev/_overlays.jte`. The `shell` and `theme` Alpine components moved to R4 and R6, so
+      `app.js` has one writer per wave. *Accept:* a keyboard e2e test on `/dev/ui` opens, traps,
+      closes and restores focus.
+
+**Wave 3: after Wave 2. One UI item only.**
+
+- [ ] **R4 Shell and navigation.** `layout/_shell`, `_tabbar`, `_sidebar`, `_topbar`,
+      `_household_switcher`; the Alpine `shell` component; `ViewContext` additions; `base.jte`'s
+      `<body>` wraps the shell for signed-in pages; hide tabs whose page does not exist yet; the
+      household switcher in both shells; sign-out button and the stored per-user language hook (the
+      Roadmap-Frontend "Phase 0 rest" items, if the owner wants them in this PR). Nothing else in the
+      UI runs beside it: every page renders inside the shell, and it uses the components of R2a–R3.
+      The backend track in `PLAN.md` §9 keeps going. *Accept:* phone and desktop e2e show the right
       navigation; `/households` no longer needs its own switch buttons.
-- [ ] **R5 Restyle the existing pages** *(after R4).* `login/page`, `error/page`+`_message`,
-      `hello/*`, and every `household/*` template (`_content`, `_create`, `_rename`, `_invites`,
-      `_members`, `join`, `members`, `page`); delete the old `brand-*`/`stone-*` usage and the old
-      scale from `app.css`; extend the `UiGuardTest` leftover check. Behaviour and routes do not change,
-      so the existing `HouseholdPagesTest` etc. stay green. *Accept:* screenshots at both sizes and
-      both themes attached to the PR; no old class left.
-- [ ] **R6 Theme preference** *(after R4).* Cookie `mm_theme` (UI-D8) read in `ViewContextAdvice`,
-      a theme control in the avatar menu (phone) and sidebar (desktop), `Alpine theme`; confirm the
-      cookie-versus-DB choice with the owner first. *Accept:* no flash of the wrong theme on reload;
-      the choice survives a restart of the app.
-- [ ] **R7 PWA polish** *(after R1; parallel).* Manifest colours, new icon set, theme-color metas,
-      `sw.js` v2 with `fonts`; `documentation/References.md` rows. *Accept:* Lighthouse PWA
-      installable; the icons look right on a real phone. *(The wizard favicon and the icon set landed
-      early in PR #61: `favicon.svg`, `favicon.ico`, the PWA PNGs and `scripts/generate-icons.py`. Still
-      open: manifest and theme-color colours, `sw.js` v2.)*
-- [ ] **R8 Docs and rules** *(with R1–R7, finish last).* Update `.claude/rules/web-ui.md` (tokens, `ui/`
-      components, shell, theme, fonts), `documentation/Current-State-Frontend.md`,
-      `Roadmap-Frontend.md`, `Newcomer-Guide.md` (where it describes templates), `README.md`; move
-      the "Phase 0 rest" and "switcher in the header" items from the roadmap to current state when they land.
-- [ ] **R9 Close-out.** Lighthouse accessibility and PWA run on a phone, an owner walk-through on a
-      phone and a laptop in both themes, `repo-audit`-style check for leftovers, final log row.
+
+**Wave 4: after R4. Four UI items plus the Phase 2 pages (`PLAN.md`); R5a and R5c are small, so
+one subagent takes both and the wave has four UI subagents.**
+
+- [ ] **R5a Restyle sign-in, error and hello.** `login/page`, `error/page` + `_message`, `hello/*`.
+- [ ] **R5b Restyle the household pages.** Every `household/*` template (`_content`, `_create`,
+      `_rename`, `_invites`, `_members`, `join`, `members`, `page`); remove the switch buttons.
+- [ ] **R5c Restyle the admin allowlist.** `admin/allowlist` + `_allowlist` (added by #45 after this
+      plan was written; same list-and-card pattern, §8).
+- *R5a–R5c:* behaviour and routes do not change, so `HouseholdPagesTest`, `AllowlistAdminPagesTest`
+  and the others stay green. *Accept:* screenshots at both sizes and both themes on the PR; no
+  `brand-\d`/`stone-` class left in the item's own templates.
+- [ ] **R6 Theme preference.** Cookie `mm_theme` (UI-D8) read in `ViewContextAdvice`, the
+      `data-theme` value in `base.jte`'s `<html>` tag, a theme control in `layout/_topbar` (avatar
+      menu) and `layout/_sidebar`, the Alpine `theme` component; confirm the cookie-versus-DB choice
+      with the owner first. *Accept:* no flash of the wrong theme on reload; the choice survives a
+      restart of the app.
+
+**Wave 5: after Wave 4.**
+
+- [ ] **R5d Remove the old styles.** Delete the `brand-50/100/600/700/800` scale from `app.css` and
+      extend `UiGuardTest` to fail on a leftover `brand-\d`/`stone-` class. Last, because it would
+      fail every page that is not restyled yet, including Phase 2 pages still in review.
+- [ ] **R8 Docs and rules: final pass.** Every item updates its own part of
+      `.claude/rules/web-ui.md` and `documentation/Current-State-Frontend.md` in its PR (the docs gate
+      wants that anyway); R8 reads them as a whole, then updates `Roadmap-Frontend.md`,
+      `Newcomer-Guide.md` (where it describes templates) and `README.md`, and moves the "Phase 0
+      rest" and "switcher in the header" items from the roadmap to current state.
+- [ ] **R9 Close-out** *(owner, after R5d and R8).* Lighthouse accessibility and PWA run on a phone,
+      the PWA installed on a real phone, an owner walk-through on a phone and a laptop in both
+      themes, a `repo-audit`-style check for leftovers, final log row.
+
+Critical path: R1 → R2a → (R2b ∥ R2c ∥ R3) → R4 → (R5a ∥ R5b ∥ R5c ∥ R6) → R5d → R9: six merge
+steps where the single list had nine, and R8 and the whole backend track (`PLAN.md` §9) run
+beside them.
+
+### 7.1 Working in parallel with subagents
+
+**Who does what.** The session the owner talks to is the **coordinator**. For each wave it:
+
+1. files the wave's sub-issues with the `new-issue` skill as children of #57, before starting
+   anyone, so the numbers exist and two agents never file or edit the board at the same time;
+2. starts one subagent per item with `isolation: "worktree"` (its own checkout and branch
+   `feat/<issue>-…`), and gives it the issue number, the item text from this section, the list of
+   files it owns (table below) and the files to read first: `CLAUDE.md`, this file,
+   `.claude/rules/web-ui.md`, `.claude/rules/tests.md`, `.claude/context/workflow.md` and
+   `pr-checklist.md`;
+3. lets each subagent run the gates and open its PR through `create-pr`, but **merges them itself,
+   one at a time, in the order the wave gives** (R1 before R2a). This is still D22 (an agent
+   merges planned work when the checks are green); one merger avoids two PRs landing on top of
+   each other unchecked (see "Merging" below);
+4. ticks the items, adds the log rows and starts the next wave.
+
+**One writer per file per wave.** A subagent edits only the files its item owns. If it needs a
+change in a file another item owns (say R2b needs a new icon), it reports that and the coordinator
+adds it to the owner's PR or to the next wave. Ownership:
+
+| File or area | W1 | W2 | W3 | W4 | W5 |
+|---|---|---|---|---|---|
+| `src/main/css/app.css` | R1 | — | R4 (shell classes, if any) | — | R5d |
+| `layout/base.jte` | R1 (`<head>`, `<html>`) | — | R4 (`<body>`) | R6 (`data-theme` value) | — |
+| `layout/_*` (shell) | — | — | R4 | R6 (theme control only) | — |
+| `static/js/app.js` | — | R3 (`sheet`) | R4 (`shell`) | R6 (`theme`) | — |
+| `ui/_icon`, `_button`, `_fab` | R2a | — | — | — | — |
+| `ui/` other components | — | R2b / R2c / R3, as listed | — | — | — |
+| `dev/ui.jte` / `dev/_<section>.jte` | R2a / stubs | each its own section | R4 (`dev/_shell.jte`, if needed) | — | — |
+| `ViewContext`, `ViewContextAdvice` | — | — | R4 | R6 | — |
+| `static/fonts/`, `sw.js` | R1 | — | — | — | — |
+| `manifest.webmanifest`, `PwaAssetsTest` | R1 | — | — | — | — |
+| `static/icons/`, `scripts/generate-icons.py` | done (PR #61); re-run the script only if the artwork changes | — | — | — | — |
+| page templates (`login`, `error`, `hello`, `household`, `admin`) | — | — | — | R5a / R5b / R5c | — |
+| `UiGuardTest` | R2a (if needed) | — | R4 (`aria-label` check) | — | R5d |
+
+**Files everyone touches** are the message bundles, `PLAN.md`, this file and the docs pages. They
+are add-only for workers, which keeps conflicts small:
+
+- **Message bundles:** keys are grouped by prefix with a blank line between groups. Add new keys to
+  the group of their prefix, or a new group for a new prefix (`ui.*`, `sheet.*`, `nav.*`,
+  `theme.*`), never at the end of the file. A conflict is resolved by keeping both sides; the
+  bundle-parity test catches mistakes.
+- **Checklists and progress logs:** the coordinator ticks items and adds log rows, in the PR it is
+  about to merge (a commit on the subagent's branch), so two PRs never append to the same table.
+- **Docs pages:** each item writes its own paragraph in `web-ui.md` and
+  `Current-State-Frontend.md`; on a conflict keep both and let R8 tidy.
+
+**Local checks.** Each subagent runs `task lint` and `task test` in its worktree (Testcontainers
+picks free ports, so these run side by side). `task test-e2e` does not: `compose.e2e.yml` binds
+the fixed ports 18080 and 18081, so only one worktree at a time can run it. Subagents leave E2E to
+the `E2E` job of their PR's CI, or the coordinator runs them one after the other. For screenshots
+with `task serve`, give each worktree its own port: `SERVER_PORT=8081 task serve`.
+
+**Merging.** Branch protection does not require a branch to be up to date with `main` before it
+merges (`strict: false`), so a PR that was green against an older `main` could merge on top of a
+change it never ran with (a removed icon, a renamed key). Before each merge the coordinator
+rebases the branch on `origin/main` if `main` moved since its CI ran, pushes with
+`--force-with-lease` and waits for green again. Every code merge also releases (#51), so a wave of
+four merges is four patch releases; that is expected.
+
+**How many at once.** At most five subagents at once, counting the backend track of `PLAN.md` §9
+(Wave 1 has four: R1, R2a, #59 and B2). More would mostly
+add rebases and CI queueing, not speed.
 
 **Adoption rule for `PLAN.md` Phases 2–5:** every new page uses the `ui/` fragments, the shell and
 the tokens, adds a section to the `/dev/ui` page for any new component, and follows the phone and
 desktop behaviour in §4–§5; a new component starts in the design-system artifact first (owner
 decides), then here. Do not start Phase 3's week view before R1–R4 land, or it will be built twice.
+The Phase 2 and 3 *backend* (module, migrations, services, tests; no controllers or templates) does
+not depend on the redesign and runs beside it (`PLAN.md` §9).
 
 ---
 
 ## 8. Screens (the target for each page)
 
-- **Sign-in:** full-height calm page, violet rounded `wand` brand mark with two sparkles, the
+- **Sign-in:** full-height calm page, the wizard brand mark (UI-D11) with two sparkles, the
   wordmark in `display`, one tagline, one large primary "Sign in with Google" button, a quiet line
   that only invited people can enter; language switch top right. A refused account gets the same page
   with a `danger` alert ("This account is not on the invite list. Ask the household owner.").
@@ -397,11 +523,11 @@ decides), then here. Do not start Phase 3's week view before R1–R4 land, or it
 - **Every UI PR:** `task lint`, `task test`, `task test-e2e`; screenshots at 375×812 and 1280×800 in
   Moonlight and Midnight attached to the PR; `PLAN.md`-style docs diff (rule file, Current-State page).
 - **R1:** the contrast test passes and fails on a bad token; both themes switch.
-- **R2/R3:** the `/dev/ui` page shows every component and state; keyboard e2e for sheet and dialog.
-- **R4/R5:** phone and desktop e2e on sign-in and households; no `brand-\d`/`stone-` left; the existing
-  household tests untouched and green.
+- **R2a–R3:** the `/dev/ui` page shows every component and state; keyboard e2e for sheet and dialog.
+- **R4/R5a–R5d:** phone and desktop e2e on sign-in and households; no `brand-\d`/`stone-` left
+  (R5d's guard); the existing household and admin tests untouched and green.
 - **R6:** reload and restart keep the theme, no flash.
-- **R7/R9:** Lighthouse (phone) accessibility ≥ 95 and installable; owner walk-through on a real phone
+- **R9:** Lighthouse (phone) accessibility ≥ 95 and installable; owner walk-through on a real phone
   and a laptop in both themes.
 
 ---
@@ -410,10 +536,12 @@ decides), then here. Do not start Phase 3's week view before R1–R4 land, or it
 
 1. Read `CLAUDE.md`, `PLAN.md` §2 and §9, `.claude/rules/web-ui.md`, `.claude/context/workflow.md`
    and `pr-checklist.md`, then this file (§2, §3, §6, §7).
-2. The epic is **#57**. File the sub-issue for the item you start (R1 first) with the
-   `new-issue` skill, as a child of #57, and branch `feat/<issue>-…`.
-3. Start with **R1**; once it is merged, R2 and R3 can run in parallel, then R4, then R5/R6/R7.
-   Two writers never touch the same files.
+2. The epic is **#57**. Work goes in **waves** (§7): the coordinator files the wave's sub-issues
+   with the `new-issue` skill as children of #57, then starts one worktree subagent per item
+   (§7.1). Working alone instead of with subagents is fine too: take the items in wave order.
+3. **Wave 1 now:** R1 and R2a (merged after R1), beside the backend items in `PLAN.md` §9.
+   Then Wave 2 (R2b, R2c, R3), Wave 3 (R4 alone), Wave 4 (R5a, R5b, R5c, R6 and the Phase 2
+   pages), Wave 5 (R5d, R8, then R9). Two writers never touch the same file (§7.1 table).
 4. Every UI PR: tokens and components from this file, copy through `messages_hu/en.properties`, no
    inline styles or scripts, tests (100 % coverage), screenshots, docs diff.
 5. Do not change `PLAN.md` decisions here. A UI-D change is an amendment in §2
@@ -427,6 +555,8 @@ decides), then here. Do not start Phase 3's week view before R1–R4 land, or it
 |---|---|---|
 | 2026-11-01 | Design agreed with the owner in a design-system artifact (two drafts: the first, warm cream/green, was rejected as "brownish"; the second is the violet/gold storybook look). This plan written; no code changed. | — |
 | 2026-11-01 | Epic #57 filed and made the next item in `PLAN.md` (before Phase 2); sub-issues are filed as each item starts. | #57 |
+| 2026-11-01 | UI-D11: the wizard is the brand mark inside the app too (owner); §3.4 and §8 updated. | #57, #61 |
+| 2026-11-01 | §7 reorganised into five waves for parallel subagents at the owner's request: R2 split into R2a/R2b/R2c and R5 into R5a–R5d (the admin page from #45 added as R5c), R7 ticked (icons landed in PR #61) and its rest (manifest colours, `theme-color` metas, `sw.js` v2) moved to R1, §6.2 amended for the wizard icon, the `shell`/`theme` Alpine components moved from R3 to R4/R6, a file-ownership table and the coordinator rules (§7.1). R0 ticked. Docs only. | #57 |
 
 ---
 
