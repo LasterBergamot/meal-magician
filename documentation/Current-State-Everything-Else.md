@@ -79,7 +79,9 @@ What exists in `main` today:
   - `compose.e2e.yml` starts the image, a pgvector Postgres and a stub OIDC provider
     (`navikt/mock-oauth2-server`) that signs in `e2e@example.test` without a login form. The
     app's `google` registration is pointed at it through `SPRING_SECURITY_OAUTH2_CLIENT_*`
-    variables, so the real `oauth2Login` code path, the allowlist and the session store run.
+    variables, so the real `oauth2Login` code path, the allowlist and the session store run. It sets
+    the profiles `dev,postgres`: the datasource variables win over the dev profile's H2, and `dev`
+    serves the `/dev/ui` style guide that the component tests (R3) open.
   - `src/e2eTest` (Playwright for Java, Gradle task `e2eTest`) opens `/`, follows the sign-in and
     checks the hello page at 390×844 and 1280×800, including that the page does not scroll
     sideways. `task test-e2e` builds the image, runs the stack, the tests and tears the stack down

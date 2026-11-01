@@ -23,6 +23,8 @@ paths:
     provider; run at phone (390×844) and desktop (1280×800) viewports. `task test-e2e` runs them
     (Gradle task `e2eTest`, outside `task test` and the coverage gate). The app greets in Hungarian
     whatever the browser's language, so assert the Hungarian text or switch the language first.
+    The stack runs with profiles `dev,postgres` (the data is still in Postgres), because the
+    component tests drive the `/dev/ui` style guide, which only the `dev` profile serves.
 - Always-present guard tests: `ModularityTests` (Modulith verify + docs),
   `EveryEndpointNeedsSignInTests` (endpoint-auth walk), `TenantIsolationTests` (tenant isolation, below), `UiGuardTest` (message bundles have equal keys, no
   hard-coded template text), `DocsToolingTests` (router paths exist, rule globs match,

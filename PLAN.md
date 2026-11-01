@@ -185,9 +185,10 @@ Full plan: [`plan-ui-redesign.md`](plan-ui-redesign.md) (design system, shell, c
 R0–R9). Epic #57 was filed 2026-11-01; its sub-issues are filed as each wave starts, and the `R#`
 ids in that file are replaced with the real numbers then.
 - [x] R0 Plan and design agreed. *(PR #55, PR #60.)*
-- [ ] Wave 1: R1 tokens, fonts and base CSS; R2a icons, button and the `/dev/ui` page (merged after
-      R1). R7 app icons landed early (PR #61); its manifest colours moved into R1.
-- [ ] Wave 2: R2b content and status components, R2c form components, R3 sheet and confirm dialog.
+- [x] Wave 1: R1 tokens, fonts and base CSS; R2a icons, button and the `/dev/ui` page (merged after
+      R1; PRs #69, #70). R7 app icons landed early (PR #61); its manifest colours moved into R1.
+- [x] Wave 2: R2b content and status components, R2c form components, R3 sheet and confirm dialog
+      (PRs #77, #76, #78).
 - [ ] Wave 3: R4 shell and navigation (the only UI item).
 - [ ] Wave 4: R5a sign-in/error/hello, R5b household pages, R5c admin allowlist, R6 theme preference,
       plus the Phase 2 pages.

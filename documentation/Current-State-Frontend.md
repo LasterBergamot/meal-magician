@@ -69,9 +69,30 @@ do nothing, so the look is still the old one.
 - `dev/ui.jte` (`DevUiController`, `/dev/ui`): the living style guide. It shows every icon, every
   button variant in every size and state, and the add button in both forms. It exists only in the
   `dev` profile (`task serve`), it needs a sign-in like every page, and production answers 404.
-  The section `dev/_overlays.jte` is empty until R3 fills it (R2b filled `dev/_content.jte`, R2c
-  `dev/_forms.jte`). To see both themes, switch the browser between light and dark (the theme
-  preference comes with R6).
+  The sections `dev/_content.jte`, `_forms.jte` and `_overlays.jte` are filled (R2b, R2c, R3). To
+  see both themes, switch the browser between light and dark (the theme preference comes with
+  R6).
+
+## Sheet and confirm dialog (R3, #75)
+
+Two overlays built on the native `<dialog>` element (plan-ui-redesign.md §5, UI-D6), so the browser
+does the heavy part: `showModal()` makes the page behind inert, puts the dialog in the top layer
+and closes it on Escape.
+- `ui/_sheet.jte`: a bottom sheet on a phone, with a grabber to drag down, and a centred dialog
+  from `md` up. It takes an `id`, the `title` (which names the dialog for screen readers), a
+  `trigger` (the control that opens it, which must have `x-on:click="show"`) and the `body`, which
+  htmx may load into. `closable` adds an X button. `role` is `dialog` or `alertdialog`.
+- `ui/_confirm.jte`: a destructive question. It is always a centred alert dialog, even on a phone,
+  with a `Cancel` button and a `danger` action. The action's `attrs` hold the request it sends
+  (`hx-post`), or `x-on:click="hide"` when nothing should be sent.
+- The Alpine component `sheet` in `static/js/app.js` adds what the browser does not do reliably:
+  Tab and Shift+Tab stay inside the dialog, focus goes back to the control that opened it when it
+  closes, and a drag down on the grabber closes a phone sheet (released past a third of its
+  height, at most 120 px; a short drag springs back). A click on the backdrop closes it too.
+- Rules for callers: a sheet is never opened from a sheet, and a confirm dialog must sit outside
+  any region that htmx swaps, or the swap removes the open dialog.
+- `/dev/ui` shows both in `dev/_overlays.jte`. `SheetAndConfirmE2ETest` drives them from the
+  keyboard at phone and desktop size, and swipes the phone sheet closed.
 
 ## Form components (R2c)
 
@@ -178,7 +199,8 @@ variables are mapped into Tailwind with `@theme inline`, so the utilities exist:
 `src/main/resources/static/js/`:
 - `htmx.min.js` 2.0.11 and `alpine-csp.min.js` 3.17.5 (Alpine's CSP build). Versions, source and
   SHA-256 are recorded in `VENDORED.md` next to them.
-- `app.js` (ours): registers the Alpine components (`menu`), adds the CSRF header to htmx
+- `app.js` (ours): registers the Alpine components (`menu`, and `sheet` for the R3 dialogs, which
+  keeps focus inside and restores it on close), adds the CSRF header to htmx
   requests from `<meta name="_csrf">` tags, and redirects to `/` on an htmx 401/403.
 - `sw-register.js` registers the service worker.
 
