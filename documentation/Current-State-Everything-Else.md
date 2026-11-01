@@ -61,8 +61,9 @@ What exists in `main` today:
   --watch=always` in the background and `./gradlew bootRun -PskipTailwind` in the foreground, and
   stops the watcher when the app stops (Ctrl-C). The `dev` profile serves static files straight
   from `src/main/resources/static`, so CSS and JS edits show after a browser reload.
-- **Icons:** `scripts/generate-icons.sh` regenerates the placeholder PWA icons with ImageMagick;
-  the PNGs are committed, so nobody needs ImageMagick for a normal build.
+- **Icons:** `scripts/generate-icons.py` draws the wizard artwork (one drawing, three framings) and
+  writes `favicon.svg`, `favicon.ico` and the PWA PNGs; it needs `pillow` and `resvg-py` from pip.
+  The outputs are committed, so a normal build needs neither.
 
 - **Container image and e2e tests (#15):**
   - `Dockerfile` is multi-stage and both base images are pinned by digest. The build stage

@@ -354,7 +354,9 @@ different files.
       the choice survives a restart of the app.
 - [ ] **R7 PWA polish** *(after R1; parallel).* Manifest colours, new icon set, theme-color metas,
       `sw.js` v2 with `fonts`; `documentation/References.md` rows. *Accept:* Lighthouse PWA
-      installable; the icons look right on a real phone.
+      installable; the icons look right on a real phone. *(The wizard favicon and the icon set landed
+      early in PR #61: `favicon.svg`, `favicon.ico`, the PWA PNGs and `scripts/generate-icons.py`. Still
+      open: manifest and theme-color colours, `sw.js` v2.)*
 - [ ] **R8 Docs and rules** *(with R1–R7, finish last).* Update `.claude/rules/web-ui.md` (tokens, `ui/`
       components, shell, theme, fonts), `documentation/Current-State-Frontend.md`,
       `Roadmap-Frontend.md`, `Newcomer-Guide.md` (where it describes templates), `README.md`; move

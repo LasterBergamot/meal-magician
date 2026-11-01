@@ -73,7 +73,9 @@ class PwaAssetsTest {
             "/js/alpine-csp.min.js",
             "/js/app.js",
             "/js/sw-register.js",
-            "/icons/apple-touch-icon.png")) {
+            "/icons/apple-touch-icon.png",
+            "/icons/favicon.svg",
+            "/favicon.ico")) {
       mvc.perform(get(path)).andExpect(status().isOk());
     }
   }
