@@ -70,6 +70,8 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | Google OAuth / OIDC | https://developers.google.com/identity/openid-connect/openid-connect |
 | Google Cloud Run | https://cloud.google.com/run/docs |
 | Workload Identity Federation (GitHub) | https://github.com/google-github-actions/auth |
+| `google-github-actions/setup-gcloud` (gcloud in a workflow) | https://github.com/google-github-actions/setup-gcloud |
+| `gcloud run deploy` | https://cloud.google.com/sdk/gcloud/reference/run/deploy |
 | Secret Manager | https://cloud.google.com/secret-manager/docs |
 | Neon | https://neon.com/docs |
 | GitHub Actions | https://docs.github.com/en/actions |

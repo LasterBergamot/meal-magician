@@ -80,7 +80,7 @@ meal-magician/
 │   ├── rules/                # path-scoped conventions (Java modules, persistence, security, UI, tests, container, docs)
 │   ├── skills/               # create-pr, new-issue, … (from ai-common, don't edit here)
 │   └── settings.json
-├── .github/                  # workflows/ (ci, docs-check, wiki-sync), dependabot.yml, pull_request_template.md
+├── .github/                  # workflows/ (ci, docs-check, wiki-sync, release), dependabot.yml, pull_request_template.md
 └── documentation/            # mirrored to the GitHub wiki (Home, Setup, Current-State-*, Roadmap-*, …)
 ```
 

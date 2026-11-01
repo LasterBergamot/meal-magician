@@ -121,7 +121,9 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       can read Cloud Run status and logs. The setup is not yet verified by a script: #27, parked.)* Runbooks: `documentation/Hosting-Setup.md`,
       `documentation/Auth-Setup.md`.
 - [ ] #18 `release.yml` → first deploy **v0.1.0**: sign in on a phone and see the hello page.
-      Confirm that the app and the database really scale to zero when idle.
+      Confirm that the app and the database really scale to zero when idle. *(Workflow written
+      in PR #34, checked with actionlint only; it has not run. Still open: run it for 0.1.0 and
+      verify sign-in, the cold start and scale to zero.)*
 
 ### Phase 1 — Households (`M1 – Core planner`, epic #2)
 - [ ] Create a household (the creator becomes OWNER), rename it, switch between households
@@ -363,3 +365,4 @@ meal-magician/
 | 2026-11-01 | Owner OK'd required checks: `Lint & test`, `Migrations (Postgres)`, `E2E`, `Docs updated` are now required on `main`. Wiki sync failed its first run (no wiki git repo yet); owner will create the first page later. | #16 |
 | 2026-11-01 | `Dockerfile` (digest-pinned Temurin 25, uid 10001, JDK 25 AOT cache from a training run, bash `HEALTHCHECK`), `compose.e2e.yml` with `mock-oauth2-server` as the stub OIDC provider, `src/e2eTest` with one Playwright sign-in test at phone and desktop size, `task build` and `task test-e2e` made real, the E2E and Trivy steps in `ci.yml` made unconditional. | #15, #32 |
 | 2026-11-01 | Guard tests: `EveryEndpointNeedsSignInTests` (calls every mapped endpoint anonymously) and `DocsToolingTests` (`CLAUDE.md` ≤ 100 lines, router paths, rule globs with a `NOT_YET` list that fails when stale); each also runs on a broken example. `task docs:check` made real. | #14, #33 |
+| 2026-11-01 | `release.yml` written (manual, main only: version + CI-green check, version bump on a detached commit, image to Artifact Registry, `gcloud run deploy` through Workload Identity Federation, health poll, tag last). Not run yet; the v0.1.0 run is the rest of #18. | #17, #18, #34 |
