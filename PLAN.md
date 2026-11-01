@@ -106,9 +106,9 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       and desktop viewports.
 - [ ] #16 CI: `ci.yml`, `docs-check.yml` (+ `scripts/check_docs_touched.sh`), `wiki-sync.yml`,
       `dependabot.yml`, PR template already in place. *(PR #29. The E2E and Trivy steps pass
-      without running until #15 adds the Dockerfile and `compose.e2e.yml`. Still open, needs the
-      owner: create the wiki's first page in the web UI so the sync can push, and OK adding the
-      four checks to branch protection once they have reported on a PR.)*
+      without running until #15 adds the Dockerfile and `compose.e2e.yml`. The four checks are required in
+      branch protection (2026-11-01, owner OK). Still open, owner: create the wiki's first page in
+      the web UI so the sync can push; then #16 can close.)*
 - [ ] #17 Hosting (D11): Cloud Run service + Neon Postgres, secrets in Secret Manager, deploy
       through Workload Identity Federation. The owner does all console steps in **one setup
       session** up front (Google Cloud project, billing + budget, OAuth client, Artifact Registry,
@@ -357,3 +357,4 @@ meal-magician/
 | 2026-11-01 | Hosting moved from Railway to Google Cloud Run + Neon (D11, D13, D23 amended): Railway sign-ups were closed. `Hosting-Setup.md` replaces `Railway-Setup.md` as the owner's one-session setup guide. | — |
 | 2026-11-01 | Owner setup session done (Google Cloud project, billing + budget, OAuth client, Artifact Registry, service accounts, WIF, secrets, Neon, GitHub variables, auto-merge, local `gcloud` login). Real-Google sign-in checks passed; #12 closed. Cloud bootstrap script + skill filed as #27 (parked). | #12, #27 |
 | 2026-11-01 | CI: `ci.yml` (Lint & test, Migrations, E2E placeholder + gated Trivy), `docs-check.yml` with `check_docs_touched.sh`, `wiki-sync.yml` with the page map and `sync-wiki.sh`, `dependabot.yml`. Scripts tested against throw-away repos; workflows pass actionlint. | #16, #29 |
+| 2026-11-01 | Owner OK'd required checks: `Lint & test`, `Migrations (Postgres)`, `E2E`, `Docs updated` are now required on `main`. Wiki sync failed its first run (no wiki git repo yet); owner will create the first page later. | #16 |

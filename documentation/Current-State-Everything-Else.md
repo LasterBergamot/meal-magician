@@ -9,7 +9,8 @@ What exists in `main` today:
   `update-documentation`, and the `convention-reviewer` agent.
 - **Docs:** `README.md`, `PLAN.md`, this wiki source in `documentation/`, the PR template.
 - **GitHub:** public repo `LasterBergamot/meal-magician`. `main` is protected (PRs required,
-  no force-push), merges are merge commits only, the wiki is on. Dependabot alerts and secret
+  no force-push, and the checks `Lint & test`, `Migrations (Postgres)`, `E2E` and `Docs updated`
+  must pass; the owner can still bypass as an admin), merges are merge commits only, the wiki is on. Dependabot alerts and secret
   scanning are on, and the labels, milestones and phase epics (#1–#8) exist.
 - **Workflow conventions:** `main`-only branching, merge commits, `#N - subject` commits
   (`.claude/context/workflow.md`).
