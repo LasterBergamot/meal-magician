@@ -69,9 +69,9 @@ do nothing, so the look is still the old one.
 - `dev/ui.jte` (`DevUiController`, `/dev/ui`): the living style guide. It shows every icon, every
   button variant in every size and state, and the add button in both forms. It exists only in the
   `dev` profile (`task serve`), it needs a sign-in like every page, and production answers 404.
-  The sections `dev/_content.jte` and `_overlays.jte` are empty until R2b and R3 fill them;
-  `dev/_forms.jte` is filled (R2c). To see both themes, switch the browser between light and dark
-  (the theme preference comes with R6).
+  The section `dev/_overlays.jte` is empty until R3 fills it (R2b filled `dev/_content.jte`, R2c
+  `dev/_forms.jte`). To see both themes, switch the browser between light and dark (the theme
+  preference comes with R6).
 
 ## Form components (R2c)
 
@@ -102,6 +102,39 @@ are all on `/dev/ui` in `dev/_forms.jte`, in every state.
   so the fragments never write them by hand. Tests: `FormComponentsPageTest` reads every state
   from the `/dev/ui` HTML, `DescribedByTest` and `HtmxFetchTest` cover the helpers, and
   `UiGuardTest` checks the text and the CSP rules of the templates.
+
+## Content and status components (R2b)
+
+The content and status fragments of `src/main/jte/ui/` (plan-ui-redesign.md §5), all on the
+design tokens (R1) and shown in every state on `/dev/ui`:
+- `ui/_badge.jte`: a short state label (Owner, Member, Current, Today) in seven `tone`s:
+  `neutral`, `brand`, `accent` (a gold fill with indigo text, because gold is never text),
+  `success`, `warning`, `danger`, `info`. A badge is a `span`; it is never a control.
+- `ui/_chip.jte`: a filter pill button with `aria-pressed`. Selected is a violet fill with a
+  check icon, so the state is not colour alone. It is 44 px tall (the touch minimum).
+- `ui/_slot_chip.jte` and `ui/_slot_dot.jte`: one meal type, `slot` = `BREAKFAST`, `LUNCH`,
+  `DINNER` or `SNACK` (the order of the day). The chip always shows the icon and the word; the
+  dot is a 12 px mark, or a 36 px disc with the icon for a lone marker. A dot beside a word is
+  decorative; a lone dot takes an `aria-label`. The `slot-*` classes in `app.css` set the colour
+  variables, so one set of utilities serves the four types.
+- `ui/_card.jte`: a surface with the outline and the medium sticker shadow, in `default`,
+  `accent` (occasions only) and `selected` variants. One link inside may stretch over the whole
+  card (`after:inset-0`).
+- `ui/_row.jte`: a list item of at least 60 px with a dashed separator, so a list is a `ul` in a
+  card with `li` rows. A selected row always comes with a Current badge.
+- `ui/_avatar.jte`: a gold disc with one or two initials (`sm` 32 px, `md` 44 px). The caller
+  computes the initials; the avatar is decorative because the name beside it says who it is.
+- `ui/_alert.jte`: an icon, a bold title, one sentence and an optional action. `success` and
+  `info` are `role="status"`; `warning` and `danger` are `role="alert"`. There are no toasts.
+- `ui/_empty.jte`: the empty state, a gold-outlined round icon with two sparkles, an `h2`, one
+  sentence and the actions the caller passes (one primary, at most one ghost).
+- `ui/_skeleton_rows.jte`: placeholder rows for a list that loads for more than about 300 ms. The
+  region is `aria-busy` with a screen-reader label, and the rows pulse (not under reduced motion).
+
+The texts come from `messages_*.properties`: the slot words (`slot.*`), the skeleton label
+(`ui.skeleton.loading`) and the style guide's own texts (`dev.content.*`). The tests in
+`ContentComponentsPageTest` read each state from the page, and no new fragment may use a raw
+palette class (`brand-700`, `stone-*` and the like).
 
 ## Styling: Tailwind
 
