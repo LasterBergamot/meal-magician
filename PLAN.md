@@ -204,6 +204,12 @@ create, quick-add, edit, archive, tags, search and filter, the `MealChanged` eve
 queries, tests; no controllers or templates) and **the meal pages** (controllers, templates built
 from the `ui/` components, `TenantEndpoints` registrations, e2e; after R4). "Recently used first"
 needs `meal_slot`, so it lands with the pages once B3 is in.
+- [x] #66 **B2 catalog backend** *(PR #68; backend only, no pages)*: V6 `meal`/`tag`/`meal_tag`
+      (composite foreign keys so the database refuses a cross-household link), `MealService`
+      (create, quick-add, edit with a tag diff, archive, restore, search by name and tag),
+      `MealChanged`, tenant-scoped, recipe links limited to http/https. **Left out on purpose:**
+      the occasion types a meal suits (which module owns the enum is undecided; decide before the
+      meal pages or add a later migration) and "recently used first" (needs B3's `meal_slot`).
 - [ ] Meal CRUD: name, notes, recipe URL, tags, which occasion types it suits, archive.
 - [ ] Tags per household; search and filter (name, tag), recently used meals first.
 - [ ] Quick-add from a phone (name only, add the details later).
@@ -482,3 +488,4 @@ meal-magician/
 | 2026-11-01 | Backups planned (#62, child of #7): nightly encrypted `pg_dump` to a Cloud Storage bucket in Frankfurt through GitHub Actions + WIF, tested restore into Neon, after Phase 5 and before Phase 7. Owner chose the wizard as the in-app brand mark too (UI-D11). Docs only. | #62 |
 | 2026-11-01 | Planned the work for parallel subagents at the owner's request (D24): the redesign split into five waves with a file-ownership table (`plan-ui-redesign.md` §7), Phase 2 and 3 each split into a backend part that starts now (B2, B3; Flyway V6/V7 reserved) and pages that wait for R4, and a three-track schedule in §9. Docs only. | #57 |
 | 2026-11-01 | Wave 1 started (D24): sub-issues #64 (R1), #65 (R2a, blocked by #64) and #66 (B2 catalog backend, under #3) filed; one worktree subagent each, plus #59. #59 landed: removing an address from the allowlist now ends that person's live sessions. | #57, #59, #64, #65, #66, #67 |
+| 2026-11-01 | Catalog backend (#66, B2): the `catalog` module with Flyway V6, `MealService` and the `MealChanged` event, tenant-scoped, 100 % covered, no controllers or templates. Occasion types on a meal are not in V6 (open decision). Known gap: two people creating the same new tag at the same instant can get a constraint error on one save. | #3, #66, #68 |
