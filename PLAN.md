@@ -89,9 +89,9 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
 - [x] #11 `compose.yml` (Postgres with pgvector) and the H2 dev profile; the Flyway baseline
       (`V1__init.sql`, plus the pgvector extension in `postgresql/`). *(Done in PR #22.)*
 - [x] #12 Identity: Google OIDC login, the DB allowlist and `MM_ADMIN_EMAILS` bootstrap, `AppUser`,
-      Spring Session JDBC, sign-out, fail-closed production config. *(PR #24. The real-Google
-      checks (admin sign-in, refused account, session survives restart) are the owner's manual
-      acceptance steps with a dev OAuth client; the header has no sign-out button yet and the
+      Spring Session JDBC, sign-out, fail-closed production config. *(PR #24. The owner ran the
+      real-Google checks locally on 2026-11-01 (admin sign-in works, a refused account gets 403):
+      passed, issue closed. The header has no sign-out button yet and the
       per-user language is not applied yet, both planned for Phase 1.)*
 - [x] #13 Base layout: JTE layout, Tailwind standalone CLI, htmx + Alpine (CSP build), the `t()`
       i18n helper (hu/en) and language switcher, PWA manifest + service worker, error pages,
@@ -110,7 +110,9 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       through Workload Identity Federation. The owner does all console steps in **one setup
       session** up front (Google Cloud project, billing + budget, OAuth client, Artifact Registry,
       service accounts, WIF, secrets, Neon project, GitHub variables, auto-merge); agents write
-      the deploy workflow and do the rest from CI. Runbooks: `documentation/Hosting-Setup.md`,
+      the deploy workflow and do the rest from CI. *(Owner setup session done 2026-11-01, parts
+      1–8 of `Hosting-Setup.md`, by hand; `gcloud` is signed in on the owner's machine, so agents
+      can read Cloud Run status and logs. The setup is not yet verified by a script: #27, parked.)* Runbooks: `documentation/Hosting-Setup.md`,
       `documentation/Auth-Setup.md`.
 - [ ] #18 `release.yml` → first deploy **v0.1.0**: sign in on a phone and see the hello page.
       Confirm that the app and the database really scale to zero when idle.
@@ -328,8 +330,9 @@ meal-magician/
 3. #9–#13 are done. **Order for the rest (amended 2026-10-31, to remove manual verification
    early):** #16 CI first, so "green" means verified; then #15 (Dockerfile, stub OIDC provider,
    Playwright e2e), so agents verify sign-in and screens without a real Google account; then
-   #14; then #17/#18. *(Amended 2026-10-31; was #14/#15 → #16 → #18.)* #17's console steps are
-   the owner's one setup session (`documentation/Hosting-Setup.md`).
+   #14; then #17/#18. *(Amended 2026-10-31; was #14/#15 → #16 → #18.)* #17's console steps (the
+   owner's one setup session, `documentation/Hosting-Setup.md`) are **done**; nothing from the
+   owner is needed until the first deploy (#18).
 4. Then work on Phase 0 issue by issue: a branch per issue, PRs through `create-pr`.
 5. Before scaffolding, look up the current latest versions (Spring Boot 4.x, Spring Modulith,
    JTE, the Gradle plugins, Testcontainers, Playwright) and pin them in the version catalog.
@@ -349,3 +352,4 @@ meal-magician/
 | 2026-10-31 | Identity: Google OIDC sign-in with a DB allowlist (`MM_ADMIN_EMAILS` + `allowed_email`), `app_user` keyed by Google `sub`, Spring Session JDBC (30 days, cleanup at sign-in), CSRF on, htmx 401 + `HX-Redirect`, fail-closed `prod` profile, login page, CSRF meta tags. | #12, #24 |
 | 2026-10-31 | Decided D22 (agents merge planned PRs when checks are green) and D23 (one Google OAuth client); Phase 0 order changed to #16 → #15 → #14 → #17/#18 so agents can verify without the owner; owner console steps batched into one setup session. | — |
 | 2026-11-01 | Hosting moved from Railway to Google Cloud Run + Neon (D11, D13, D23 amended): Railway sign-ups were closed. `Hosting-Setup.md` replaces `Railway-Setup.md` as the owner's one-session setup guide. | — |
+| 2026-11-01 | Owner setup session done (Google Cloud project, billing + budget, OAuth client, Artifact Registry, service accounts, WIF, secrets, Neon, GitHub variables, auto-merge, local `gcloud` login). Real-Google sign-in checks passed; #12 closed. Cloud bootstrap script + skill filed as #27 (parked). | #12, #27 |
