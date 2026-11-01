@@ -94,8 +94,9 @@ class DevUiPageTest {
       assertThat(html).as(variant).contains("<code class=\"text-sm text-ink-muted\">" + variant);
     }
     // 4 variants x (4 sizes + 4 states). The layout has a button of its own, so count ours by
-    // the class only ui/_button.jte writes.
-    assertThat(count(html, "font-extrabold")).isEqualTo(32);
+    // the class only ui/_button.jte writes. Scoped to <button> because the form labels (R2c) use
+    // the same weight.
+    assertThat(count(html, "<button[^>]*font-extrabold")).isEqualTo(32);
     // The inline and the floating add button, by the class only ui/_fab.jte writes.
     assertThat(count(html, "size-\\[58px]")).isEqualTo(2);
   }
@@ -105,8 +106,9 @@ class DevUiPageTest {
     String html = page();
 
     assertThat(count(html, "aria-busy=\"true\"")).isEqualTo(4);
-    // One disabled state and one busy state per variant.
-    assertThat(count(html, "\\sdisabled[\\s>]")).isEqualTo(8);
+    // One disabled state and one busy state per variant. Scoped to <button> because the disabled
+    // form controls of R2c are on the same page.
+    assertThat(count(html, "<button[^>]*\\sdisabled[\\s>]")).isEqualTo(8);
     // A "disabled" attribute with any value still disables a button, so there must be none.
     assertThat(html).doesNotContain("disabled=\"");
   }

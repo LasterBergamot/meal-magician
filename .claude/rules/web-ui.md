@@ -68,4 +68,16 @@ paths:
   these fragments. The style guide `/dev/ui` (`shared.web.DevUiController`, dev profile only, not
   in `PUBLIC_PATHS`, so it needs a sign-in) shows every icon and button state; a new component
   adds its section to `dev/ui.jte` or to a `dev/_<section>.jte` fragment, never a second page.
+- **Form components (`ui/`, R2c):** `ui/_field.jte` (the label is always visible; `hint` is a
+  help sentence; `error` is an already translated message that sets `aria-invalid`, the red
+  border and an alert icon), `ui/_select.jte` (a native `<select>` whose `options` are
+  `FormOption` records), `ui/_search.jte` (a pill with a visually hidden label and no error
+  state) and `ui/_segmented.jte` (a `role="tablist"` of `SegmentOption` links). Never write
+  `aria-describedby` or `hx-get` by hand: `HtmlAttributes.describedBy` and
+  `HtmlAttributes.htmxFetch` build them, and the fragments pass the result through
+  `$unsafe{HtmlAttributes.render(...)}`. An inline conditional inside `$unsafe{...}` in a tag
+  did not compile in JTE 3.2 (the parser rejected it), so put the condition in a helper. A rejected form returns the same fragment with 422,
+  the message in `error` and the typed value (or the chosen option) passed back. Callers pass
+  translated text from `ctx.t`; the components carry no text of their own. The style guide
+  `dev/_forms.jte` shows every state.
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.

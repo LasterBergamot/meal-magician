@@ -69,9 +69,39 @@ do nothing, so the look is still the old one.
 - `dev/ui.jte` (`DevUiController`, `/dev/ui`): the living style guide. It shows every icon, every
   button variant in every size and state, and the add button in both forms. It exists only in the
   `dev` profile (`task serve`), it needs a sign-in like every page, and production answers 404.
-  The sections `dev/_content.jte`, `_forms.jte` and `_overlays.jte` are empty until R2b, R2c and
-  R3 fill them. To see both themes, switch the browser between light and dark (the theme
-  preference comes with R6).
+  The sections `dev/_content.jte` and `_overlays.jte` are empty until R2b and R3 fill them;
+  `dev/_forms.jte` is filled (R2c). To see both themes, switch the browser between light and dark
+  (the theme preference comes with R6).
+
+## Form components (R2c)
+
+The form controls of the design system are in `src/main/jte/ui/` (plan-ui-redesign.md §5). Each
+takes typed parameters and translated text from the caller, and carries no text of its own. They
+are all on `/dev/ui` in `dev/_forms.jte`, in every state.
+- `ui/_field.jte`: a labelled text input, 48 px high with 16 px text. The label is always visible.
+  `hint` is a help sentence under the input. `error` is a message already translated: it sets
+  `aria-invalid`, a red border and an alert icon with the sentence. The hint and the error are
+  linked from the input with `aria-describedby` (the ids are `<id>-hint` and `<id>-error`), so a
+  screen reader reads them after the label.
+- `ui/_select.jte`: the same frame around a native `<select>`, so the phone shows its own list.
+  `options` is a list of `FormOption` (value and label), `selected` is the value shown.
+- `ui/_search.jte`: a pill with a search icon in front. Its label is visually hidden, because the
+  placeholder and the icon say what the field is for. It has no error state, since a search is
+  not a rejected form. `attrs` carry the htmx wiring (`hx-get`, `hx-trigger`).
+- `ui/_segmented.jte`: two to four segments, each a `SegmentOption` (value, label and the address
+  it links to). The active segment has the violet fill, a check icon and `aria-selected`. Given a
+  `target` (a CSS selector such as `#content`), each segment fetches its address into that target
+  and pushes the URL, so Back and reload work; with `target` null the segments are plain links,
+  which is what the style guide uses. Known gap: the ARIA tablist pattern wants arrow keys between
+  the segments, and that needs an Alpine behaviour in `app.js`. Until it lands every segment stays
+  in the normal tab order.
+- **The 422 state:** a rejected form returns the same fragment with status 422, the message in
+  `error` and what was typed (`value`, or `selected` for a select) passed back, so nothing the
+  person entered is lost. The style guide shows a field and a select in that state.
+- The helpers `HtmlAttributes.describedBy` and `HtmlAttributes.htmxFetch` build the attributes,
+  so the fragments never write them by hand. Tests: `FormComponentsPageTest` reads every state
+  from the `/dev/ui` HTML, `DescribedByTest` and `HtmxFetchTest` cover the helpers, and
+  `UiGuardTest` checks the text and the CSP rules of the templates.
 
 ## Styling: Tailwind
 
