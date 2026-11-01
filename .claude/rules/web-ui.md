@@ -31,7 +31,10 @@ paths:
   such as `stone-*` or `green-*` in new code. The `--mm-*` values live in `app.css`, per theme,
   and `ContrastTokensTest` checks every Appendix C pair in both themes, so a new token pair
   needs a row there. Fonts are self-hosted in `static/fonts/` (see its `FONTS.md`); a new font
-  file needs its licence text and hash there, and a `@font-face` in `app.css`. The old
+  file needs its licence text and hash there, and a `@font-face` in `app.css`. Headings use
+  `--font-display` = Fredoka, then Nunito (Fredoka lacks ő/ű, Nunito draws them), then the system
+  faces; never name a web font there that is not hosted (`FontFallbackTest` checks). Neither font
+  has `tnum`, so do not rely on `tabular-nums`. The old
   `brand-*` scale is kept until R5d, so `brand-700` still works for now.
 - **Templates and `ViewContext`:** every template declares `@param ViewContext ctx` (translations,
   CSRF token; `ViewContextAdvice` adds it to every model) and wraps pages in

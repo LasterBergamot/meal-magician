@@ -26,12 +26,15 @@ design. Each was reduced for the web with `fontTools` 4.68 (Python), in this ord
 3. Written as WOFF2 (`flavor="woff2"`).
 
 Fredoka has **no Latin Extended-A glyphs** in this release (version 2.001): no ő, ű, č, ş, and so
-on. There is therefore no `fredoka-latin-ext.woff2`. In headings a Hungarian ő or ű is drawn by the
-next family in `--font-display` (`app.css`), which is not a self-hosted font, so it falls back to
-the system face. See the R1 notes in `.claude/rules/web-ui.md`.
+on. There is therefore no `fredoka-latin-ext.woff2`. `--font-display` in `app.css` is
+`"Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif`: the browser picks the font per
+character, so in a heading a Hungarian ő or ű is drawn by **Nunito** (its `nunito-latin-ext.woff2`,
+which covers 500–800, so the heading weights 600 and 700 too) and everything else by Fredoka. No
+extra font file is needed (#71). `FontFallbackTest` checks the chain on the stylesheet and
+`FontFallbackE2ETest` asks Chromium which fonts drew a heading with ő/ű.
 
 Neither font has the `tnum` (tabular figures) feature, so `font-variant-numeric: tabular-nums`
-has no effect with these files.
+has no effect with these files; digits are proportional.
 
 ## How to check or rebuild
 
