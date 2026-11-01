@@ -8,6 +8,10 @@ paths:
 
 # Web UI: JTE, htmx, Alpine, Tailwind, i18n, PWA
 
+> A redesign (tokens, `ui/` components, app shell, themes, fonts) is planned in
+> `plan-ui-redesign.md`. Until its phases land, the rules below apply as written; the plan's R8
+> rewrites this file to match what was built.
+
 - **Mobile-first.** Design for a ~375 px phone first, then enhance for tablet/desktop
   (`md:`/`lg:`). The week view is a list of days on phone and a grid on desktop. Touch targets ≥ 44 px.
 - **JTE** templates are precompiled; layouts in `src/main/jte/layout/`, one folder per module,

@@ -8,7 +8,8 @@ ate. A later AI assistant will learn the household's preferences and draft plans
 > **Status:** Phase 0 (foundation) is deployed (v0.1.0) and Phase 1 (households) has started: you
 > can sign in, create, rename and switch households, invite people by e-mail link, and manage
 > the members (remove, leave, hand over ownership). The planner itself is still to come. The plan, decisions and phases are in
-> [`PLAN.md`](PLAN.md).
+> [`PLAN.md`](PLAN.md); the planned redesign of the look and navigation is in
+> [`plan-ui-redesign.md`](plan-ui-redesign.md).
 
 ## Stack
 
@@ -63,6 +64,7 @@ Current:
 meal-magician/
 ├── CLAUDE.md                 # Claude Code router (rules + context map)
 ├── PLAN.md                   # working plan: decisions, phases, progress log
+├── plan-ui-redesign.md       # UI redesign plan: design system, app shell, components, phases
 ├── README.md
 ├── apm.yml, apm.lock.yaml    # shared Claude Code skills from ai-common (via APM)
 ├── build.gradle.kts, settings.gradle.kts, gradle/libs.versions.toml, gradlew   # build (Gradle wrapper pins Gradle 9.8.2)
