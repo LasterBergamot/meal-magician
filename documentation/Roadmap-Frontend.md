@@ -5,8 +5,9 @@ Planned UI work (JTE + htmx + Alpine + Tailwind), by `PLAN.md` phase. Move items
 
 - **UI redesign (all phases):** a storybook look (violet, gold, outlined "sticker" shapes, light and dark
   themes), a bottom tab bar on phones and a sidebar on desktop, a shared component set and a restyle of
-  every existing page. It is planned in `plan-ui-redesign.md` (phases R0–R9) in the repository root;
-  build the Phase 2–5 pages from its components.
+  every existing page. It is planned in `plan-ui-redesign.md` (phases R0–R9) in the repository root,
+  tracked by epic #57, and is the next piece of work, before Phase 2; build the Phase 2–5 pages from
+  its components.
 - **Phase 0 (rest):** a sign-out button in the header and applying the stored per-user language
   (`app_user.locale` exists, nothing uses it yet); real PWA artwork comes in Phase 5.
 - **Phase 1:** household create/switch/rename landed in #41, the invite section and join page in

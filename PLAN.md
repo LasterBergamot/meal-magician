@@ -132,6 +132,11 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       sign in on a phone; and confirm scale to zero (Cloud Run has no minimum instance, Neon
       suspends after ~5 idle minutes; the instance count after idle is not checked yet).)*
 - [ ] #51 CD: release automatically when a PR is merged into `main`. *(Owner asked 2026-11-01. `release.yml` now has a `plan` job (`scripts/next_release.sh`: next patch version, `release:minor` / `release:major` label or the manual `bump` input for the other parts, skips docs-only merges and commits older than the last release) and the `release` job as before plus a GitHub Release. PR #52; the merge of that PR is the first automatic release.)*
+- [ ] #58 CD: post-deploy smoke test against the live service. *(Filed 2026-11-01. `task smoke
+      <url>` runs once per release in `release.yml`, after the health poll and before the tag is
+      pushed, and checks anonymously: health, the login page, a protected path redirecting to
+      sign-in, the security headers, static assets, no 5xx. Not in the PR workflow (the `E2E` job
+      covers the image there) and never on a timer (D11). Blocked by #18.)*
 - [x] #37 CI: make the E2E job faster (was ~3m20s per PR): BuildKit `type=gha` layer cache for the
       image, Playwright Chromium and Tailwind CLI caches, Trivy scans the image the e2e run used.
       *(Owner added it to the plan 2026-11-01. Docs-only E2E skipping (PR #39) keeps the job and
@@ -167,6 +172,20 @@ Sub-issues filed 2026-11-01: #41 → #42, #43, #44 (blocked by #41); #45 stands 
       `/admin/**` rule in `SecurityConfig` (`hasRole("ADMIN")`) gives non-admins 403; admins get a
       header link. Removing an address blocks the next sign-in only: a live session lasts up to 30
       days, so ending it is an open follow-up.)*
+- [ ] #59 End a person's live sessions when their address is removed from the allowlist (child
+      of #2, `type:security`, filed 2026-11-01). Delete the sessions through
+      `FindByIndexNameSessionRepository`; first check what the principal name is. The
+      alternative, checking the allowlist on every request, costs a read per request.
+
+### UI redesign (`M1`, epic #57) — **next, before Phase 2**
+Full plan: [`plan-ui-redesign.md`](plan-ui-redesign.md) (design system, shell, components, phases
+R0–R9). Epic #57 was filed 2026-11-01; its sub-issues are filed as each item starts, R1 first, and
+the `R#` ids in that file are replaced with the real numbers then.
+- [ ] R1 Tokens and base CSS, then R2 icons and `ui/` components and R3 sheet/dialog in parallel,
+      then R4 shell and navigation, then R5 restyle of the existing pages, R6 theme preference,
+      R7 PWA polish, R8 docs, R9 close-out.
+- Order: Phase 2 pages are built from these components, so Phase 2 starts once R1–R4 have landed;
+  Phase 3's week view must not start before them.
 
 ### Phase 2 — Meal library (`M1`, epic #3)
 - [ ] Meal CRUD: name, notes, recipe URL, tags, which occasion types it suits, archive.
@@ -381,6 +400,9 @@ meal-magician/
    JTE, the Gradle plugins, Testcontainers, Playwright) and pin them in the version catalog.
 6. Before building a page of Phase 2–5, check `plan-ui-redesign.md`: the shell, tokens and
    components it defines come first, so a page is not built twice.
+7. **Next up (2026-11-01):** the UI redesign, epic #57, starting with R1. File the R1 sub-issue
+   with the `new-issue` skill and link it to #57. #59 (live sessions after an allowlist removal,
+   small, `priority:p1`) can go before or beside R1. #58 (smoke test) waits for #18.
 
 ---
 
@@ -414,3 +436,4 @@ meal-magician/
 | 2026-11-01 | Tenant guard (#44): `TenantIsolationTests` + `TenantEndpoints` registry + `TenantWorld` fixture (two households, four people); unregistered and stale registrations fail, and the decision logic is tested on leaky stubs. `tests.md` explains how to register an endpoint. | #44, #53 |
 | 2026-11-01 | UI redesign planned: a design system agreed with the owner (storybook look: violet, gold, outlines, sparkles; Moonlight and Midnight themes; bottom tab bar on phone, sidebar on desktop) and written down as `plan-ui-redesign.md` with phases R0–R9. No code changed yet. | #55 |
 | 2026-11-01 | Allowlist admin page (#45): `AllowlistAdminController`/`AllowlistAdminService` in `identity/internal`, `/admin/**` restricted to `ROLE_ADMIN`, bootstrap admins shown but not removable, `ViewContext.admin` for the header link. Phase 1 is complete. | #45, #56 |
+| 2026-11-01 | Filed three issues at the owner's request: the **UI redesign** epic #57 (made next on the list, before Phase 2), the post-deploy smoke test #58 (runs once per release in `release.yml`, before the tag; owner agreed with the placement) and #59 (end live sessions when an address leaves the allowlist, child of #2). Docs only. | #57, #58, #59 |

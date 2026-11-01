@@ -4,7 +4,7 @@ Planned backend work, by `PLAN.md` phase. Move items to [[Current State: Backend
 
 - **Phase 1:** done. Households (create, rename, switch, OWNER/MEMBER) landed in #41, email-bound
   invites in #42, member management in #43, the tenant-isolation guard test in #44 and the
-  allowlist admin page in #45. Still open: ending a removed person's live sessions.
+  allowlist admin page in #45. Still open: ending a removed person's live sessions (#59).
 - **Phase 2:** `catalog` module: meals, tags, search, archive.
 - **Phase 3:** `planning` module: slots per date, week queries, optimistic locking.
 - **Phase 4:** copy day/week, `PlanTemplate` (DAY/WEEK), occasions and occasion templates.

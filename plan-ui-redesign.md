@@ -309,11 +309,11 @@ design-system names. The behaviour column is the contract.
 
 ## 7. Phases and issues
 
-Filing the GitHub issues (an epic **UI redesign**, milestone `M1 – Core planner`, with one
-sub-issue per item below) is outside `PLAN.md`, so it needs the owner's OK: the first agent asks,
-then uses the `new-issue` skill and replaces the `R#` ids below with real issue numbers. Until
-issues exist, branch as `feat/ui-<slug>` and write commit subjects as `UI - <summary>`; after, use
-the normal `feat/<issue>-…` and `#N - …` rules. Each item is one PR through `create-pr`; D22 lets an
+The epic **UI redesign** is issue **#57** (milestone `M1 – Core planner`, filed 2026-11-01 at the
+owner's request and made the next item in `PLAN.md`). Its sub-issues, one per item below, are
+filed with the `new-issue` skill as each item starts (R1 first), linked to #57 as GitHub
+sub-issues, and the `R#` ids below are replaced with the real numbers then. Branch as
+`feat/<issue>-…` and write commit subjects as `#N - <summary>`. Each item is one PR through `create-pr`; D22 lets an
 agent merge its own PR for planned work once every required check is green, **once the owner has
 approved this plan** (the owner approved it by asking for it, 2026-11-01).
 
@@ -408,9 +408,8 @@ decides), then here. Do not start Phase 3's week view before R1–R4 land, or it
 
 1. Read `CLAUDE.md`, `PLAN.md` §2 and §9, `.claude/rules/web-ui.md`, `.claude/context/workflow.md`
    and `pr-checklist.md`, then this file (§2, §3, §6, §7).
-2. Ask the owner to approve filing the **UI redesign** epic and its sub-issues from §7 (the
-   `new-issue` skill); until they say yes, work from this file with the `feat/ui-<slug>` /
-   `UI - …` conventions in §7.
+2. The epic is **#57**. File the sub-issue for the item you start (R1 first) with the
+   `new-issue` skill, as a child of #57, and branch `feat/<issue>-…`.
 3. Start with **R1**; once it is merged, R2 and R3 can run in parallel, then R4, then R5/R6/R7.
    Two writers never touch the same files.
 4. Every UI PR: tokens and components from this file, copy through `messages_hu/en.properties`, no
@@ -425,6 +424,7 @@ decides), then here. Do not start Phase 3's week view before R1–R4 land, or it
 | Date | What | Refs |
 |---|---|---|
 | 2026-11-01 | Design agreed with the owner in a design-system artifact (two drafts: the first, warm cream/green, was rejected as "brownish"; the second is the violet/gold storybook look). This plan written; no code changed. | — |
+| 2026-11-01 | Epic #57 filed and made the next item in `PLAN.md` (before Phase 2); sub-issues are filed as each item starts. | #57 |
 
 ---
 
