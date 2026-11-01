@@ -24,7 +24,7 @@ The skill holds the procedure; this file holds the project's values.
 
 ## Milestones
 
-- `M0 – Foundation`: PLAN.md Phase 0 (scaffold, auth, CI, Railway, first deploy v0.1.0).
+- `M0 – Foundation`: PLAN.md Phase 0 (scaffold, auth, CI, hosting, first deploy v0.1.0).
 - `M1 – Core planner`: Phases 1–5 → v1.0.0.
 - `M2 – Hardening`: Phase 6.
 - `M3 – Assistant`: Phase 7 (AI).

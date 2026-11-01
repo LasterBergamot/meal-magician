@@ -16,7 +16,7 @@ RAG, pluggable provider) drafts plans from that history.
 - Java 25 and Spring Boot 4, built with Gradle (Kotlin DSL). A **modular monolith** with Spring Modulith.
 - UI: JTE + htmx + Alpine.js + Tailwind (standalone CLI, no Node), mobile-first, PWA.
 - Data: Postgres with pgvector and Flyway; H2 for fast tests and `task serve`.
-- Hosted on Railway.
+- Hosted on Google Cloud Run, database on Neon (both scale to zero).
 
 All decisions are in `PLAN.md` §2. **Status:** Phase 0 in progress; the Gradle skeleton (#9), Taskfile (#10), local databases (#11), base UI (#13) and identity (#12) exist. Next steps are in
 `PLAN.md` §9.
@@ -31,7 +31,7 @@ All decisions are in `PLAN.md` §2. **Status:** Phase 0 in progress; the Gradle 
 | Auth, allowlist, invites, CSP, prod config | `.claude/rules/security.md` (loads for `**/identity/**`, `**/household/**`, `**/config/**`) |
 | JTE templates, htmx, Alpine, Tailwind, i18n, PWA | `.claude/rules/web-ui.md` (loads for `src/main/jte/**`, `src/main/resources/static/**`, `src/main/resources/messages*`) |
 | Tests and coverage | `.claude/rules/tests.md` (loads for `src/test/**`, `src/e2eTest/**`) |
-| Dockerfile, Compose, Railway, CI workflows | `.claude/rules/container.md` |
+| Dockerfile, Compose, Cloud Run, CI workflows | `.claude/rules/container.md` |
 | Writing docs or wiki pages | `.claude/rules/documentation.md` (loads for `documentation/**`, `README.md`) |
 | Setting up a dev machine | `documentation/Setup.md` (the `setup-project` skill follows it) |
 | Tasks, environment variables, branches, merge rules | `.claude/context/workflow.md` |
@@ -49,7 +49,7 @@ Explore and Plan subagents load neither this file nor the rules: put the rule fi
   issue/PR number) when an item lands; record any change of decision in its D-table as an
   amendment (`*(Amended YYYY-MM-DD; was …)*`).
 - **Outward-facing actions need the owner's OK first:** GitHub repo settings, labels, issues
-  outside the plan, Railway or Google Cloud changes, anything not in `PLAN.md`.
+  outside the plan, Google Cloud or Neon changes, anything not in `PLAN.md`.
   **Standing permission (D22):** for issues in `PLAN.md`, push the feature branch, open the PR
   and merge it (merge commit) once all required checks are green; until CI exists (#16), once
   `task lint` and `task test` pass locally. Never push or force-push `main`.

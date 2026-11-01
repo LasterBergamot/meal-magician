@@ -25,7 +25,7 @@ Read: `CLAUDE.md`, `.claude/**`, `apm.yml`, `README.md`, `PLAN.md`, `documentati
 `Taskfile.yml`, `compose*.yml`, `Dockerfile`, `.dockerignore`, `.gitignore`, `.github/**`.
 Hunt for: docs that contradict the code or each other; PLAN.md items done but unticked;
 Docker root user, unpinned images, missing healthcheck; CI permissions, SHA pinning, caching;
-anything that would keep Railway from sleeping; ai-common skills edited in place (`apm audit`).
+anything that would keep Cloud Run or Neon from scaling to zero; ai-common skills edited in place (`apm audit`).
 
 ## GitHub state explorer
 

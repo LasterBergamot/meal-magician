@@ -30,7 +30,7 @@ Magician is a **private, household-only** web app that should:
 
 **v1 is done when** the household plans and eats from Meal Magician for two weeks in a row: the
 week is planned on a phone, a past day or week is reused, one occasion is planned, and meals
-are rated. It runs on Railway at a cost close to the Hobby-plan minimum, with nobody looking
+are rated. It runs on Google Cloud Run + Neon at (close to) zero cost, with nobody looking
 after a server.
 
 ---
@@ -49,9 +49,9 @@ after a server.
 | D8 | **One user can belong to many households.** Roles are OWNER and MEMBER, and the UI has a household switcher. Every query is scoped by household. Another household's data returns **404** (so its existence doesn't leak), and owner-only actions return **403** to members. | Decided |
 | D9 | **Invites are email-bound.** The owner enters an email: it is added to the allowlist (source INVITE) and gets a `/join/<code>` link. The link expires after 2 h, 24 h (default) or 3 days, can be revoked, and only a SHA-256 hash of the code is stored. Joining needs the signed-in Google email to match the invited one. No email sending: the owner shares the link through any messenger. | Decided |
 | D10 | **DB: PostgreSQL 17+ with pgvector from day one**, so RAG needs no data migration. Schema changes go through **Flyway**. **H2 (PostgreSQL mode)** runs fast unit and slice tests and `task serve` without Docker. Integration tests and CI always run on **Testcontainers Postgres**, which is the source of truth. Postgres-only SQL, such as pgvector, goes in `db/migration/postgresql/`. | Decided |
-| D11 | **Hosting: Railway**, EU region: one app service plus a Postgres service with pgvector, on the free `*.up.railway.app` domain for now. **Cost is kept as low as possible**: the app has Railway's Serverless/app-sleeping mode on (it sleeps after about 10 minutes idle and wakes on a request). The Hikari pool is allowed to shrink to zero connections when idle (`minimumIdle=0`), and there are no in-app schedulers, keepalives or metrics exporters. Check current Hobby-plan pricing, sleeping behaviour and backup options in Phase 0. | Decided |
+| D11 | **Hosting: Google Cloud Run + Neon Postgres**, both in Frankfurt (Cloud Run `europe-west3`, Neon `aws-eu-central-1`). The app is one Cloud Run service (min 0, max 1 instance, request-based billing, startup CPU boost) on its `*.run.app` URL; the database is a Neon project (Postgres 17, pgvector, direct endpoint, no pooler because Flyway and Spring Session need session semantics). **Cost is kept as low as possible**: both scale to zero when idle (Cloud Run after the last request, Neon after ~5 minutes) and should fit the free tiers; a billing budget alert guards it. The Hikari pool may shrink to zero connections (`minimumIdle=0`), and there are no in-app schedulers, keepalives or metrics exporters, so nothing keeps either side awake. Secrets live in Secret Manager, CI deploys through Workload Identity Federation (no keys). | Decided *(Amended 2026-11-01; was Railway app + pgvector service with app sleeping: Railway sign-ups were closed after an incident, and Cloud Run + Neon is likely free and reuses the Google Cloud project of the OAuth client)* |
 | D12 | **Branching: `main` only**, with no `develop`. `main` is protected: PRs only, required checks green, no force-pushes. Branch names: `feat/<issue>-…`, `fix/<issue>-…`, `chore/<issue>-…`, `docs/…`. **Merge commits only.** Commit subjects use `#N - <imperative summary>`. | Decided |
-| D13 | **Deploy on a release tag.** A manual `release` workflow bumps the version, tags `vX.Y.Z`, builds the image, pushes it to GHCR, deploys it to Railway and polls `/actuator/health`. Merges to `main` only run CI. Migrations run at app startup (Flyway), so keep them backwards compatible (expand/contract). | Decided |
+| D13 | **Deploy on a release tag.** A manual `release` workflow bumps the version, tags `vX.Y.Z`, builds the image, pushes it to Artifact Registry (`europe-west3-docker.pkg.dev/<project>/meal-magician/app`), deploys it to Cloud Run (`gcloud run deploy`, authenticated by Workload Identity Federation) and polls `/actuator/health`. Merges to `main` only run CI. Migrations run at app startup (Flyway), so keep them backwards compatible (expand/contract). | Decided *(Amended 2026-11-01; was GHCR + Railway)* |
 | D14 | **i18n: Hungarian by default, English selectable.** All UI text lives in `messages_hu.properties` / `messages_en.properties`, and a test fails if a JTE template contains a hard-coded literal. Time zone is Europe/Budapest and weeks start on Monday (ISO weeks). | Decided |
 | D15 | **AI comes later (Phase 7)**, but v1 already records what it needs: history, tags, occasions and ratings. | Decided |
 | D16 | **Quality gates as in lineup:** Taskfile is the single entry point and CI calls the same tasks. **JaCoCo at 100 %** line and branch coverage, with every exclusion explained. **Javadoc is required** on public types and methods (Checkstyle), written for a junior developer. Spotless runs google-java-format. Also the docs gate, Dependabot targeting `main`, a Trivy image scan, base images pinned by digest, a non-root container, and third-party actions pinned to a SHA. | Decided |
@@ -60,7 +60,7 @@ after a server.
 | D19 | **The in-app AI provider is pluggable through Spring AI**, so it doesn't have to be Claude. The default is a cheap hosted model on a **paid tier**, so household data isn't used for training: Gemini Flash, a GPT mini model, Claude Haiku, or OpenRouter to switch freely. The model is chosen by config; the final pick comes from a small eval in Phase 7. **Embeddings run in-process** (Spring AI ONNX transformers, e.g. all-MiniLM-L6-v2), so they cost nothing per call. Ollama on Railway is rejected: it would cost far more and be slow on CPU. | Decided |
 | D20 | **Base package `hu.lasterbergamot.mealmagician`.** | Decided |
 | D22 | **Agents may merge their own PRs for planned work.** For an issue in this plan, an agent pushes its feature branch, opens the PR and merges it (merge commit) once every required check is green (before CI exists, #16: once `task lint` and `task test` pass locally). Repo settings, Railway, Google Cloud and anything outside the plan still need the owner's OK. Goal: the owner does one setup session and then only reviews results. | Decided (2026-10-31) |
-| D23 | **One Google OAuth client** (`meal-magician`) with two redirect URIs, `localhost:8080` and the Railway domain, instead of separate dev and prod clients: this is a home project, and rotating the one secret takes a minute. | Decided (2026-10-31) |
+| D23 | **One Google OAuth client** (`meal-magician`) with two redirect URIs, `localhost:8080` and the Cloud Run URL, instead of separate dev and prod clients: this is a home project, and rotating the one secret takes a minute. | Decided (2026-10-31) *(Amended 2026-11-01; was the Railway domain)* |
 | D21 | **JDK: Eclipse Temurin 25** (Adoptium's OpenJDK build), used the same way everywhere. The **Gradle wrapper** (`./gradlew`, committed) pins Gradle. The **Gradle toolchain** (`languageVersion = 25`, `vendor = ADOPTIUM`) with the foojay resolver plugin downloads the JDK automatically, so nobody installs Java 25 by hand. The container uses `eclipse-temurin:25-jdk` for the build and `eclipse-temurin:25-jre` at runtime, both pinned by digest. Railway runs our image, so production uses exactly that JRE: there's no separate host JVM to match. | Decided |
 
 ---
@@ -106,13 +106,14 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       and desktop viewports.
 - [ ] #16 CI: `ci.yml`, `docs-check.yml` (+ `scripts/check_docs_touched.sh`), `wiki-sync.yml`,
       `dependabot.yml`, PR template already in place.
-- [ ] #17 Railway: project, Postgres with pgvector, app service from the GHCR image, sleeping on,
-      variables. The Google OAuth client is created in Google Cloud (one client, D23). The owner
-      does all console steps in **one setup session** up front (Railway project + domain + token,
-      Google client, GitHub secret and auto-merge); agents do the rest from CI. Runbooks:
-      `documentation/Railway-Setup.md`, `documentation/Auth-Setup.md`.
+- [ ] #17 Hosting (D11): Cloud Run service + Neon Postgres, secrets in Secret Manager, deploy
+      through Workload Identity Federation. The owner does all console steps in **one setup
+      session** up front (Google Cloud project, billing + budget, OAuth client, Artifact Registry,
+      service accounts, WIF, secrets, Neon project, GitHub variables, auto-merge); agents write
+      the deploy workflow and do the rest from CI. Runbooks: `documentation/Hosting-Setup.md`,
+      `documentation/Auth-Setup.md`.
 - [ ] #18 `release.yml` → first deploy **v0.1.0**: sign in on a phone and see the hello page.
-      Confirm that the app really sleeps when idle.
+      Confirm that the app and the database really scale to zero when idle.
 
 ### Phase 1 — Households (`M1 – Core planner`, epic #2)
 - [ ] Create a household (the creator becomes OWNER), rename it, switch between households
@@ -147,7 +148,7 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
 - [ ] PWA polish: icons, theme colour, install hint. Lighthouse check on a phone.
 
 ### Phase 6 — Hardening (`M2 – Hardening`, epic #7)
-- [ ] Backups: Railway's own backups, if the plan has them, plus `db-backup.yml` (scheduled
+- [ ] Backups: Neon's point-in-time restore window (check the free-plan limit), plus `db-backup.yml` (scheduled
       `pg_dump` → encrypted with `age` → artifact or object storage). One **restore drill**,
       documented.
 - [ ] GDPR basics: export my data, delete my account; privacy note page.
@@ -223,7 +224,7 @@ support. Other modules may only use the root package; the Modulith test enforces
   - Request size limit and rate limits on invite and join.
   - **Fail-closed production config:** the app won't start under the `prod` profile without
     the Google client id/secret, `MM_ADMIN_EMAILS`, a Postgres URL and
-    `server.forward-headers-strategy=framework` behind Railway's proxy.
+    `server.forward-headers-strategy=framework` behind Cloud Run's proxy.
 - **Concurrency:** `@Version` on the aggregates, so two family members editing the same week
   get a friendly conflict message instead of losing an edit.
 - **Cold starts (D11, D17):** AppCDS, lazy init where it is safe, a small Hikari pool with
@@ -257,23 +258,27 @@ meal-magician/
 
 ---
 
-## 6. Hosting and cost (Railway)
+## 6. Hosting and cost (Cloud Run + Neon, D11)
 
-- **Services:** `app` (the Docker image from GHCR) and `postgres` (an image or template with
-  pgvector), both in an EU region and talking over the private network.
+- **Services:** the Cloud Run service `meal-magician` (`europe-west3`, image from Artifact
+  Registry, runtime service account `mm-runtime`) and a Neon project `meal-magician`
+  (`aws-eu-central-1`, Postgres 17, database `mealmagician`, TLS required).
 - **Variables:**
   - `SPRING_PROFILES_ACTIVE=prod`
-  - `SPRING_DATASOURCE_URL`/`USERNAME`/`PASSWORD` (Railway references to the DB service)
-  - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+  - `SPRING_DATASOURCE_URL`/`USERNAME` (GitHub variables) and `_PASSWORD` (Secret Manager
+    `db-password`), Neon's direct (non-pooled) endpoint
+  - `GOOGLE_CLIENT_ID` (GitHub variable), `GOOGLE_CLIENT_SECRET` (Secret Manager
+    `google-client-secret`)
   - `MM_ADMIN_EMAILS`
   - `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75 …`
-- **Sleeping:** on for `app`. Verify that it actually sleeps; DB keepalives or outbound
-  telemetry would keep it awake.
-- **Deploy (D13):** `release.yml` pushes `ghcr.io/lasterbergamot/meal-magician:<version>` and
-  points the Railway service at it (Railway CLI/API with a project token, `RAILWAY_TOKEN` secret).
-  Pick the exact mechanism in Phase 0 and document it in `documentation/Railway-Setup.md`.
-- **Watch:** the first month's bill. If it is clearly above the Hobby minimum, look at native
-  (D17) and memory limits first.
+- **Scale to zero:** Cloud Run min instances 0, max 1; Neon autosuspend. Verify both really go
+  idle; DB keepalives or outbound telemetry would keep Neon awake and burn its compute hours.
+- **Deploy (D13):** `release.yml` authenticates with Workload Identity Federation (pool
+  `github`, provider `github-repo`, service account `mm-deployer`), pushes the image to Artifact
+  Registry and runs `gcloud run deploy` with the env vars and `--set-secrets`. Setup and the
+  GitHub variables it reads: `documentation/Hosting-Setup.md`.
+- **Watch:** the first month's bill (budget alert at $5). If it is clearly above zero, look at
+  native (D17), memory limits and Neon compute hours first.
 
 ---
 
@@ -305,8 +310,8 @@ meal-magician/
 
 - **Every PR:** `task lint`, `task test` (100 %), `task test-e2e` when the UI flow or the
   container changed; CI green.
-- **Phase 0:** sign in on a phone against Railway, check that someone not on the allowlist gets
-  403, check that the app goes to sleep and wakes up.
+- **Phase 0:** sign in on a phone against Cloud Run, check that someone not on the allowlist gets
+  403, check that the app and the database scale to zero and wake up.
 - **Phase 1–5:** the scenario from §1 on a real phone and a laptop, with two Google accounts in
   one household and a third account that isn't a member (it must get 404s).
 - **Phase 7:** the eval set passes; suggestions are only drafts; the spend cap is enforced.
@@ -318,13 +323,13 @@ meal-magician/
 1. Read `CLAUDE.md`, then this file, then `.claude/context/workflow.md` and `pr-checklist.md`.
 2. The repo, labels, milestones, epics (#1–#8) and Phase 0 issues (#9–#18, with blocked-by
    links) exist. Agents push, open and merge PRs for planned issues once checks are green
-   (D22); still **ask the owner before** anything in Google Cloud or Railway, repo settings,
+   (D22); still **ask the owner before** anything in Google Cloud or Neon, repo settings,
    or work outside the plan.
 3. #9–#13 are done. **Order for the rest (amended 2026-10-31, to remove manual verification
    early):** #16 CI first, so "green" means verified; then #15 (Dockerfile, stub OIDC provider,
    Playwright e2e), so agents verify sign-in and screens without a real Google account; then
    #14; then #17/#18. *(Amended 2026-10-31; was #14/#15 → #16 → #18.)* #17's console steps are
-   the owner's one setup session (`documentation/Railway-Setup.md`).
+   the owner's one setup session (`documentation/Hosting-Setup.md`).
 4. Then work on Phase 0 issue by issue: a branch per issue, PRs through `create-pr`.
 5. Before scaffolding, look up the current latest versions (Spring Boot 4.x, Spring Modulith,
    JTE, the Gradle plugins, Testcontainers, Playwright) and pin them in the version catalog.
@@ -343,3 +348,4 @@ meal-magician/
 | 2026-10-31 | Base UI: JTE layout + hello and error pages (full page / htmx fragment), Tailwind v4 standalone CLI (watch in `task serve`, minified in the Gradle build), vendored htmx 2.0.11 + Alpine CSP 3.17.5, `ctx.t("key")` i18n (hu default, cookie language switch), CSP/security-header filter, PWA manifest + icons + static-only service worker, guard tests (bundles, template literals, CSP-unsafe markup). | #13, #23 |
 | 2026-10-31 | Identity: Google OIDC sign-in with a DB allowlist (`MM_ADMIN_EMAILS` + `allowed_email`), `app_user` keyed by Google `sub`, Spring Session JDBC (30 days, cleanup at sign-in), CSRF on, htmx 401 + `HX-Redirect`, fail-closed `prod` profile, login page, CSRF meta tags. | #12, #24 |
 | 2026-10-31 | Decided D22 (agents merge planned PRs when checks are green) and D23 (one Google OAuth client); Phase 0 order changed to #16 → #15 → #14 → #17/#18 so agents can verify without the owner; owner console steps batched into one setup session. | — |
+| 2026-11-01 | Hosting moved from Railway to Google Cloud Run + Neon (D11, D13, D23 amended): Railway sign-ups were closed. `Hosting-Setup.md` replaces `Railway-Setup.md` as the owner's one-session setup guide. | — |

@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * page the person originally asked for.
  *
  * <p>Spring Session normally does this clean-up on a timer. A timer would query the database every
- * minute and keep the Railway app from sleeping (PLAN.md D11), so it is switched off in {@code
+ * minute and keep the database from scaling to zero (PLAN.md D11), so it is switched off in {@code
  * application.yml}. Expired sessions are never served (they are ignored when read), so the only
  * cost of waiting is a few stale rows; sign-ins are rare and a natural moment to clear them.
  */

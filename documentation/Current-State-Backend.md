@@ -31,9 +31,9 @@ no business modules yet.
   - **Profiles:** `dev` points at in-memory H2 in PostgreSQL mode; `postgres` points at the
     compose Postgres (override with `SPRING_DATASOURCE_URL`/`_USERNAME`/`_PASSWORD`) and adds the
     `postgresql/` folder. Use them together as `dev,postgres`. With no profile there is no
-    datasource configured; the `prod` profile (Railway) takes it from environment variables.
+    datasource configured; the `prod` profile (Cloud Run) takes it from environment variables.
   - **Connection pool:** at most 5 connections and `minimum-idle: 0`, with idle ones closed
-    after a minute, so nothing keeps the Railway app awake (D11).
+    after a minute, so nothing keeps the Neon database awake (D11).
 
 - **Identity (#12):** nothing is reachable without signing in. Why this design: the app holds a
   household's private data, so the default must be "closed".
@@ -52,7 +52,7 @@ no business modules yet.
     app waking from sleep does not sign anyone out. They last 30 days. The cookie is
     `HttpOnly`, `SameSite=Lax` and, in prod, `Secure`. Expired sessions are deleted at sign-in
     (`SessionCleanupOnSignIn`) instead of by Spring's timer, because a timer would poll the
-    database and keep Railway from putting the app to sleep.
+    database and keep the app and the database from scaling to zero.
   - **Rules** (`identity/internal/SecurityConfig`): everything needs a session except the explicit
     `PUBLIC_PATHS` (login page, error page, health check, static files, PWA files). CSRF stays on.
     An anonymous browser request is redirected to `/login`; an anonymous **htmx** request gets
@@ -62,7 +62,7 @@ no business modules yet.
   - **Fail closed in production:** `ProductionConfigGuard` stops the `prod` profile from starting,
     before any other bean exists, unless the Google client id and secret, `MM_ADMIN_EMAILS`, a
     `jdbc:postgresql:` datasource and `forward-headers-strategy=framework` are all set. It lists
-    every missing setting in one message. Without it a forgotten Railway variable would fail in a
+    every missing setting in one message. Without it a forgotten Cloud Run variable would fail in a
     confusing place, or worse, start half-open.
   - Setup for a developer: [[Auth Setup]].
 

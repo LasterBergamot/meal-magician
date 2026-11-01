@@ -22,7 +22,7 @@ class SessionStoreTests {
   }
 
   @Test
-  void noCleanupTimerIsScheduledSoRailwayCanSleep() {
+  void noCleanupTimerIsScheduledSoTheAppCanScaleToZero() {
     assertThat(ReflectionTestUtils.getField(sessions, "taskScheduler")).isNull();
   }
 }

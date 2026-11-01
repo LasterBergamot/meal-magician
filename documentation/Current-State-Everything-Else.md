@@ -31,7 +31,7 @@ What exists in `main` today:
   that implements them. Why it exists: everyone, including CI, runs the same commands,
   so "works on my machine" and "passes in CI" mean the same thing.
   - `scripts/doctor.sh` (`task doctor`) prints `ok`/`FAIL` per tool: Java 17+ (only to start
-    Gradle), Task, Docker with a running daemon, Compose 2.24+; `gh`, Railway CLI, `apm` and the
+    Gradle), Task, Docker with a running daemon, Compose 2.24+; `gh`, `gcloud`, `apm` and the
     Tailwind CLI are optional.
   - `scripts/install-tailwind.sh` (`task install`) downloads the Tailwind standalone CLI into
     `.tools/` (git-ignored). The version and each platform's SHA-256 are pinned in the script, and

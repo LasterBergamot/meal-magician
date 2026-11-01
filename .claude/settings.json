@@ -22,7 +22,7 @@
       "Bash(git reset:*)",
       "Bash(gh pr create:*)",
       "Bash(gh pr merge:*)",
-      "Bash(railway:*)"
+      "Bash(gcloud:*)"
     ],
     "deny": [
       "Read(./.env)",

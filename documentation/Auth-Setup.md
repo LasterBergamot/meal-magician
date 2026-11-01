@@ -28,9 +28,10 @@ This is a home project, so one client (`meal-magician`) serves both places (PLAN
 | Redirect URI | Used by |
 |---|---|
 | `http://localhost:8080/login/oauth2/code/google` | your machine (`.env`) |
-| `https://<railway-domain>/login/oauth2/code/google` | Railway |
+| `https://meal-magician-<PROJECT_NUMBER>.europe-west3.run.app/login/oauth2/code/google` | Cloud Run |
 
-Create the Railway domain first ([[Railway Setup]], part 1) so you can add both URIs at once. If
+Cloud Run's URL is predictable from the project number ([[Hosting Setup]], part 1), so you can add
+both URIs at once. If
 the secret ever leaks, rotate it (bottom of this page); both places then get the new one.
 
 ## Step by step: the project and consent screen (once)
@@ -62,7 +63,7 @@ the secret ever leaks, rotate it (bottom of this page); both places then get the
 3. **Authorized JavaScript origins:** leave empty (not needed: the exchange happens on the server).
 4. **Authorized redirect URIs → Add URI** twice, exactly:
    `http://localhost:8080/login/oauth2/code/google` and
-   `https://<railway-domain>/login/oauth2/code/google`
+   `https://meal-magician-<PROJECT_NUMBER>.europe-west3.run.app/login/oauth2/code/google`
    (copy-paste them: scheme, host, port and path must match character for character).
 5. Click **Create**. A dialog shows the **Client ID** and **Client secret**. Copy both now; you
    can also reveal the secret again later from the client's page.
@@ -108,12 +109,12 @@ error message lists every missing one at once.
 | `MM_ADMIN_EMAILS` | at least one instance admin |
 | `SPRING_DATASOURCE_URL` | a `jdbc:postgresql://...` URL (plus `_USERNAME`, `_PASSWORD`) |
 
-`server.forward-headers-strategy=framework` is set in `application-prod.yml` because Railway's
+`server.forward-headers-strategy=framework` is set in `application-prod.yml` because Cloud Run's
 proxy terminates HTTPS; without it the app would send Google an `http://` redirect URI.
-Railway steps: [[Railway Setup]].
+Hosting steps: [[Hosting Setup]].
 
 ## Rotation
 
-Create a new secret on the client, update Railway/`.env`, redeploy, delete the old secret. If a
+Create a new secret on the client, update Secret Manager and `.env`, redeploy, delete the old secret. If a
 secret ever leaks (a screenshot, a chat, a commit), rotate it immediately, even if you believe no
 one saw it.
