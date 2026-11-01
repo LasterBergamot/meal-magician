@@ -129,8 +129,8 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       suspends after ~5 idle minutes; the instance count after idle is not checked yet).)*
 - [x] #37 CI: make the E2E job faster (was ~3m20s per PR): BuildKit `type=gha` layer cache for the
       image, Playwright Chromium and Tailwind CLI caches, Trivy scans the image the e2e run used.
-      *(Owner added it to the plan 2026-11-01. Docs-only E2E skipping is left out: it changes how
-      branch protection treats a required check, decide separately. PR #38: E2E job 3m19s → 2m16s
+      *(Owner added it to the plan 2026-11-01. Docs-only E2E skipping (PR #39) keeps the job and
+      its name and skips only its steps, so branch protection is unchanged. PR #38: E2E job 3m19s → 2m16s
       with warm caches (image build 147 s → 20 s); the first run on a new cache key is slower.)*
 
 ### Phase 1 — Households (`M1 – Core planner`, epic #2)
@@ -377,3 +377,4 @@ meal-magician/
 | 2026-11-01 | First `release.yml` run (0.1.0) failed at the deploy step, before any tag: the env-var delimiter `@` clashed with the emails in `MM_ADMIN_EMAILS`; changed to `\|`. WIF login and the image push worked. | #18, #35 |
 | 2026-11-01 | **v0.1.0 deployed** to Cloud Run (`europe-west3`, max 1, no minimum) against Neon: `release.yml` run 2 passed (run 1 failed on the `@` delimiter, PR #35). Health 200; Flyway applied V1–V3; first start 6.7 s. Sign-in on a phone and scale to zero still to confirm. | #18, #36 |
 | 2026-11-01 | CI speed: BuildKit `type=gha` layer cache for the E2E image, Chromium and Tailwind caches, `task test-e2e:run`, Trivy scans the e2e image. E2E 3m19s → 2m16s warm (4m40s on the cold first run). | #37, #38 |
+| 2026-11-01 | CI: the `E2E` job skips its image build, Playwright and Trivy steps on PRs that change only documentation (`scripts/e2e_needed.sh`); the job and its check name stay, so branch protection is untouched. | #37, #39 |
