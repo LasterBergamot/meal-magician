@@ -93,13 +93,13 @@ class DevUiPageTest {
     for (String variant : new String[] {"primary", "secondary", "ghost", "danger"}) {
       assertThat(html).as(variant).contains("<code class=\"text-sm text-ink-muted\">" + variant);
     }
-    // 4 variants x (4 sizes + 4 states). The layout has a button of its own, so count ours by
-    // the class only ui/_button.jte writes.
-    // The content components (chips, alerts, cards) also use font-extrabold, so match the button's
-    // own class run. 32 are the button section; 3 more come from the content section (the alert's
-    // Reload button and the empty state's Add and Not now buttons).
+    // 4 variants x (4 sizes + 4 states) = 32, plus 3 buttons of the content section (the alert's
+    // Reload, the empty state's Add and Not now) and 7 of the overlay examples: the sheet's
+    // trigger, its X, Save and Add (4) and the confirm dialog's trigger, Cancel and submit (3).
+    // The layout has a button of its own and the content components (chips, alerts, cards) also use
+    // font-extrabold, so match the class run only ui/_button.jte writes.
     assertThat(count(html, "whitespace-nowrap rounded-md font-sans text-sm font-extrabold"))
-        .isEqualTo(35);
+        .isEqualTo(42);
     // The inline and the floating add button, by the class only ui/_fab.jte writes.
     assertThat(count(html, "size-\\[58px]")).isEqualTo(2);
   }
@@ -126,6 +126,39 @@ class DevUiPageTest {
   void pinsTheFloatingAddButtonAboveTheTabBarOnPhones() throws Exception {
     assertThat(page())
         .contains("fixed right-4 bottom-[calc(var(--mm-bottom-bar)_+_16px)] z-20 md:hidden");
+  }
+
+  @Test
+  void rendersTheSheetAsANativeDialogNamedByItsHeadingAndOpenedByItsTrigger() throws Exception {
+    String html = page();
+
+    assertThat(html)
+        .contains("id=\"dev-sheet\"")
+        .contains("role=\"dialog\"")
+        .contains("aria-labelledby=\"dev-sheet-title\"")
+        .contains("<h2 id=\"dev-sheet-title\"")
+        .contains("<span class=\"sr-only\">Bezárás</span>");
+    assertThat(count(html, "x-data=\"sheet\"")).isEqualTo(2);
+    assertThat(count(html, "x-on:click=\"show\"")).isEqualTo(2);
+  }
+
+  @Test
+  void hasASwipeGrabberOnlyOnTheSheetNotTheConfirmDialog() throws Exception {
+    assertThat(count(page(), "x-ref=\"grabber\"")).isEqualTo(1);
+  }
+
+  @Test
+  void closesTheSheetAndTheConfirmDialogFromEveryCancelControl() throws Exception {
+    // The sheet's X, the confirm dialog's Cancel and its submit button (the example only closes).
+    assertThat(count(page(), "x-on:click=\"hide\"")).isEqualTo(3);
+  }
+
+  @Test
+  void rendersTheConfirmDialogAsAnAlertDialogNamedByItsTitle() throws Exception {
+    assertThat(page())
+        .contains("id=\"dev-confirm\"")
+        .contains("role=\"alertdialog\"")
+        .contains("aria-labelledby=\"dev-confirm-title\"");
   }
 
   private String page() throws Exception {

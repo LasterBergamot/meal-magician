@@ -15,7 +15,9 @@ services:
       oidc:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: postgres
+      # `dev` switches on the /dev/ui style guide that the component e2e tests drive; the datasource
+      # variables below override the dev profile's in-memory H2, so the data still lives in Postgres.
+      SPRING_PROFILES_ACTIVE: dev,postgres
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mealmagician
       SPRING_DATASOURCE_USERNAME: mealmagician
       SPRING_DATASOURCE_PASSWORD: mealmagician

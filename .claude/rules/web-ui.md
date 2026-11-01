@@ -96,4 +96,11 @@ paths:
   fails on a raw palette class (`brand-700`, `stone-100`) in these fragments and in
   `dev/_content.jte`, and it reads each state from `/dev/ui`, so add a state to the test when you
   add one there.
+- **Sheet and confirm dialog (R3, #75):** `ui/_sheet.jte` is a native `<dialog>` (a bottom sheet
+  on phones, a centred dialog from `md`), `ui/_confirm.jte` is the destructive confirmation (always
+  a centred `alertdialog`). Both take a `trigger` whose control has `x-on:click="show"` and close
+  through `hide`; the Alpine `sheet` component in `app.js` traps Tab, restores focus to the
+  opener and handles the phone's swipe-down. Use `_confirm` for anything destructive, never a
+  sheet for it. Never open a sheet from a sheet, and keep an open confirm out of any htmx swap
+  region. `dev/_overlays.jte` shows both; `SheetAndConfirmE2ETest` drives them from the keyboard.
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.
