@@ -62,6 +62,10 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+// A fixed file name, so the Dockerfile (and anything else) can find the boot jar without knowing
+// the version. The `-plain.jar` that the java plugin also builds is not used.
+tasks.bootJar { archiveFileName = "app.jar" }
+
 // JTE templates are compiled to Java classes at build time (PLAN.md D4): type-safe, no runtime
 // template parsing, native-friendly.
 jte {
@@ -100,6 +104,33 @@ val tailwindBuild =
     }
 tasks.processResources { dependsOn(tailwindBuild) }
 
+// End-to-end tests (PLAN.md §3 Phase 0): Playwright drives a real browser against the container
+// that `task test-e2e` starts from compose.e2e.yml. A separate source set, so `task test` and the
+// coverage gate never touch them; they test the running image, not the code in this module.
+val e2eTest: SourceSet by sourceSets.creating
+dependencies {
+    "e2eTestImplementation"(platform(libs.spring.boot.bom))
+    "e2eTestImplementation"(libs.playwright)
+    "e2eTestImplementation"(libs.junit.jupiter)
+    "e2eTestImplementation"(libs.assertj)
+    "e2eTestRuntimeOnly"("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.register<Test>("e2eTest") {
+    group = "verification"
+    description = "Runs the Playwright tests against the stack from compose.e2e.yml (use `task test-e2e`)."
+    testClassesDirs = e2eTest.output.classesDirs
+    classpath = e2eTest.runtimeClasspath
+    useJUnitPlatform()
+    // Tests that already passed would otherwise be skipped as "up to date" while the image under
+    // test has changed.
+    outputs.upToDateWhen { false }
+    testLogging {
+        events("failed")
+        exceptionFormat = TestExceptionFormat.FULL
+    }
+}
+
 spotless {
     java {
         target("src/**/*.java")
@@ -124,6 +155,7 @@ checkstyle {
 tasks.named<Checkstyle>("checkstyleMain") { exclude("**/gg/jte/generated/**") }
 // Javadoc is required on production code only (CLAUDE.md); tests are named for behaviour instead.
 tasks.named("checkstyleTest") { enabled = false }
+tasks.named("checkstyleE2eTest") { enabled = false }
 
 tasks.test {
     useJUnitPlatform {

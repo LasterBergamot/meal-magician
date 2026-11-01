@@ -11,11 +11,22 @@ paths:
 
 - **Dockerfile:** multi-stage (Gradle/JDK 25 build → JRE 25 runtime), base images **pinned by
   digest**, non-root user uid 10001, `HEALTHCHECK` on `/actuator/health`, AppCDS archive built
-  at image build time (PLAN.md D17). Only the boot jar and the CDS archive go into the final image.
+  at image build time (PLAN.md D17). Only the unpacked boot jar (`app.jar` + `lib/`, from
+  `-Djarmode=tools extract`: CDS cannot read a fat jar's nested jars) and the cache go into the
+  final image. The cache is a JDK 25 AOT cache (`-XX:AOTCacheOutput`, built on AppCDS) recorded by
+  a training run with the `dev` profile (in-memory H2) and `-Dspring.context.exit=onRefresh`. It is
+  only valid for the same JRE, classpath and heap flags, so `ENV JAVA_TOOL_OPTIONS` is set before
+  the training `RUN`. A stale cache is ignored at run time, never fatal; check the start time
+  after touching the Dockerfile or the JVM flags. The runtime image has no curl or wget, so the
+  `HEALTHCHECK` uses bash's `/dev/tcp`.
 - `JAVA_TOOL_OPTIONS` sets memory via `-XX:MaxRAMPercentage`, never a fixed `-Xmx` larger than
   the Cloud Run memory limit.
 - **compose.yml:** Postgres with pgvector for local dev. **compose.e2e.yml:** app image + Postgres
-  + a stub OIDC provider, used only by `task test-e2e`.
+  + a stub OIDC provider (`navikt/mock-oauth2-server`, digest-pinned, config in
+  `src/e2eTest/stub-oidc/config.json`), used only by `task test-e2e`. The app discovers the stub as
+  `http://oidc:18081` and Chromium maps `oidc` to `127.0.0.1` (`--host-resolver-rules`) with the
+  port published under the same number, so token issuer and browser URL agree. The e2e app runs
+  with the `postgres` profile, not `prod` (plain HTTP on localhost).
 - **CI** (`.github/workflows/`): every job calls `task` targets; `permissions:` minimal per
   workflow; third-party actions pinned to a commit SHA; `concurrency` set; Gradle cache via
   `gradle/actions/setup-gradle`. Required checks report on every PR (no path filters on them).

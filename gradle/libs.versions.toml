@@ -9,6 +9,7 @@ spotless = "8.10.4"
 google-java-format = "2.0.0"
 checkstyle = "14.3.0"
 jacoco = "0.8.16"
+playwright = "1.64.0"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
@@ -33,6 +34,10 @@ spring-modulith-starter-test = { module = "org.springframework.modulith:spring-m
 spring-modulith-docs = { module = "org.springframework.modulith:spring-modulith-docs" }
 jte-spring-boot-starter = { module = "gg.jte:jte-spring-boot-starter-4", version.ref = "jte" }
 lombok = { module = "org.projectlombok:lombok" }
+# End-to-end tests (src/e2eTest). JUnit and AssertJ are versioned by the Spring Boot BOM.
+playwright = { module = "com.microsoft.playwright:playwright", version.ref = "playwright" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+assertj = { module = "org.assertj:assertj-core" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

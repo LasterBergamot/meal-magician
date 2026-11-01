@@ -55,7 +55,7 @@ after a server.
 | D14 | **i18n: Hungarian by default, English selectable.** All UI text lives in `messages_hu.properties` / `messages_en.properties`, and a test fails if a JTE template contains a hard-coded literal. Time zone is Europe/Budapest and weeks start on Monday (ISO weeks). | Decided |
 | D15 | **AI comes later (Phase 7)**, but v1 already records what it needs: history, tags, occasions and ratings. | Decided |
 | D16 | **Quality gates as in lineup:** Taskfile is the single entry point and CI calls the same tasks. **JaCoCo at 100 %** line and branch coverage, with every exclusion explained. **Javadoc is required** on public types and methods (Checkstyle), written for a junior developer. Spotless runs google-java-format. Also the docs gate, Dependabot targeting `main`, a Trivy image scan, base images pinned by digest, a non-root container, and third-party actions pinned to a SHA. | Decided |
-| D17 | **Runtime: JVM with an AppCDS / Spring AOT cache** to keep cold starts short (aim for about 2–4 s). After the first month, measure the bill and the cold starts, and **move to a GraalVM native image only if they hurt**. Stay native-friendly: precompiled JTE, no runtime classpath-scanning tricks. | Decided |
+| D17 | **Runtime: JVM with an AppCDS / Spring AOT cache** to keep cold starts short (aim for about 2–4 s). After the first month, measure the bill and the cold starts, and **move to a GraalVM native image only if they hurt**. Stay native-friendly: precompiled JTE, no runtime classpath-scanning tricks. | Decided *(Amended 2026-11-01; the image uses the JDK 25 AOT cache, which builds on AppCDS and halves the start time, instead of a plain AppCDS archive)* |
 | D18 | **Lombok is allowed**, mainly for JPA entities and builders. `lombok.config` sets `lombok.addLombokGeneratedAnnotation = true` so JaCoCo skips the generated code. Use records for DTOs, commands and value objects. | Decided |
 | D19 | **The in-app AI provider is pluggable through Spring AI**, so it doesn't have to be Claude. The default is a cheap hosted model on a **paid tier**, so household data isn't used for training: Gemini Flash, a GPT mini model, Claude Haiku, or OpenRouter to switch freely. The model is chosen by config; the final pick comes from a small eval in Phase 7. **Embeddings run in-process** (Spring AI ONNX transformers, e.g. all-MiniLM-L6-v2), so they cost nothing per call. Ollama on Railway is rejected: it would cost far more and be slow on CPU. | Decided |
 | D20 | **Base package `hu.lasterbergamot.mealmagician`.** | Decided |
@@ -101,9 +101,10 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
 - [ ] #14 Tests: the Modulith verify test, an "every endpoint needs auth" test, the template
       hard-coded-text test, a docs-tooling test (router paths exist, rule globs match,
       `CLAUDE.md` under 100 lines).
-- [ ] #15 `Dockerfile` (multi-stage, pinned by digest, uid 10001, AppCDS) and `compose.e2e.yml`
+- [x] #15 `Dockerfile` (multi-stage, pinned by digest, uid 10001, AppCDS) and `compose.e2e.yml`
       with a stub OIDC provider; one Playwright-Java e2e test (sign in → hello page) on phone
-      and desktop viewports.
+      and desktop viewports. *(PR #32. The cache is a JDK 25 AOT cache, see D17. Cold start
+      measured: 1.3 s with the cache vs 2.9 s without on H2; the Cloud Run number comes with #18.)*
 - [ ] #16 CI: `ci.yml`, `docs-check.yml` (+ `scripts/check_docs_touched.sh`), `wiki-sync.yml`,
       `dependabot.yml`, PR template already in place. *(PR #29. The E2E and Trivy steps pass
       without running until #15 adds the Dockerfile and `compose.e2e.yml`. The four checks are required in
@@ -358,3 +359,4 @@ meal-magician/
 | 2026-11-01 | Owner setup session done (Google Cloud project, billing + budget, OAuth client, Artifact Registry, service accounts, WIF, secrets, Neon, GitHub variables, auto-merge, local `gcloud` login). Real-Google sign-in checks passed; #12 closed. Cloud bootstrap script + skill filed as #27 (parked). | #12, #27 |
 | 2026-11-01 | CI: `ci.yml` (Lint & test, Migrations, E2E placeholder + gated Trivy), `docs-check.yml` with `check_docs_touched.sh`, `wiki-sync.yml` with the page map and `sync-wiki.sh`, `dependabot.yml`. Scripts tested against throw-away repos; workflows pass actionlint. | #16, #29 |
 | 2026-11-01 | Owner OK'd required checks: `Lint & test`, `Migrations (Postgres)`, `E2E`, `Docs updated` are now required on `main`. Wiki sync failed its first run (no wiki git repo yet); owner will create the first page later. | #16 |
+| 2026-11-01 | `Dockerfile` (digest-pinned Temurin 25, uid 10001, JDK 25 AOT cache from a training run, bash `HEALTHCHECK`), `compose.e2e.yml` with `mock-oauth2-server` as the stub OIDC provider, `src/e2eTest` with one Playwright sign-in test at phone and desktop size, `task build` and `task test-e2e` made real, the E2E and Trivy steps in `ci.yml` made unconditional. | #15, #32 |

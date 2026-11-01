@@ -27,9 +27,8 @@ What exists in `main` today:
 - **Lombok** is configured (`lombok.config`) but not used yet.
 - **Taskfile (#10):** `Taskfile.yml` is the one command surface for people, agents and CI
   (`task --list`). Working today: `install`, `doctor`, `lint`, `format`, `serve`, `test`,
-  `test:fast`, `up`, `down`, `serve:pg` and `migrate-check`. `build` starts working when the
-  `Dockerfile` lands; `test-e2e` and `docs:check` exist but stop with a message naming the issue
-  that implements them. Why it exists: everyone, including CI, runs the same commands,
+  `test:fast`, `up`, `down`, `serve:pg`, `migrate-check`, `build` and `test-e2e` (#15).
+  `docs:check` exists but stops with a message naming the issue that implements it (#14). Why it exists: everyone, including CI, runs the same commands,
   so "works on my machine" and "passes in CI" mean the same thing.
   - `scripts/doctor.sh` (`task doctor`) prints `ok`/`FAIL` per tool: Java 17+ (only to start
     Gradle), Task, Docker with a running daemon, Compose 2.24+; `gh`, `gcloud`, `apm` and the
@@ -65,12 +64,33 @@ What exists in `main` today:
 - **Icons:** `scripts/generate-icons.sh` regenerates the placeholder PWA icons with ImageMagick;
   the PNGs are committed, so nobody needs ImageMagick for a normal build.
 
+- **Container image and e2e tests (#15):**
+  - `Dockerfile` is multi-stage and both base images are pinned by digest. The build stage
+    (Temurin 25 JDK) downloads the checksum-pinned Tailwind CLI, runs `./gradlew bootJar` and
+    unpacks the jar; the runtime stage (Temurin 25 JRE) copies it in, runs the app once to record a
+    **JDK 25 AOT cache** (`app.aot`, the successor of an AppCDS archive) and starts as uid 10001
+    (`app`) with a `HEALTHCHECK` on `/actuator/health`. Why a training run: the JVM then loads
+    the hundreds of Spring classes from the cache instead of parsing them at every start, which
+    matters because Cloud Run starts a fresh instance after every idle period (PLAN.md D11, D17).
+  - **Cold start**, measured on the dev laptop (the app only; Cloud Run's CPU is slower, so
+    #18 measures the real number): about 2.9 s without the cache and 1.3 s with it on in-memory H2;
+    1.6 s on Postgres including three Flyway migrations.
+  - `compose.e2e.yml` starts the image, a pgvector Postgres and a stub OIDC provider
+    (`navikt/mock-oauth2-server`) that signs in `e2e@example.test` without a login form. The
+    app's `google` registration is pointed at it through `SPRING_SECURITY_OAUTH2_CLIENT_*`
+    variables, so the real `oauth2Login` code path, the allowlist and the session store run.
+  - `src/e2eTest` (Playwright for Java, Gradle task `e2eTest`) opens `/`, follows the sign-in and
+    checks the hello page at 390×844 and 1280×800, including that the page does not scroll
+    sideways. `task test-e2e` builds the image, runs the stack, the tests and tears the stack down
+    even if they fail. Not covered: the `prod` profile and HTTPS (the stack runs plain HTTP on
+    localhost) and real Google.
+
 - **CI (#16):** three workflows in `.github/workflows/`. Every job calls the same `task` targets
   a developer runs, so a green PR means "passes on a clean machine".
   - `ci.yml` has the checks **Lint & test** (`task lint`, `task test`, the 100 % gate),
-    **Migrations (Postgres)** (`task migrate-check`) and **E2E**. E2E and the Trivy image scan
-    are wired but pass without doing anything until the Dockerfile and `compose.e2e.yml` exist
-    (#15); a notice in the run says so. Actions are pinned to a commit SHA, permissions are
+    **Migrations (Postgres)** (`task migrate-check`) and **E2E** (`task test-e2e`, then a Trivy scan
+    of the image: the table step fails the check on a fixable HIGH/CRITICAL finding, the SARIF
+    upload runs on `main` only). Actions are pinned to a commit SHA, permissions are
     read-only, and a newer push cancels the older run.
   - `docs-check.yml` is the **Docs updated** check (`scripts/check_docs_touched.sh`). A PR must
     touch `README.md`, `CLAUDE.md` or a file under `documentation/`, `.claude/rules/` or

@@ -20,7 +20,9 @@ paths:
     Extend `AbstractPostgresIntegrationTest` (a shared pgvector container, profiles
     `dev,postgres`) rather than starting containers yourself.
   - **E2E** (`src/e2eTest`, Playwright for Java) against `compose.e2e.yml` with a stub OIDC
-    provider; run at phone (390×844) and desktop (1280×800) viewports.
+    provider; run at phone (390×844) and desktop (1280×800) viewports. `task test-e2e` runs them
+    (Gradle task `e2eTest`, outside `task test` and the coverage gate). The app greets in Hungarian
+    whatever the browser's language, so assert the Hungarian text or switch the language first.
 - Always-present guard tests: `ModularityTests` (Modulith verify + docs), endpoint-auth walk,
   tenant isolation (other household → 404), message bundles have equal keys, no hard-coded
   template text, docs tooling (router paths exist, rule globs match, `CLAUDE.md` ≤ 100 lines).
