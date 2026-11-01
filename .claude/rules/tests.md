@@ -25,9 +25,13 @@ paths:
     whatever the browser's language, so assert the Hungarian text or switch the language first.
 - Always-present guard tests: `ModularityTests` (Modulith verify + docs),
   `EveryEndpointNeedsSignInTests` (endpoint-auth walk), tenant isolation (other household → 404;
-  arrives with the first household endpoint), `UiGuardTest` (message bundles have equal keys, no
+  first covered by `HouseholdPagesTest`, the reusable guard is #44), `UiGuardTest` (message bundles have equal keys, no
   hard-coded template text), `DocsToolingTests` (router paths exist, rule globs match,
   `CLAUDE.md` ≤ 100 lines; `task docs:check`). Every guard has tests that run it on a
   deliberately broken example, so it cannot silently stop guarding.
+- Spring Session keeps sessions in the database: to carry a session across MockMvc requests, send
+  back the `SESSION` cookie of the first response, not a `MockHttpSession` (see `HouseholdPagesTest`).
+- The `@WebMvcTest` slices (`WebSliceTest`) leave the `household` package out, because its web
+  classes need a database; test them with `@SpringBootTest` + MockMvc.
 - Test names describe behaviour (`copiesDayIntoEmptyDate`), one behaviour per test.
 - Never hit real Google or the real AI provider in tests; stub them.

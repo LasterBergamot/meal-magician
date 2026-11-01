@@ -45,8 +45,8 @@ The plan is in `PLAN.md` §4.3. What exists today, for the hello page (`GET /`):
 3. `HelloController` (in `shared.web`) builds a small view record and picks a view with
    `Htmx.view(...)`: the full page `hello/page`, or the fragment `hello/_greeting` when htmx
    sent the request (header `HX-Request`).
-4. `ViewContextAdvice` has already put the `ctx` object (translations, CSRF token) into the
-   model; the JTE template calls `ctx.t("hello.title")` and wraps itself in `layout/base.jte`.
+4. `ViewContextAdvice` has already put the `ctx` object (translations, CSRF token, the header's
+   household) into the model; the JTE template calls `ctx.t("hello.title")` and wraps itself in `layout/base.jte`.
 5. The page loads `/css/app.css`, htmx and Alpine from our own server. Clicking "Refresh" makes
    htmx ask `/` again and swap just the fragment in. Add the module code, security and database
    steps from the plan as they land in #12 and Phase 1.

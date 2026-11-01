@@ -48,7 +48,12 @@
       </button>
       <%-- Hidden on phones until the button opens it (Alpine adds max-md:flex); always shown from md up. --%>
       <div id="site-menu" class="hidden w-full flex-col gap-2 pb-3 md:flex md:w-auto md:flex-row md:items-center md:gap-4 md:pb-0" x-bind:class="panelClass">
-        <div id="household-slot" class="min-h-11 content-center text-sm text-brand-100">${ctx.t("household.placeholder")}</div>
+        <%-- The current household (or the invitation to create one) once someone is signed in. --%>
+        <div id="household-slot" class="min-h-11 content-center text-sm text-brand-100">
+          @if(ctx.household() != null)
+            <a href="/households" class="inline-flex min-h-11 items-center underline">${ctx.household().name() != null ? ctx.household().name() : ctx.t("household.create.link")}</a>
+          @endif
+        </div>
         <nav class="flex gap-1" aria-label="${ctx.t("lang.label")}">
           @template.layout._lang_link(ctx = ctx, code = "hu", label = ctx.t("lang.hu.short"), name = ctx.t("lang.hu.name"))
           @template.layout._lang_link(ctx = ctx, code = "en", label = ctx.t("lang.en.short"), name = ctx.t("lang.en.name"))

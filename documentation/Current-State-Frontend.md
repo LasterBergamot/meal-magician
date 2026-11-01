@@ -6,8 +6,8 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
 
 ## Pages and templates
 
-- `src/main/jte/layout/base.jte` is the frame of every page: header (brand, a placeholder for the
-  household switcher, the HU/EN language links), `<main>` with an empty `#error-slot`, footer.
+- `src/main/jte/layout/base.jte` is the frame of every page: header (brand, the current household as a link
+  to `/households`, the HU/EN language links), `<main>` with an empty `#error-slot`, footer.
   On a phone the header collapses behind a menu button (an Alpine component); from the `md`
   breakpoint (768 px) it is shown in full. Touch targets are at least 44 px.
 - `hello/page.jte` + `hello/_greeting.jte`: the temporary home page `/`. The "Refresh" button
@@ -21,7 +21,17 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   `HX-Redirect: /login` (#12), which htmx follows by itself.
 - Every template declares `@param ViewContext ctx`. `ViewContextAdvice` puts it into every
   controller's model, so templates write `ctx.t("key")` for text and nothing has to be passed by
-  hand. Later additions (current user, household) go into `ViewContext`.
+  hand. `ViewContext` also carries `household`, the header's household (#41): its `name()` is `null` for a
+  signed-in person with no household, whose header then says "Create a household"; the whole
+  field is `null` on public pages.
+- `household/page.jte` + `_content.jte`, `_create.jte`, `_rename.jte`: the `/households` page
+  (#41). It lists my households with my role, a "Switch" button for each other one and the
+  current one marked, a rename form (owners of the current household only) and a create form.
+  The forms are htmx posts. A rejected form answers 422 (or 409 when someone else renamed the
+  household first) with just that form, error inside it and the typed text kept; a success sends
+  the browser on with `Htmx.redirect` (`HX-Redirect`, because a plain 302 would be followed
+  inside htmx's fetch and swap a whole page into the form). A header dropdown for switching is
+  not built: switching happens on this page.
 
 ## Styling: Tailwind
 
