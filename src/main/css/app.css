@@ -13,7 +13,8 @@
 /* --- Self-hosted fonts (plan-ui-redesign.md §6.2; sources and hashes in static/fonts/FONTS.md).
    Both are SIL OFL 1.1. Each file holds one unicode-range subset, so a browser downloads only the
    subsets a page uses. Fredoka has no Latin Extended-A glyphs, so Hungarian ő and ű in headings
-   fall back to the next family in --font-display. font-display: swap shows text at once. */
+   are drawn by Nunito, the next family in --font-display (#71). font-display: swap shows text at
+   once. */
 @font-face {
   font-family: "Fredoka";
   src: url("/fonts/fredoka-latin.woff2") format("woff2");
@@ -264,13 +265,22 @@
   --color-slot-ink: var(--slot-ink);
 }
 
-/* Not themed: shapes and fonts. Spacing needs nothing (Tailwind's 4 px scale matches). */
+/* Not themed: shapes. Spacing needs nothing (Tailwind's 4 px scale matches). */
 @theme {
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-xl: 28px;
-  --font-display: "Fredoka", "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+}
+
+/* Not themed: fonts. `static` always writes the variables out, even when no utility uses them yet,
+   so plain CSS and the font tests can read var(--font-display).
+   Headings are Fredoka, which has no Latin Extended-A glyphs (no ő, ű). The browser picks the
+   font per character: for those it takes the next family that has the character, Nunito (its
+   latin-ext file, same weights), before any system face. Every family before the generic ones
+   must be self-hosted above, so FontFallbackTest checks the chain (#71). */
+@theme static {
+  --font-display: "Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif;
   --font-sans: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
