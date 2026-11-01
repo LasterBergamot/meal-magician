@@ -73,9 +73,10 @@ check required docker "" docker --version
 # Testcontainers and compose need a running daemon, not just the client binary.
 check required "docker daemon" "" docker info --format '{{.ServerVersion}}'
 check required "docker compose" 2.24 docker compose version
+# Issues, PRs, the board and CI checks all go through the GitHub CLI.
+check required gh 2 gh --version
 
 echo "Optional:"
-check optional gh 2 gh --version
 check optional gcloud "" gcloud --version
 check optional neon "" neon --version
 check optional apm "" apm --version
