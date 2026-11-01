@@ -25,6 +25,11 @@ paths:
   (`household.internal.CurrentHouseholdResolver`; controllers declare a `CurrentHousehold` parameter
   and pass `id()` to every repository call). `HouseholdService` methods take the person's id and
   throw `HouseholdNotFoundException` (404) or `OwnerOnlyException` (403) themselves.
+- **Members (#43):** `household.MemberService` removes, leaves and hands over. Anything that can
+  change who is in charge locks the household row first (`HouseholdRepository.findForUpdate`) and
+  checks the caller's role afterwards; the last owner cannot leave. A removed person loses access
+  because the resolver re-checks membership on every request, so never cache the role beyond one
+  request.
 - Sessions: Spring Session JDBC; cookie `Secure`, `HttpOnly`, `SameSite=Lax`. CSRF on; htmx
   sends the token from a `<meta>` tag as a header.
 - htmx + expired session: return `HX-Redirect` to the login URL instead of a 302 into a fragment.

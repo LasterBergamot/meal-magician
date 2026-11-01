@@ -19,6 +19,7 @@
               <span>${household.role() == HouseholdRole.OWNER ? ctx.t("household.role.owner") : ctx.t("household.role.member")}</span>
               @if(page.current() != null && page.current().id() == household.id())
                 <span class="rounded bg-brand-100 px-2 py-1 font-semibold text-brand-800" aria-current="true">${ctx.t("household.current")}</span>
+                <a href="/households/members" class="inline-flex min-h-11 items-center underline">${ctx.t("household.members.link")}</a>
               @else
                 <button type="button" class="inline-flex min-h-11 items-center rounded border border-brand-700 px-4 font-semibold text-brand-800 hover:bg-brand-50"
                         hx-post="/households/${household.id()}/switch">${ctx.t("household.switch")}</button>

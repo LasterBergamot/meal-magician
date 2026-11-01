@@ -37,6 +37,13 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   whole `#invites` section (`hx-target="#invites"`); the new link appears in a read-only field in
   that response only. `household/join.jte` is the page an invite link opens: the household name and
   a Join button, or the reason the link was refused (the status code is 404, 403 or 410).
+- `household/members.jte` and `household/_members.jte` (#43): the page at `/households/members`
+  (linked from the current household's row on `/households`). Everyone sees the members with name,
+  e-mail and role, and a "Leave the household" button. Owners also get "Make owner" and "Remove" on
+  every other row. The buttons use `hx-confirm` (a browser dialog; it needs no inline script) and
+  swap the whole `#members` section. A refused action (the last owner leaving, an owner naming
+  themselves) answers 409 with the same section and a red message; a successful leave sends the
+  browser to `/households` with `HX-Redirect`.
 
 ## Styling: Tailwind
 

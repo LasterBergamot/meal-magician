@@ -27,7 +27,8 @@ allowlisted emails get in; households are shared through email-bound invite link
 
 ## Glossary
 
-- **Household:** the shared workspace; members are OWNER or MEMBER.
+- **Household:** the shared workspace; members are OWNER or MEMBER. It always has an owner: the
+  last one cannot leave, they hand the household over first.
 - **Meal:** a reusable library entry (name, tags, notes, recipe link).
 - **Slot:** one planned meal on a date for a slot type (breakfast, lunch, …).
 - **Template:** a saved day or week of slots that can be applied to new dates.
