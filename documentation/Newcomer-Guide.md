@@ -20,6 +20,7 @@ allowlisted emails get in; households are shared through email-bound invite link
 | PostgreSQL + pgvector, Flyway | one DB for app data and later AI embeddings; versioned schema |
 | H2 | fast local runs and tests without Docker |
 | Gradle + Taskfile | build, and one command surface for people, agents and CI: type `task --list` to see every command, `task doctor` to check your machine. The `gradlew` wrapper pins the Gradle version; a *toolchain* downloads Java 25 itself, so your machine's JDK doesn't matter |
+| GitHub Actions | CI: on every PR it runs the same `task` commands you run locally (lint, tests with the 100 % gate, migrations, docs-updated check), so you can reproduce any red check on your machine. After a merge it also copies `documentation/` into the wiki |
 | Spotless, Checkstyle, JaCoCo | the quality gates: formatting, "every public method has Javadoc", and 100 % test coverage. `./gradlew build` runs all three |
 | Lombok | removes getter/builder boilerplate from JPA entities (later); its output is marked so coverage ignores it |
 | Cloud Run + Neon | hosting with no server to manage: the app (Cloud Run) and the database (Neon) both scale to zero when idle |

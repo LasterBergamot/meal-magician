@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phase 0 in progress** (#9, #10, #11 done) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phase 0 in progress** (#9–#13 done, #16 in review) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -105,7 +105,10 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       with a stub OIDC provider; one Playwright-Java e2e test (sign in → hello page) on phone
       and desktop viewports.
 - [ ] #16 CI: `ci.yml`, `docs-check.yml` (+ `scripts/check_docs_touched.sh`), `wiki-sync.yml`,
-      `dependabot.yml`, PR template already in place.
+      `dependabot.yml`, PR template already in place. *(PR #PR. The E2E and Trivy steps pass
+      without running until #15 adds the Dockerfile and `compose.e2e.yml`. Still open, needs the
+      owner: create the wiki's first page in the web UI so the sync can push, and OK adding the
+      four checks to branch protection once they have reported on a PR.)*
 - [ ] #17 Hosting (D11): Cloud Run service + Neon Postgres, secrets in Secret Manager, deploy
       through Workload Identity Federation. The owner does all console steps in **one setup
       session** up front (Google Cloud project, billing + budget, OAuth client, Artifact Registry,
@@ -353,3 +356,4 @@ meal-magician/
 | 2026-10-31 | Decided D22 (agents merge planned PRs when checks are green) and D23 (one Google OAuth client); Phase 0 order changed to #16 → #15 → #14 → #17/#18 so agents can verify without the owner; owner console steps batched into one setup session. | — |
 | 2026-11-01 | Hosting moved from Railway to Google Cloud Run + Neon (D11, D13, D23 amended): Railway sign-ups were closed. `Hosting-Setup.md` replaces `Railway-Setup.md` as the owner's one-session setup guide. | — |
 | 2026-11-01 | Owner setup session done (Google Cloud project, billing + budget, OAuth client, Artifact Registry, service accounts, WIF, secrets, Neon, GitHub variables, auto-merge, local `gcloud` login). Real-Google sign-in checks passed; #12 closed. Cloud bootstrap script + skill filed as #27 (parked). | #12, #27 |
+| 2026-11-01 | CI: `ci.yml` (Lint & test, Migrations, E2E placeholder + gated Trivy), `docs-check.yml` with `check_docs_touched.sh`, `wiki-sync.yml` with the page map and `sync-wiki.sh`, `dependabot.yml`. Scripts tested against throw-away repos; workflows pass actionlint. | #16, #PR |

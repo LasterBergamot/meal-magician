@@ -64,4 +64,24 @@ What exists in `main` today:
 - **Icons:** `scripts/generate-icons.sh` regenerates the placeholder PWA icons with ImageMagick;
   the PNGs are committed, so nobody needs ImageMagick for a normal build.
 
-Not yet: CI, container, hosting — see [[Roadmap: Everything Else]].
+- **CI (#16):** three workflows in `.github/workflows/`. Every job calls the same `task` targets
+  a developer runs, so a green PR means "passes on a clean machine".
+  - `ci.yml` has the checks **Lint & test** (`task lint`, `task test`, the 100 % gate),
+    **Migrations (Postgres)** (`task migrate-check`) and **E2E**. E2E and the Trivy image scan
+    are wired but pass without doing anything until the Dockerfile and `compose.e2e.yml` exist
+    (#15); a notice in the run says so. Actions are pinned to a commit SHA, permissions are
+    read-only, and a newer push cancels the older run.
+  - `docs-check.yml` is the **Docs updated** check (`scripts/check_docs_touched.sh`). A PR must
+    touch `README.md`, `CLAUDE.md` or a file under `documentation/`, `.claude/rules/` or
+    `.claude/context/`; or change only Markdown; or carry the `no-docs` label *and* a
+    `No doc impact: <reason>` line in its body. `PLAN.md` next to code does not count, because
+    every PR edits it. Dependabot PRs are exempt.
+  - `wiki-sync.yml` copies `documentation/` into the GitHub wiki on every merge to `main` that
+    touches it (`scripts/sync-wiki.sh`). The page map in the workflow turns `Current-State-Backend.md`
+    into the wiki page "Current State: Backend", which is what `[[wiki links]]` expect. The
+    wiki is overwritten each time, so never edit it by hand. The wiki's git repo exists only
+    after the first page is created in the web UI.
+  - `.github/dependabot.yml` opens weekly update PRs against `main` for Gradle, GitHub Actions
+    and Docker/Compose, with minor and patch bumps of Gradle and Actions grouped in one PR each.
+
+Not yet: container and hosting — see [[Roadmap: Everything Else]].

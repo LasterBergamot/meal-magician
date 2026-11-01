@@ -1,0 +1,34 @@
+# Required check "Docs updated": a PR must change a doc, or say why it needn't (CLAUDE.md,
+# "Always-on rules"). The logic lives in scripts/check_docs_touched.sh so it can be run and tested
+# locally. Labels and the PR body reach the script only through `env:`, never inside `run:`.
+name: Docs check
+
+on:
+  pull_request:
+    # `labeled`/`unlabeled`/`edited` re-run the check when someone adds `no-docs` or edits the body.
+    types: [opened, synchronize, reopened, labeled, unlabeled, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-updated:
+    name: Docs updated
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Check that the PR touches the docs
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: bash scripts/check_docs_touched.sh

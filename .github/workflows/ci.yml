@@ -1,0 +1,130 @@
+# Required checks for every PR: "Lint & test", "Migrations (Postgres)" and "E2E".
+# Every job calls the same `task` targets a developer runs locally (PLAN.md D16), so "green in CI"
+# and "green on my machine" mean the same thing. Job names are the check names that branch
+# protection requires, so do not rename them without updating the protection rule.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Nothing here needs more than read access; the E2E job adds `security-events` for the SARIF upload.
+permissions:
+  contents: read
+
+# A newer push to the same branch makes the older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test:
+    name: Lint & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - uses: arduino/setup-task@c0bc642852239c2689f73f4ea6459c29405f3c52 # v3.0.0
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      # The Gradle build runs the Tailwind CLI first and stops if .tools/ is empty.
+      - run: task install
+      - run: task lint
+      # Needs Docker for the Testcontainers tests (the runner has it) and enforces the 100 % gate.
+      - run: task test
+      - name: Upload test and coverage reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reports
+          path: |
+            build/reports/tests
+            build/reports/jacoco
+          if-no-files-found: ignore
+
+  migrations:
+    name: Migrations (Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - uses: arduino/setup-task@c0bc642852239c2689f73f4ea6459c29405f3c52 # v3.0.0
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task install
+      # Applies every Flyway migration to a throw-away pgvector Postgres: H2 can pass where
+      # Postgres fails (PLAN.md §7).
+      - run: task migrate-check
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The Dockerfile and compose.e2e.yml arrive with #15. Until then this job passes without
+      # doing anything, so the required check can already be switched on; #15 removes the
+      # `hashFiles` conditions below and makes every step unconditional.
+      - name: Note that E2E is not set up yet
+        if: hashFiles('Dockerfile', 'compose.e2e.yml') == ''
+        run: 'echo "::notice::E2E and the Trivy scan arrive with #15 (Dockerfile, compose.e2e.yml, Playwright)."'
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
+      - uses: arduino/setup-task@c0bc642852239c2689f73f4ea6459c29405f3c52 # v3.0.0
+        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task install
+        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
+      - run: task test-e2e
+        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
+      # Trivy scans the image the e2e run just used. The table step is the gate (fails on a fixable
+      # HIGH/CRITICAL finding); the SARIF step feeds GitHub's code-scanning tab and runs on `main`
+      # only, because pull requests from Dependabot and forks get a read-only token.
+      - run: task build
+        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
+      - name: Trivy scan (gate)
+        if: hashFiles('Dockerfile', 'compose.e2e.yml') != ''
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: meal-magician
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Trivy scan (SARIF)
+        if: hashFiles('Dockerfile', 'compose.e2e.yml') != '' && github.event_name == 'push'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: meal-magician
+          format: sarif
+          output: trivy.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+      - name: Upload SARIF
+        if: hashFiles('Dockerfile', 'compose.e2e.yml') != '' && github.event_name == 'push'
+        uses: github/codeql-action/upload-sarif@793b778da9c9275a0f276522b27cb5fc14bba279 # v4
+        with:
+          sarif_file: trivy.sarif

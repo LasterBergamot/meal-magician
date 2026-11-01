@@ -73,4 +73,10 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | Secret Manager | https://cloud.google.com/secret-manager/docs |
 | Neon | https://neon.com/docs |
 | GitHub Actions | https://docs.github.com/en/actions |
+| Dependabot configuration | https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference |
+| GitHub Wiki (and pushing to its git repo) | https://docs.github.com/en/communities/documenting-your-project-with-wikis/adding-or-editing-wiki-pages-locally |
+| `arduino/setup-task` (installs Task in CI) | https://github.com/arduino/setup-task |
+| `gradle/actions/setup-gradle` | https://github.com/gradle/actions/blob/main/docs/setup-gradle.md |
+| Trivy and `aquasecurity/trivy-action` | https://trivy.dev/docs/ |
+| actionlint (workflow linter, handy before pushing) | https://github.com/rhysd/actionlint |
 | GHCR | https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry |
