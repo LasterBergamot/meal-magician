@@ -8,6 +8,10 @@ its scope and a checklist, and the **Progress log** at the bottom records what h
 Update both as work lands: tick the box, add the issue and PR numbers, and add a log row.
 
 > **Agent starting work:** read [§9 Start here](#9-start-here-next-agent) first.
+>
+> **UI redesign:** the look, the app shell and the component set are planned separately in
+> [`plan-ui-redesign.md`](plan-ui-redesign.md) (design system, phases R0–R9). Read it before building
+> any page in Phases 2–5, and build those pages from its components.
 
 ---
 
@@ -371,6 +375,8 @@ meal-magician/
 4. Then work on Phase 0 issue by issue: a branch per issue, PRs through `create-pr`.
 5. Before scaffolding, look up the current latest versions (Spring Boot 4.x, Spring Modulith,
    JTE, the Gradle plugins, Testcontainers, Playwright) and pin them in the version catalog.
+6. Before building a page of Phase 2–5, check `plan-ui-redesign.md`: the shell, tokens and
+   components it defines come first, so a page is not built twice.
 
 ---
 
@@ -402,3 +408,4 @@ meal-magician/
 | 2026-11-01 | Invites (#42): `invite` table (V5, hash only), `InviteService` (create, list, revoke, preview, join; single use by a guarded `UPDATE`), `identity.AllowlistEditor` so an invited address may sign in, the owner's invite section on `/households` and the `/join/<code>` page. v0.1.1 (households) released to Cloud Run the same day. | #18, #42, #49 |
 | 2026-11-01 | Phase 1 started: sub-issues #41–#45 filed under epic #2. Households (#41): `household`/`membership` tables (V4), `HouseholdService` with the 404/403 rules, the session-based `CurrentHouseholdResolver` and `CurrentHousehold` controller parameter, the `/households` page (create, rename, switch), the current household in the header. Also confirmed with Cloud Monitoring that the Cloud Run service had scaled to zero ~15 min after the v0.1.0 deploy (Neon suspend still the owner's to confirm). | #18, #41, #46 |
 | 2026-11-01 | Tenant guard (#44): `TenantIsolationTests` + `TenantEndpoints` registry + `TenantWorld` fixture (two households, four people); unregistered and stale registrations fail, and the decision logic is tested on leaky stubs. `tests.md` explains how to register an endpoint. | #44, #53 |
+| 2026-11-01 | UI redesign planned: a design system agreed with the owner (storybook look: violet, gold, outlines, sparkles; Moonlight and Midnight themes; bottom tab bar on phone, sidebar on desktop) and written down as `plan-ui-redesign.md` with phases R0–R9. No code changed yet. | #55 |

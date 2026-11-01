@@ -29,6 +29,7 @@ All decisions are in `PLAN.md` §2. **Status:** Phase 0 is done except owner che
 | Module boundaries, packages, events | `.claude/rules/java-modules.md` (loads for `src/main/java/**`) |
 | Entities, Flyway, H2 vs Postgres, tenant scoping | `.claude/rules/persistence.md` (loads for `src/main/resources/db/**`, `**/internal/*Entity.java`, `**/internal/*Repository.java`) |
 | Auth, allowlist, invites, CSP, prod config | `.claude/rules/security.md` (loads for `**/identity/**`, `**/household/**`, `**/config/**`) |
+| UI redesign: design system, shell, components, phases R0–R9 | `plan-ui-redesign.md` |
 | JTE templates, htmx, Alpine, Tailwind, i18n, PWA | `.claude/rules/web-ui.md` (loads for `src/main/jte/**`, `src/main/resources/static/**`, `src/main/resources/messages*`) |
 | Tests and coverage | `.claude/rules/tests.md` (loads for `src/test/**`, `src/e2eTest/**`) |
 | Dockerfile, Compose, Cloud Run, CI workflows | `.claude/rules/container.md` |
