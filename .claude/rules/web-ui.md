@@ -34,8 +34,9 @@ paths:
   file needs its licence text and hash there, and a `@font-face` in `app.css`. Headings use
   `--font-display` = Fredoka, then Nunito (Fredoka lacks ő/ű, Nunito draws them), then the system
   faces; never name a web font there that is not hosted (`FontFallbackTest` checks). Neither font
-  has `tnum`, so do not rely on `tabular-nums`. The old
-  `brand-*` scale is kept until R5d, so `brand-700` still works for now.
+  has `tnum`, so do not rely on `tabular-nums`. The old green `brand-50…800` scale is gone (R5d):
+  `UiGuardTest` fails on a `brand-<digit>` or `stone-` class, or a raw palette colour (`bg-white`,
+  `text-red-600`), in any template or `app.js`, and on the old scale in `app.css`.
 - **Templates and `ViewContext`:** every template declares `@param ViewContext ctx` (translations,
   CSRF token; `ViewContextAdvice` adds it to every model) and wraps pages in
   `@template.layout.base(ctx = ctx, title = ..., content = @`...`)`. A URL that serves a page and
@@ -128,8 +129,7 @@ paths:
   the tokens, which already switch with `data-theme`. The `theme-color` metas get their `media`
   from `Theme.themeColorMedia`. `ThemePreferenceE2ETest` checks the first paint with JS off.
 - **Sign-in, error, hello and allowlist pages (R5a, R5c, #85):** built only from the `ui/`
-  components and tokens, no `brand-\d`/`stone-` class (`RestyledPageTemplatesTest` pins the four
-  folders until R5d). `login/page` and the standalone `error/_message` are one centred `ui/_card`
+  components and tokens, no `brand-\d`/`stone-` class (`UiGuardTest` checks every template). `login/page` and the standalone `error/_message` are one centred `ui/_card`
   outside the shell; the htmx error fragment is a `danger` `ui/_alert`. `ui/_button` renders a
   `<button>`, so a link that looks like a button (sign in, back home) is an `<a>` with the button's
   classes written out. The allowlist remove is a `ui/_confirm` (not `hx-confirm`) whose confirm
