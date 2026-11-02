@@ -37,6 +37,9 @@ class PlanEditingE2ETest {
   private static final String BASE_URL =
       System.getProperty("e2e.baseUrl", "http://localhost:18080");
 
+  /** Tailwind's {@code lg} breakpoint: the week is a table from this width, a list below it. */
+  private static final int DESKTOP_FROM = 1024;
+
   private static Playwright playwright;
   private static Browser browser;
 
@@ -144,11 +147,20 @@ class PlanEditingE2ETest {
       item(other2, lunch, "Másik tab").waitFor();
       other2.close();
       page.locator("#slot-note").fill("Késő változtatás");
+      // Resolves once the slot sheet's late close event has run, the one that used to pull focus
+      // back from the banner to the meal.
+      page.evaluate(
+          "() => { window.slotSheetClosed = new Promise((done) => document.getElementById('slot-sheet')"
+              + ".addEventListener('close', () => setTimeout(done), { once: true })); }");
       page.locator("#note-form button[type=submit]").click();
       Locator banner = page.locator("#plan-conflict [role=alert]");
       banner.waitFor();
       assertThat(banner.textContent()).contains("Valaki más közben");
       assertThat(page.locator("dialog[open]").count()).isZero();
+      page.evaluate("() => window.slotSheetClosed");
+      assertThat(page.evaluate("document.activeElement.closest('#plan-conflict') !== null"))
+          .as("focus is on the banner's action")
+          .isEqualTo(true);
       page.evaluate("window.scrollTo(0, 0)");
       shots(page, device, "conflict");
       page.locator("#plan-conflict a:has-text('Újratöltés')").click();
@@ -156,7 +168,7 @@ class PlanEditingE2ETest {
       assertThat(item(page, lunch, gulyas).textContent()).doesNotContain("Késő változtatás");
 
       // Keyboard: Enter on the add control opens the pick sheet, Escape gives the focus back.
-      page.locator("a[data-add='" + breakfast + "']:visible").focus();
+      add(page, breakfast).focus();
       page.keyboard().press("Enter");
       page.locator("dialog#pick-sheet[open]").waitFor();
       page.locator("#pick-quick-form").waitFor();
@@ -195,9 +207,20 @@ class PlanEditingE2ETest {
     return new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED);
   }
 
-  /** The visible box of one day and slot type (the phone's row or the desktop's cell). */
+  /**
+   * The box of one day and slot type in the layout this window shows: the phone's row (an {@code
+   * li}) below {@code lg}, the desktop's cell (a {@code div}) from {@code lg} up. The window's
+   * width picks it, not {@code :visible}. Right after a save reloads the page, the stylesheet may
+   * not apply yet, and then both layouts count as visible (a strict-mode violation).
+   */
   private static Locator group(Page page, String key) {
-    return page.locator("[data-group='" + key + "']:visible");
+    String tag = page.viewportSize().width < DESKTOP_FROM ? "li" : "div";
+    return page.locator(tag + "[data-group='" + key + "']");
+  }
+
+  /** The add control of one day and slot type, in the layout this window shows. */
+  private static Locator add(Page page, String key) {
+    return group(page, key).locator("a[data-add='" + key + "']");
   }
 
   private static Locator item(Page page, String key, String text) {
@@ -211,7 +234,7 @@ class PlanEditingE2ETest {
   }
 
   private static void openAdd(Page page, String key) {
-    click(page.locator("a[data-add='" + key + "']:visible"));
+    click(add(page, key));
     sheetLoaded(page, "#pick-quick-form");
   }
 

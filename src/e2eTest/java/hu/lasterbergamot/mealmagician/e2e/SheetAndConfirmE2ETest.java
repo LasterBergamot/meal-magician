@@ -123,6 +123,41 @@ class SheetAndConfirmE2ETest {
     }
   }
 
+  /**
+   * Chrome fires a dialog's {@code close} event a frame after the dialog closed. Focus that moved
+   * on in between (a quick Enter on the next control, or the conflict banner's action) must stay
+   * there, not be pulled back to the sheet's opener. The close and the focus happen in one script,
+   * so the late event always comes after them and the test does not depend on timing.
+   */
+  @ParameterizedTest(name = "{0} ({1}x{2})")
+  @CsvSource({"phone, 390, 844", "desktop, 1280, 800"})
+  void focusThatMovesOnAfterTheSheetClosesStaysThere(String device, int width, int height) {
+    try (BrowserContext context =
+        browser.newContext(new Browser.NewContextOptions().setViewportSize(width, height))) {
+      Page page = signedIntoStyleGuide(context);
+      openerButton(page, "Lap megnyitása").focus();
+      page.keyboard().press("Enter");
+      page.locator("#dev-sheet").waitFor(visible());
+      Locator elsewhere = openerButton(page, "Eltávolítás");
+
+      elsewhere.evaluate(
+          """
+          (element, id) => new Promise((done) => {
+            const dialog = document.getElementById(id);
+            // Registered after the sheet's own listener, so it runs once that one has.
+            dialog.addEventListener('close', () => setTimeout(done), { once: true });
+            dialog.close();
+            element.focus();
+          })
+          """,
+          "dev-sheet");
+
+      assertThat(isFocused(elsewhere))
+          .as("the late close event leaves focus where it went on %s", device)
+          .isTrue();
+    }
+  }
+
   @Test
   void swipingTheGrabberDownClosesThePhoneSheet() {
     try (BrowserContext context =

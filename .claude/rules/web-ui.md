@@ -104,7 +104,10 @@ paths:
   on phones, a centred dialog from `md`), `ui/_confirm.jte` is the destructive confirmation (always
   a centred `alertdialog`). Both take a `trigger` whose control has `x-on:click="show"` and close
   through `hide`; the Alpine `sheet` component in `app.js` traps Tab, restores focus to the
-  opener and handles the phone's swipe-down. Use `_confirm` for anything destructive, never a
+  opener and handles the phone's swipe-down. Chrome fires a dialog's `close` event a frame late,
+  so the component gives the opener focus only when focus was lost (on the body); focus that moved
+  on in the meantime stays where it went (a quick Enter on the next control, the conflict banner's
+  action). Use `_confirm` for anything destructive, never a
   sheet for it. Never open a sheet from a sheet, and keep an open confirm out of any htmx swap
   region. `dev/_overlays.jte` shows both; `SheetAndConfirmE2ETest` drives them from the keyboard.
 - **App shell and navigation (R4, #79):** `base.jte` draws `layout/_shell.jte` when `ctx.user()`
