@@ -4,14 +4,11 @@ import hu.lasterbergamot.mealmagician.shared.ClockConfig;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.TimeZone;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.web.servlet.LocaleResolver;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.CookieLocaleResolver;
 
 /**
@@ -27,19 +24,7 @@ import org.springframework.web.servlet.i18n.CookieLocaleResolver;
  * messages_hu} and {@code messages_en}.
  */
 @Configuration(proxyBeanMethods = false)
-public class I18nConfig implements WebMvcConfigurer {
-
-  private final ObjectProvider<LanguageStore> languageStores;
-
-  /**
-   * Creates the configuration.
-   *
-   * @param languageStores the store that keeps a signed-in person's language; the switch
-   *     interceptor asks it for each change
-   */
-  public I18nConfig(ObjectProvider<LanguageStore> languageStores) {
-    this.languageStores = languageStores;
-  }
+public class I18nConfig {
 
   /** Name of the cookie that stores the chosen language ({@code hu} or {@code en}). */
   public static final String COOKIE_NAME = "mm_lang";
@@ -88,10 +73,5 @@ public class I18nConfig implements WebMvcConfigurer {
     resolver.setCookieHttpOnly(true);
     resolver.setCookieSameSite("Lax");
     return resolver;
-  }
-
-  @Override
-  public void addInterceptors(InterceptorRegistry registry) {
-    registry.addInterceptor(new LanguageSwitchInterceptor(languageStores));
   }
 }

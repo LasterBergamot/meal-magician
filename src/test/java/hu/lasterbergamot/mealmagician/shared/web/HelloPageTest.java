@@ -32,7 +32,8 @@ class HelloPageTest {
             content().string(org.hamcrest.Matchers.containsString("Ma 2026. október 31., szombat")))
         // No one is signed in in this slice, so the page is the anonymous layout with the language
         // choice in its header; the app shell is covered by AppShellPagesTest.
-        .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"?lang=en\"")))
+        .andExpect(
+            content().string(org.hamcrest.Matchers.containsString("name=\"lang\" value=\"en\"")))
         .andExpect(
             content()
                 .string(
@@ -62,25 +63,14 @@ class HelloPageTest {
   }
 
   @Test
-  void switchesToEnglishAndRemembersTheChoiceInACookie() throws Exception {
-    MvcResult result =
-        mvc.perform(get("/").param("lang", "en"))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("<html lang=\"en\"")))
-            .andExpect(
-                content().string(org.hamcrest.Matchers.containsString("Hello, Meal Magician!")))
-            .andExpect(
-                content()
-                    .string(
-                        org.hamcrest.Matchers.containsString(
-                            "Today is Saturday, October 31, 2026.")))
-            .andReturn();
-
-    Cookie cookie = result.getResponse().getCookie(I18nConfig.COOKIE_NAME);
-    assertThat(cookie).isNotNull();
-    assertThat(cookie.getValue()).isEqualTo("en");
-    assertThat(cookie.isHttpOnly()).isTrue();
-    assertThat(cookie.getMaxAge()).isEqualTo(365 * 24 * 60 * 60);
-    assertThat(cookie.getPath()).isEqualTo("/");
+  void rendersEnglishWhenTheRememberedLanguageIsEnglish() throws Exception {
+    mvc.perform(get("/").cookie(new Cookie(I18nConfig.COOKIE_NAME, "en")))
+        .andExpect(content().string(org.hamcrest.Matchers.containsString("<html lang=\"en\"")))
+        .andExpect(content().string(org.hamcrest.Matchers.containsString("Hello, Meal Magician!")))
+        .andExpect(
+            content()
+                .string(
+                    org.hamcrest.Matchers.containsString("Today is Saturday, October 31, 2026.")));
   }
 
   @Test
@@ -90,15 +80,9 @@ class HelloPageTest {
   }
 
   @Test
-  void switchesBackToHungarian() throws Exception {
-    mvc.perform(get("/").param("lang", "hu").cookie(new Cookie(I18nConfig.COOKIE_NAME, "en")))
-        .andExpect(content().string(org.hamcrest.Matchers.containsString("<html lang=\"hu\"")));
-  }
-
-  @Test
-  void ignoresUnsupportedLanguageCodes() throws Exception {
+  void aLangQueryParameterChangesNothingBecauseTheSwitchIsAPost() throws Exception {
     MvcResult result =
-        mvc.perform(get("/").param("lang", "de"))
+        mvc.perform(get("/").param("lang", "en"))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("<html lang=\"hu\"")))
             .andReturn();
 
@@ -113,11 +97,11 @@ class HelloPageTest {
 
   @Test
   void marksTheCurrentLanguageInTheSwitcher() throws Exception {
-    mvc.perform(get("/").param("lang", "en"))
+    mvc.perform(get("/").cookie(new Cookie(I18nConfig.COOKIE_NAME, "en")))
         .andExpect(
             content()
                 .string(
                     org.hamcrest.Matchers.matchesPattern(
-                        "(?s).*hreflang=\"en\"[^>]*aria-current=\"true\".*")));
+                        "(?s).*lang=\"en\" aria-label=\"English\"\\s+aria-current=\"true\".*")));
   }
 }

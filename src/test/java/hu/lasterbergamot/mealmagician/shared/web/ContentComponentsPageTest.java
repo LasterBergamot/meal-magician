@@ -139,10 +139,28 @@ class ContentComponentsPageTest {
     String avatar =
         element(
             page(),
-            "aria-hidden=\"true\"\\s+class=\"inline-flex shrink-0 items-center justify-center rounded-full border-2 border-outline bg-accent",
+            "aria-hidden=\"true\" data-tone=\"gold\"\\s+class=\"inline-flex shrink-0 items-center justify-center rounded-full border-2 border-outline",
             "</span>");
 
-    assertThat(avatar).contains("size-11").contains("text-on-accent").contains(">KA</span>");
+    assertThat(avatar)
+        .contains("bg-accent")
+        .contains("size-11")
+        .contains("text-on-accent")
+        .contains(">KA</span>");
+  }
+
+  @Test
+  void theSoftAvatarSpendsNoGoldForScreensThatAlreadyHaveSome() throws Exception {
+    String avatar =
+        element(
+            page(),
+            "aria-hidden=\"true\" data-tone=\"soft\"\\s+class=\"inline-flex shrink-0 items-center justify-center rounded-full border-2 border-outline",
+            "</span>");
+
+    assertThat(avatar)
+        .contains("bg-brand-soft text-brand-ink")
+        .contains("size-8")
+        .doesNotContain("bg-accent");
   }
 
   @Test

@@ -7,9 +7,9 @@ import java.util.Locale;
  * Remembers the language a person picked in the database, so that it is used again after their next
  * sign-in (the stored per-user language, PLAN.md D14, {@code app_user.locale}).
  *
- * <p>The cookie that {@link LanguageSwitchInterceptor} sets is per browser; this is the part that
- * follows the person to another device. {@code shared} only declares the interface, the {@code
- * identity} module implements it, so {@code shared} does not depend on {@code identity}.
+ * <p>The cookie that {@link LanguageController} sets is per browser; this is the part that follows
+ * the person to another device. {@code shared} only declares the interface, the {@code identity}
+ * module implements it, so {@code shared} does not depend on {@code identity}.
  */
 @FunctionalInterface
 public interface LanguageStore {

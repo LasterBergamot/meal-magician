@@ -54,8 +54,8 @@ paths:
   `messages_hu.properties` (default) and `messages_en.properties`; both files must have the same
   keys (a test checks it, and another fails on hard-coded text in templates). Dates via the
   locale's formatter; weeks start Monday. The language is the cookie `mm_lang`, set by
-  `?lang=hu|en` (per user in the DB from #12); the browser's `Accept-Language` is ignored on
-  purpose. Brand names and `HU`/`EN` come from the bundles too.
+  `POST /language` (`lang=hu|en`, CSRF-protected, public; per user in the DB too, #79 and #83), never
+  a GET link; the browser's `Accept-Language` is ignored on purpose. Brand names and `HU`/`EN` come from the bundles too.
 - **PWA (D5):** `manifest.webmanifest`, icons (`favicon.svg`, 192/512, maskable; `scripts/generate-icons.py` draws them), `sw.js` that only caches
   static assets — no offline data, never cache HTML pages with user data. The manifest is served
   by `ManifestController` (Tomcat does not know `.webmanifest`).
@@ -89,7 +89,8 @@ paths:
   (`slot` = `BREAKFAST`, `LUNCH`, `DINNER` or `SNACK`; the word comes from `ctx.t("slot.*")` and
   is passed in as `label`, and a chip always shows its icon). `ui/_card.jte` (`variant` default,
   accent or selected), `ui/_row.jte` (an `li` for a list in a `ul`), `ui/_avatar.jte` (initials
-  passed in, decorative), `ui/_alert.jte` (`kind` success, info, warning or danger; warning and
+  passed in, decorative; `tone` gold, the default, or `soft` where gold is already spent, as in
+  the phone top bar), `ui/_alert.jte` (`kind` success, info, warning or danger; warning and
   danger are `role="alert"`), `ui/_empty.jte` and `ui/_skeleton_rows.jte` (`aria-busy`, a
   screen-reader label). Every fragment takes its texts from the caller (`ctx.t` at the call site),
   so the templates need no `ViewContext`. Use the design tokens only: `ContentComponentsPageTest`

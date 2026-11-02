@@ -6,15 +6,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.Locale;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.i18n.LocaleContextHolder;
 
 class MessagesTest {
 
-  // No language store is needed to translate; an empty provider stands in for "no identity module".
-  private final I18nConfig config =
-      new I18nConfig(new StaticListableBeanFactory().getBeanProvider(LanguageStore.class));
+  private final I18nConfig config = new I18nConfig();
   private final Messages messages = config.messages(config.messageSource());
 
   @AfterEach

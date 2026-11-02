@@ -109,7 +109,7 @@
           @template.ui._badge(tone = "brand", label = ctx.t("household.current"), icon = IconName.CHECK)
         `)
         @template.ui._row(selected = false, content = @`
-          @template.ui._avatar(initials = ctx.t("dev.content.sample.bela.initials"), size = "sm")
+          @template.ui._avatar(initials = ctx.t("dev.content.sample.bela.initials"), size = "sm", tone = "soft")
           <div class="flex min-w-0 flex-1 flex-col">
             <span class="font-sans text-base font-extrabold leading-6 text-ink">${ctx.t("dev.content.sample.bela")}</span>
             <span class="text-sm font-medium leading-5 text-ink-muted">${ctx.t("dev.content.row.caption")}</span>

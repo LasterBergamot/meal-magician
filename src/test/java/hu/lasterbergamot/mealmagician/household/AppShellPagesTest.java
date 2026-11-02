@@ -4,8 +4,12 @@ import static hu.lasterbergamot.mealmagician.household.HouseholdTestSupport.sign
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import jakarta.persistence.EntityManager;
@@ -101,14 +105,45 @@ class AppShellPagesTest {
 
   @Test
   void aLanguageChosenWhileSignedInIsSavedOnThePerson() throws Exception {
-    mvc.perform(get("/").with(signedInAs(anna)).param("lang", "en"))
-        .andExpect(content().string(containsString("<html lang=\"en\"")));
+    mvc.perform(
+            post("/language")
+                .with(signedInAs(anna))
+                .with(csrf())
+                .header("Referer", "http://localhost/households")
+                .param("lang", "en"))
+        .andExpect(status().isSeeOther())
+        .andExpect(header().string("Location", "/households"))
+        .andExpect(cookie().value("mm_lang", "en"));
 
     // The change is made on the entity, which Hibernate writes at the next flush; the plain JDBC
     // query below would not see it before that, so flush first.
     em.flush();
     assertThat(jdbc.queryForObject("select locale from app_user where id = ?", String.class, anna))
         .isEqualTo("en");
+  }
+
+  @Test
+  void aGetWithALangParameterDoesNotChangeTheStoredLanguage() throws Exception {
+    mvc.perform(get("/").with(signedInAs(anna)).param("lang", "en"))
+        .andExpect(content().string(containsString("<html lang=\"hu\"")));
+
+    em.flush();
+    assertThat(jdbc.queryForObject("select locale from app_user where id = ?", String.class, anna))
+        .isNotEqualTo("en");
+  }
+
+  @Test
+  void aLanguageSwitchWithoutTheCsrfTokenIsRefused() throws Exception {
+    mvc.perform(post("/language").with(signedInAs(anna)).param("lang", "en"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void theLanguageButtonsArePostFormsWithTheCsrfField() throws Exception {
+    mvc.perform(get("/").with(signedInAs(anna)))
+        .andExpect(content().string(containsString("method=\"post\" action=\"/language\"")))
+        .andExpect(content().string(containsString("name=\"lang\" value=\"en\"")))
+        .andExpect(content().string(not(containsString("href=\"?lang="))));
   }
 
   @Test

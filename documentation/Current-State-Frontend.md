@@ -83,7 +83,7 @@ Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` 
 - **Sign-out** (`layout/_sign_out.jte`) is a POST form to `/logout` with the CSRF token as the hidden
   field `_csrf`, Spring Security's default parameter name. It is not a link, because a link would
   let any other page sign the person out.
-- **Language:** the `?lang=hu|en` switch still sets the cookie `mm_lang`, and for a signed-in person
+- **Language:** the switch (`POST /language`, see "Translations (i18n)") sets the cookie `mm_lang`, and for a signed-in person
   it also saves `app_user.locale` (`identity.internal.StoredLanguage`, which implements
   `shared.i18n.LanguageStore`). At the next sign-in, `SessionCleanupOnSignIn` hands the stored value
   to `SignInLanguage`, which writes the cookie, so the choice follows the person to a new browser.
@@ -97,9 +97,9 @@ Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` 
   on a phone, the sidebar on a desktop), `<main id="main">`.
 - **Admin link:** the allowlist page (`/admin/allowlist`) stays reachable for instance admins from
   the sidebar (desktop) and the avatar menu (phone).
-- **Known gap for the design review:** on a phone, the avatar is a gold disc and the current tab
-  has a gold outline, so two gold marks share a screen. Plan §3.1 asks for one. The avatar is a
-  shared component (`ui/_avatar`), so changing it is a decision for the owner, not for this shell.
+- **One gold mark on a phone (#83):** the current tab has the gold outline, so the top bar's avatar
+  uses the `soft` tone (`brand-soft` with `brand-ink`) instead of the gold disc. Plan §3.1 allows one
+  gold highlight per screen.
 
 ## Components and the style guide (R2a)
 
@@ -192,8 +192,9 @@ design tokens (R1) and shown in every state on `/dev/ui`:
   card (`after:inset-0`).
 - `ui/_row.jte`: a list item of at least 60 px with a dashed separator, so a list is a `ul` in a
   card with `li` rows. A selected row always comes with a Current badge.
-- `ui/_avatar.jte`: a gold disc with one or two initials (`sm` 32 px, `md` 44 px). The caller
-  computes the initials; the avatar is decorative because the name beside it says who it is.
+- `ui/_avatar.jte`: a disc with one or two initials (`sm` 32 px, `md` 44 px). `tone` is `gold` (the
+  default, a gold fill) or `soft` (`brand-soft` with `brand-ink`, for a screen that already has its
+  gold mark, such as the phone top bar). The caller computes the initials; the avatar is decorative because the name beside it says who it is.
 - `ui/_alert.jte`: an icon, a bold title, one sentence and an optional action. `success` and
   `info` are `role="status"`; `warning` and `danger` are `role="alert"`. There are no toasts.
 - `ui/_empty.jte`: the empty state, a gold-outlined round icon with two sparkles, an `h2`, one
@@ -268,15 +269,17 @@ expressions like `open = !open`, so a template only names a component (`x-data="
   `{0}`, `{1}` (apostrophes must be doubled).
 - `shared.i18n.Messages` is the helper (public API of the `shared` module). A missing key throws
   on purpose.
-- The language links (in the shell, or the anonymous header) go to `?lang=hu` / `?lang=en`.
-  `LanguageSwitchInterceptor` stores the choice in the cookie `mm_lang` (one year, `HttpOnly`,
-  `SameSite=Lax`). The browser's `Accept-Language` is ignored: Hungarian is the default. Anything
-  other than hu/en is ignored.
+- The language buttons (in the shell, or the anonymous header) are small forms that `POST` to
+  `/language` with the `_csrf` field. `LanguageController` stores the choice in the cookie `mm_lang`
+  (one year, `HttpOnly`, `SameSite=Lax`) and answers `303` back to the page the person came from: the
+  path and query of the `Referer`, only when it is from this host, otherwise `/`. The browser's
+  `Accept-Language` is ignored: Hungarian is the default. Anything other than hu/en is ignored.
+  `/language` is in `PUBLIC_PATHS` because anonymous visitors switch language too (CSRF still
+  applies). A `?lang=` query on a GET does nothing any more (#83).
 - **Per user (R4, #79):** for a signed-in person the choice is also saved in `app_user.locale`, and
   it is applied again at the next sign-in, on any browser (see "App shell and navigation").
-  Anonymous switches change only the cookie. The save happens on the `?lang=` request itself, which
-  is a GET; a cross-site link can therefore change a signed-in person's stored language, a small
-  nuisance rather than a data risk. Changing it on a POST would need a form in the shell.
+  Anonymous switches change only the cookie. Because the switch is a CSRF-protected POST, another
+  site cannot change a person's stored language.
 - Guard tests (`UiGuardTest`): both bundles have the same keys and placeholders, every
   `ctx.t("key")` in a template exists, and no template contains hard-coded visible text.
 
