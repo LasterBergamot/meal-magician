@@ -10,12 +10,18 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   (`layout/_shell.jte`, see "App shell and navigation" below). An anonymous visitor (sign-in, error
   pages) gets a plain header with the HU/EN language links, `<main>` with an empty `#error-slot`, and
   a footer. Touch targets are at least 44 px.
-- `hello/page.jte` + `hello/_greeting.jte`: the temporary home page `/`. The "Refresh" button
+- `hello/page.jte` + `hello/_greeting.jte`: the temporary home page `/` (restyled in R5a, #85).
+  Inside the shell: an `h1` with one sparkle, the lead sentence and a `ui/_card` holding today's
+  date (clock icon) and a secondary "Refresh" `ui/_button`. The button
   asks `/` again through htmx; because the request carries `HX-Request`, the controller returns
   only the `_greeting` fragment. Every later screen follows this pattern (`Htmx.view(...)`).
 - `error/page.jte` + `error/_message.jte`: our 404, 403 and 500 pages (`AppErrorController`;
   other statuses show the 500 text). A normal request gets a full page. An htmx request gets the
   fragment, and `HX-Retarget` puts it into `#error-slot` so the page around it stays intact.
+  Restyled in R5a (#85): the full page is a centred card (alert icon, `h1`, the sentence, a primary
+  "Back to the home page" link); the fragment is a `danger` `ui/_alert` with a secondary link as
+  its action. Both links are anchors styled like `ui/_button`, because that component renders a
+  `<button>`.
   Exception: htmx 401/403 responses make `app.js` send the whole page to `/`, because an expired
   session looks like a 403; the server also answers an anonymous htmx request with 401 +
   `HX-Redirect: /login` (#12), which htmx follows by itself.
@@ -46,12 +52,15 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   swap the whole `#members` section. A refused action (the last owner leaving, an owner naming
   themselves) answers 409 with the same section and a red message; a successful leave sends the
   browser to `/households` with `HX-Redirect`.
-- `admin/allowlist.jte` and `admin/_allowlist.jte` (#45): the page at `/admin/allowlist`, admins
-  only. An add form (one e-mail field) and the list of addresses with where each came from and when
-  it was added; every row except the bootstrap admins has a Remove button (its own small form with
-  the address in a hidden field, so no JSON is built in an attribute, plus `hx-confirm`). Posts swap
-  the whole `#allowlist` section; a refused change answers 422 (add) or 409 (remove) with the same
-  section and a red message.
+- `admin/allowlist.jte` and `admin/_allowlist.jte` (#45, restyled in R5c, #85): the page at
+  `/admin/allowlist`, admins only, inside the shell in a reading-width column. Two cards: "Let
+  someone in" (a `ui/_field` with the 422 message under it and a primary Add button) and the list
+  (a `ui/_row` per address: the address, a badge for where it came from and when it was added). Every
+  row except the bootstrap admins has a danger Remove button that opens a `ui/_confirm` dialog
+  ("Remove x@y?"); the dialog's confirm button posts with `hx-include` pointing at a hidden input
+  holding the address (so no JSON is built in an attribute). Posts swap the whole `#allowlist`
+  section, which also closes the open dialog; a refused change answers 422 (add) or 409 (remove) with
+  the same section and the message.
 
 ## App shell and navigation (R4, #79)
 
@@ -329,8 +338,11 @@ rendered through Spring Security has them and `app.js` sends the header on htmx 
 ## Sign-in page (#12)
 
 `login/page.jte` (served by `identity.internal.LoginController` at `/login`, the only page an
-anonymous visitor sees) has one link, "Sign in with Google", to `/oauth2/authorization/google`.
-`?error` shows a retry notice (cancelled consent) and `?logout` a "signed out" notice. A refused
+anonymous visitor sees; restyled in R5a, #85) is one centred card outside the shell: the wizard
+brand mark with two sparkles, the wordmark as the `h1`, a tagline, one large primary link "Sign in
+with Google" to `/oauth2/authorization/google` (an anchor styled like the `lg` primary button) and
+a quiet line that only invited accounts get in. `?error` shows a `danger` alert (cancelled consent)
+and `?logout` a `success` alert above the button. A refused
 account does not come back here: it gets the 403 error page. A person who is already signed in is
 sent to `/`. Sign-out is the shell's button (a POST to `/logout`, see "App shell and navigation").
 

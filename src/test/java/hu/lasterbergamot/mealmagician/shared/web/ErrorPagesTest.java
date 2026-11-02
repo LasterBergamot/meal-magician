@@ -1,6 +1,7 @@
 package hu.lasterbergamot.mealmagician.shared.web;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -35,11 +36,8 @@ class ErrorPagesTest {
     mvc.perform(errorWithStatus(404))
         .andExpect(status().isNotFound())
         .andExpect(content().string(containsString("<html lang=\"hu\"")))
-        .andExpect(
-            content()
-                .string(
-                    containsString(
-                        "<h1 class=\"text-2xl font-bold\">Az oldal nem található</h1>")));
+        .andExpect(content().string(matchesPattern("(?s).*<h1[^>]*>Az oldal nem található</h1>.*")))
+        .andExpect(content().string(containsString("href=\"/\"")));
   }
 
   @Test
@@ -84,10 +82,11 @@ class ErrorPagesTest {
         .andExpect(header().string("HX-Reswap", "innerHTML"))
         .andExpect(header().string("Vary", "HX-Request"))
         .andExpect(content().string(not(containsString("<html"))))
-        .andExpect(
-            content()
-                .string(
-                    containsString("<h2 class=\"text-lg font-bold\">Az oldal nem található</h2>")));
+        .andExpect(content().string(containsString("data-kind=\"danger\"")))
+        .andExpect(content().string(containsString("role=\"alert\"")))
+        .andExpect(content().string(containsString("Az oldal nem található")))
+        .andExpect(content().string(containsString("href=\"/\"")))
+        .andExpect(content().string(not(containsString("<h1"))));
   }
 
   @Test

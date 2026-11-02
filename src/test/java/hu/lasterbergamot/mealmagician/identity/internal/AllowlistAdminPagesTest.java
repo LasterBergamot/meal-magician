@@ -115,6 +115,30 @@ class AllowlistAdminPagesTest {
   }
 
   @Test
+  void aRemovableAddressGetsAConfirmDialogThatPostsTheAddressHeldInAHiddenInput() throws Exception {
+    send("/admin/allowlist", "guest@example.com", true);
+
+    mvc.perform(get("/admin/allowlist").with(signedIn(adminId, true)))
+        .andExpect(status().isOk())
+        .andExpect(content().string(containsString("role=\"alertdialog\"")))
+        .andExpect(content().string(containsString("hx-post=\"/admin/allowlist/remove\"")))
+        .andExpect(content().string(containsString("hx-include=\"#allowlist-")))
+        .andExpect(content().string(containsString("name=\"email\" value=\"guest@example.com\"")))
+        .andExpect(content().string(containsString("guest@example.com eltávolítása?")))
+        .andExpect(content().string(not(containsString("hx-confirm"))));
+  }
+
+  @Test
+  void theOriginOfEachAddressIsShownAsABadge() throws Exception {
+    send("/admin/allowlist", "guest@example.com", true);
+
+    mvc.perform(get("/admin/allowlist").with(signedIn(adminId, true)))
+        .andExpect(content().string(containsString("data-tone=\"brand\"")))
+        .andExpect(content().string(containsString("data-tone=\"neutral\"")))
+        .andExpect(content().string(containsString("Itt hozzáadva")));
+  }
+
+  @Test
   void anAdminSeesTheHeaderLinkAndAMemberDoesNot() throws Exception {
     mvc.perform(get("/admin/allowlist").with(signedIn(adminId, true)))
         .andExpect(content().string(containsString("href=\"/admin/allowlist\"")));
@@ -160,7 +184,9 @@ class AllowlistAdminPagesTest {
     send("/admin/allowlist", "not-an-email", true)
         .andExpect(status().isUnprocessableContent())
         .andExpect(content().string(containsString("Adj meg egy érvényes e-mail-címet.")))
-        .andExpect(content().string(containsString("value=\"not-an-email\"")));
+        .andExpect(content().string(containsString("value=\"not-an-email\"")))
+        .andExpect(content().string(containsString("aria-invalid=\"true\"")))
+        .andExpect(content().string(containsString("id=\"allowlist\"")));
   }
 
   @Test

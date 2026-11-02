@@ -3,7 +3,8 @@
 
 @param ViewContext ctx
 @param AllowlistPage page
-<%-- The allowlist admin page. The same URL answers an htmx request with _allowlist only. --%>
+<%-- The allowlist admin page, rendered inside the app shell. The same URL answers an htmx request
+     with _allowlist only. --%>
 @template.layout.base(ctx = ctx, title = ctx.t("admin.allowlist.title"), content = @`
   @template.admin._allowlist(ctx = ctx, page = page)
 `)

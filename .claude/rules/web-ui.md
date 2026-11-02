@@ -127,4 +127,15 @@ paths:
   sidebar, so the component updates `aria-pressed` on all copies. A new page needs nothing: it uses
   the tokens, which already switch with `data-theme`. The `theme-color` metas get their `media`
   from `Theme.themeColorMedia`. `ThemePreferenceE2ETest` checks the first paint with JS off.
+- **Sign-in, error, hello and allowlist pages (R5a, R5c, #85):** built only from the `ui/`
+  components and tokens, no `brand-\d`/`stone-` class (`RestyledPageTemplatesTest` pins the four
+  folders until R5d). `login/page` and the standalone `error/_message` are one centred `ui/_card`
+  outside the shell; the htmx error fragment is a `danger` `ui/_alert`. `ui/_button` renders a
+  `<button>`, so a link that looks like a button (sign in, back home) is an `<a>` with the button's
+  classes written out. The allowlist remove is a `ui/_confirm` (not `hx-confirm`) whose confirm
+  button sends `hx-include="#<id>-email"`, a hidden input beside it, because an address may
+  contain a quote and must not be pasted into JSON. The id and the badge tone come from
+  `AllowlistRow.domId()` and `badgeTone()`: JTE's `loop` variable does not exist here, and
+  `UiGuardTest` reads an inline `!{var ...}` in a template as visible text. The whole `#allowlist` section is the swap target, so a
+  successful remove also closes the dialog.
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.
