@@ -287,6 +287,52 @@ is in [[Current State: Backend]].
   (quick add with its 422, library pick, note, reorder, move, remove behind the confirm, the
   two-tab conflict, keyboard focus), which also saves screenshots in both themes.
 
+### Reusing days and weeks (#110)
+
+`PlanReuseController` (`planning/internal`) puts the backend of #109 (copy, plan templates,
+occasions) on the week page. All routes are registered in `TenantEndpoints` and open to every member.
+
+| Route | What it does |
+|---|---|
+| `GET /plan/reuse/day?date=` and `GET /plan/reuse/week?week=` | the reuse sheet's content (also a page of its own, `plan/reuse.jte`) |
+| `POST /plan/days/copy?mode=` (`from`, `to` dates) | copies a day onto another |
+| `POST /plan/weeks/copy?mode=` (`from`, `to` week codes) | copies a week onto another, each meal keeping its weekday |
+| `POST /plan/templates` (`scope`, `date`, `name`) | saves a day or a week as a template |
+| `POST /plan/templates/{id}/apply?mode=` (`date`) | applies a template to a day, or to the week of the date |
+
+- **One page-level sheet**, `reuse-sheet`, a third beside the pick and slot sheets in `plan/week.jte`.
+  It opens from a Reuse icon in each day (phone day header, desktop column header, both with
+  `data-reuse="<date>"`) and from the "Reuse this week" button under the stepper
+  (`#plan-reuse-week`). All are real links, so without JavaScript they open `plan/reuse.jte`.
+- **Three parts** (`plan/_reuse.jte`): copy to another day (a date field, preselected to the same
+  weekday a week later) or to another week (a select of the next 12 weeks, the shown week left out);
+  save as a template (`_reuse_save.jte`); apply a template of the same scope. An empty day or week
+  only offers the templates, since there is nothing to copy or save.
+- **Add and Replace.** "Add" merges the copy after the meals already there. "Replace" empties the
+  target first and sits behind a `ui/_confirm`. The copy form's confirm sits **after** the form
+  (a dialog inside a swapped region would vanish) and its button sends the form's fields with
+  `hx-include="#copy-form"`. A template's Replace confirm has no form around it, so its address
+  carries the date (`...apply?mode=REPLACE&date=...`).
+- **Results.** Success redirects to the target day's week (`PlanResponses.toDay`). Copying onto the
+  same day or week, or from an empty one, is 422 with `HX-Retarget: #plan-conflict`, so every open
+  dialog closes and a warning with a Reload link shows (`plan/_reuse_error.jte`; without htmx the
+  whole week page carries it). A replace that lost a race is the existing 409 banner.
+- **Saving a template.** The form swaps itself (`hx-target="this"`): a blank or too-long name comes
+  back as the same form with 422, the message under the field and the typed text kept; success
+  replaces it with a success alert and a link to the templates page. Without htmx success is a 303
+  to `/plan/templates`.
+- **The occasion strip** (`plan/_occasions.jte`): the week's occasions (`OccasionService.between`)
+  are gold-soft links to `/occasions/{id}` above the days. A "Templates" link in the page header
+  goes to `/plan/templates`.
+- **`PlanResponses`** (`@Component`) owns the redirect (`toDay`, `isSamePage`) and the 409/422
+  banner helpers that `PlanSlotController` used to hold privately, so every `/plan` controller
+  answers the same way.
+- **Status codes:** `apply` reads the template first (household-scoped), so another household's
+  template is 404 before any 400; `mode`, `scope`, `date` and week codes are parsed strictly (400).
+- **Tests:** `PlanReusePagesTest` (MockMvc, every route and status), `PlanReuseModelsTest`,
+  `PlanParamsTest`, the six new rows in `TenantIsolationTests`, `PlanEditingPagesTest` (guards the
+  `PlanResponses` refactor) and the browser test `PlanReuseE2ETest` at phone and desktop size.
+
 ## App shell and navigation (R4, #79)
 
 Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` chooses it when

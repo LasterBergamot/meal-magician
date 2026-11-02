@@ -98,6 +98,16 @@ public final class TenantEndpoints {
               POST, "/plan/slots/{slotId}/reorder", w -> Map.of("slotId", w.homeSlotId())),
           TenantEndpoint.forMembers(
               POST, "/plan/slots/{slotId}/remove", w -> Map.of("slotId", w.homeSlotId())),
+          // plan reuse (#110): every member may copy and use templates
+          TenantEndpoint.forMembers(GET, "/plan/reuse/day", w -> NONE),
+          TenantEndpoint.forMembers(GET, "/plan/reuse/week", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/plan/days/copy", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/plan/weeks/copy", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/plan/templates", w -> NONE),
+          TenantEndpoint.forMembers(
+              POST,
+              "/plan/templates/{templateId}/apply",
+              w -> Map.of("templateId", w.homeTemplateId())),
           // meals (catalog): every member may use the library, so none is owner-only
           TenantEndpoint.forMembers(GET, "/meals", w -> NONE),
           TenantEndpoint.forMembers(GET, "/meals/new", w -> NONE),

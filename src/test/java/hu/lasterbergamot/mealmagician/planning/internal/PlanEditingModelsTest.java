@@ -119,7 +119,7 @@ class PlanEditingModelsTest {
             Arrays.stream(SlotType.values())
                 .map(type -> new SlotGroup(MONDAY, type, List.of()))
                 .toList());
-    WeekPage page = new WeekPage(week, "t", "r", true, List.of(day), false);
+    WeekPage page = new WeekPage(week, "t", "r", true, List.of(day), false, List.of(), null);
 
     assertThat(page.conflict()).isFalse();
     assertThat(page.withConflict().conflict()).isTrue();

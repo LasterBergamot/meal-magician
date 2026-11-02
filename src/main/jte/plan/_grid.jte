@@ -20,6 +20,12 @@
         <th scope="col" aria-current="${day.today() ? "date" : null}"
             class="rounded-md border-2 border-outline px-2 py-2 text-left align-top @if(day.today()) bg-accent text-on-accent @else bg-surface-raised text-ink @endif">
           <span class="block font-display text-lg font-semibold leading-6">${day.shortName()} ${day.dayOfMonth()}</span>
+          <a href="${day.reuseHref()}" data-reuse="${day.date().toString()}" x-data="sheetOpener" x-on:click="open" data-sheet="reuse-sheet"
+             hx-get="${day.reuseHref()}" hx-target="#reuse-sheet-body"
+             class="inline-flex size-9 shrink-0 items-center justify-center rounded-md border-2 border-outline bg-surface-raised text-ink hover:bg-surface-sunken">
+            @template.ui._icon(name = IconName.COPY, size = 20, filled = false)
+            <span class="sr-only">${ctx.t("plan.reuse.day.open", day.name())}</span>
+          </a>
           @if(day.today())
             @template.ui._badge(tone = "neutral", label = ctx.t("plan.today"), icon = IconName.SPARKLE)
           @endif

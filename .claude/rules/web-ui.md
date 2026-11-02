@@ -187,3 +187,9 @@ paths:
   controller adds `HX-Refresh` when `HX-Current-URL` is that page. Read the scoped resource before
   parsing the other parameters, so a foreign id is 404 before any 400. A freshly swapped form takes a
   few milliseconds to get its htmx listeners: browser tests wait for `.htmx-added` to go before typing.
+- **Week reuse (#110):** one more page-level sheet, `reuse-sheet`, opened like the other two. A
+  confirm that posts a form's fields uses `hx-include="#<form-id>"` and sits outside that form (a
+  dialog inside a swapped region disappears with the swap). A refused bulk action (same target,
+  nothing to copy) answers 422 with `HX-Retarget: #plan-conflict`, so its dialogs close, exactly
+  like the 409. `PlanResponses` owns the redirect and the conflict helpers for every `/plan`
+  controller.

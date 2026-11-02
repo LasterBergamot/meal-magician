@@ -3,6 +3,7 @@ package hu.lasterbergamot.mealmagician.planning.internal;
 import hu.lasterbergamot.mealmagician.catalog.MealSearch;
 import hu.lasterbergamot.mealmagician.catalog.MealService;
 import hu.lasterbergamot.mealmagician.catalog.MealView;
+import hu.lasterbergamot.mealmagician.planning.OccasionService;
 import hu.lasterbergamot.mealmagician.planning.PlanWeek;
 import hu.lasterbergamot.mealmagician.planning.PlanningService;
 import hu.lasterbergamot.mealmagician.planning.SlotType;
@@ -32,12 +33,19 @@ class WeekPageFactory {
 
   private final PlanningService planning;
   private final MealService meals;
+  private final OccasionService occasions;
   private final Messages messages;
   private final Clock clock;
 
-  WeekPageFactory(PlanningService planning, MealService meals, Messages messages, Clock clock) {
+  WeekPageFactory(
+      PlanningService planning,
+      MealService meals,
+      OccasionService occasions,
+      Messages messages,
+      Clock clock) {
     this.planning = planning;
     this.meals = meals;
+    this.occasions = occasions;
     this.messages = messages;
     this.clock = clock;
   }
@@ -89,7 +97,19 @@ class WeekPageFactory {
             "plan.week.range",
             PlanDates.mediumDate(week.monday(), locale),
             PlanDates.mediumDate(week.sunday(), locale));
-    return new WeekPage(week, title, range, week.contains(today), days, false);
+    List<OccasionChip> chips =
+        occasions.between(userId, householdId, week.monday(), week.sunday()).stream()
+            .map(o ->
+                new OccasionChip(
+                    o.id(),
+                    o.name(),
+                    messages.t(
+                        "plan.day",
+                        PlanDates.dayName(o.date(), locale),
+                        PlanDates.dateLabel(o.date(), locale)),
+                    o.type()))
+            .toList();
+    return new WeekPage(week, title, range, week.contains(today), days, false, chips, null);
   }
 
   private static PlannedMeal planned(SlotView slot, Map<Long, MealView> byId) {
