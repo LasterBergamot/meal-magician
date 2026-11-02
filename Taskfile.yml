@@ -64,6 +64,12 @@ tasks:
       - docker compose -f compose.e2e.yml up --detach --wait
       - ./gradlew e2eTest
 
+  smoke:
+    desc: "Smoke-test a running service without signing in: `task smoke -- <base-url>` (release.yml runs it after each deploy)"
+    # Public pages only, no credentials (scripts/smoke.sh). Locally: run the image or `task serve`
+    # and pass its URL, for example `task smoke -- http://localhost:8080`.
+    cmd: bash scripts/smoke.sh {{.CLI_ARGS}}
+
   build:
     desc: Build the container image (meal-magician)
     cmd: docker build --tag meal-magician .

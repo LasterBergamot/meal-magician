@@ -27,7 +27,7 @@ What exists in `main` today:
 - **Lombok** is configured (`lombok.config`) but not used yet.
 - **Taskfile (#10):** `Taskfile.yml` is the one command surface for people, agents and CI
   (`task --list`). Working today: `install`, `doctor`, `lint`, `format`, `serve`, `test`,
-  `test:fast`, `up`, `down`, `serve:pg`, `migrate-check`, `build` and `test-e2e` (#15).
+  `test:fast`, `up`, `down`, `serve:pg`, `migrate-check`, `build`, `test-e2e` (#15) and `smoke` (#58, `task smoke -- <url>`).
   `docs:check` (#14) runs `DocsToolingTests` alone; the full `task test` runs it too. Why the tasks exist: everyone, including CI, runs the same commands,
   so "works on my machine" and "passes in CI" mean the same thing.
   - `scripts/doctor.sh` (`task doctor`) prints `ok`/`FAIL` per tool: Java 17+ (only to start
@@ -128,7 +128,7 @@ What exists in `main` today:
     and Docker/Compose, with minor and patch bumps of Gradle and Actions grouped in one PR each.
   - `release.yml` (#18, #51) is the release: a `plan` job decides whether and as which version
     (`scripts/next_release.sh`), then image in Artifact Registry, new Cloud Run revision, health
-    check, tag, GitHub Release. It is the only workflow that can deploy or push a tag. It starts
+    check, smoke test (`scripts/smoke.sh`, #58: public pages and security headers, no sign-in), tag, GitHub Release. It is the only workflow that can deploy or push a tag. It starts
     by itself when CI succeeds on `main` (not for docs/CI-only merges) and can still be run by hand. Details and the variables it needs:
     [[Hosting Setup]]. **v0.1.0** was released with it on 2026-11-01 and the service
   answers on its `run.app` URL (health 200, `/` redirects to the login page, Flyway applied the migrations on Neon).

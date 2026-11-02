@@ -134,8 +134,8 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       sign in on a phone; and confirm scale to zero (Cloud Run has no minimum instance, Neon
       suspends after ~5 idle minutes; the instance count after idle is not checked yet).)*
 - [ ] #51 CD: release automatically when a PR is merged into `main`. *(Owner asked 2026-11-01. `release.yml` now has a `plan` job (`scripts/next_release.sh`: next patch version, `release:minor` / `release:major` label or the manual `bump` input for the other parts, skips docs-only merges and commits older than the last release) and the `release` job as before plus a GitHub Release. PR #52; the merge of that PR is the first automatic release.)*
-- [ ] #58 CD: post-deploy smoke test against the live service. *(Filed 2026-11-01. `task smoke
-      <url>` runs once per release in `release.yml`, after the health poll and before the tag is
+- [x] #58 CD: post-deploy smoke test against the live service. *(Filed 2026-11-01; built 2026-11-02,
+      PR #108. `task smoke -- <url>` (`scripts/smoke.sh`) runs once per release in `release.yml`, after the health poll and before the tag is
       pushed, and checks anonymously: health, the login page, a protected path redirecting to
       sign-in, the security headers, static assets, no 5xx. Not in the PR workflow (the `E2E` job
       covers the image there) and never on a timer (D11). Blocked by #18.)*
@@ -485,8 +485,8 @@ meal-magician/
      number: plan templates and occasions; `OccasionType` already lives in `catalog`) and the
      pages (copy a day or week, save and apply templates, the Occasions tab, which stays hidden
      until its page exists). The planner decides the exact split; it should keep one writer per file.
-   - **Beside Phase 4, small and independent:** #58, the post-deploy smoke test in `release.yml`
-     (unblocked since #18 closed).
+   - **Beside Phase 4, small and independent:** ~~#58, the post-deploy smoke test in `release.yml`~~
+     *(Done 2026-11-02, PR #108.)*
    - **Then** Phase 5 (ratings, sharing, PWA polish) → **v1.0.0**, then backups (#62), Phase 6
      hardening and Phase 7 (the assistant). #27 stays parked.
 
@@ -537,3 +537,4 @@ meal-magician/
 | 2026-11-02 | **Wave 5 planned and half-built.** An Opus planner wrote the briefs; issues #96 (R5d), #97 (week view 1/2), #98 (week view 2/2) and #99 (R8) were filed with parents and blockers. **R5d landed** (#96, PR #100): the old `brand-50…800` scale is gone and `UiGuardTest` now fails on `brand-<digit>`, `stone-` or a raw Tailwind colour in a template or `app.js`, and on the old scale in `app.css`. **Week view 1/2 landed** (#97, PR #101): `GET /plan?week=YYYY-Www` (read-only), the Plan tab on `/plan`, `htmx.config.refreshOnHistoryMiss`. **Owner decisions:** the planner's five week-view deviations from the design are accepted (table from 1024 px, no swipe, one shared sheet, slot chips as row headers, remove-confirm over the slot sheet); the gold stays exactly as designed and is judged live at R9; the hello page may be removed once `/` can redirect (to be filed after #98). | #57, #4, #96, #97, #98, #99, #100, #101 |
 | 2026-11-02 | **Week view 2/2 landed** (#98, PR #104): `PlanningService.slot` and `quickAddAndPlan`, eight routes under `/plan/slots`, the pick sheet (search, recent meals, quick add with a 422 state), the slot sheet (note, move, reorder, remove behind the confirm dialog) and the 409 conflict banner; tenant-guard registrations and `PlanEditingE2ETest` at 390 and 1280 px. **Phase 3 is done.** One find: `Htmx.redirect` to the page the browser is already on only jumps to the anchor, so the slot controller also sends `HX-Refresh` for the same page. **Hello page retired** (#103, PR #105): `/` now redirects to `/plan` (or `/households` for a person with no household), a household switch lands on `/plan`, and the hello controller, templates, message keys and test are gone; the slice tests that used `/` as a sample page use `/error`, `/meals` or `/households`, and the e2e sign-in helpers accept either landing page. R8 (#99) is next. | #4, #98, #103, #104 |
 | 2026-11-02 | **Wave 5 landed.** R8 (#99, PR #106): `web-ui.md` and `Current-State-Frontend.md` reordered into one story, `Roadmap-Frontend.md`, `Newcomer-Guide.md` (new glossary entries and a request walk-through for `GET /plan`), `README.md`, `Home.md`, `References.md` (six rows) and the `CLAUDE.md` status brought up to date; `Setup.md`'s status line fixed afterwards. With the week view (#97, #98), R5d (#96) and the retired hello page (#103) the UI redesign is built; only R9, the owner's walk-through on a phone and a laptop, is left. Next: Phase 4. | #57, #99, #106 |
+| 2026-11-02 | **Post-deploy smoke test landed** (#58, PR #108): `scripts/smoke.sh` and `task smoke -- <url>` check, anonymously, health, the login page, a protected path redirecting to sign-in, the security headers (HSTS only over https), the static assets and no 5xx; `release.yml` runs it after the health poll and before the tag push, so a failure leaves no tag. Tested against the built image with a bad case per check except HSTS, which first runs against the live https URL. | #58, #108 |
