@@ -20,7 +20,8 @@ class NavDestinationTest {
 
   @ParameterizedTest
   @CsvSource({
-    "/, PLAN",
+    "/plan, PLAN",
+    "/plan/slots/3, PLAN",
     "/households, HOUSEHOLD",
     "/households/members, HOUSEHOLD",
     "/households/7/switch, HOUSEHOLD",
@@ -32,7 +33,7 @@ class NavDestinationTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"/login", "/join/abc", "/households-old", "/mealsx"})
+  @CsvSource({"/", "/login", "/join/abc", "/households-old", "/mealsx"})
   void aPathOutsideEveryDestinationHighlightsNothing(String path) {
     assertThat(NavDestination.matching(path)).isNull();
   }

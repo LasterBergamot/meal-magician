@@ -13,8 +13,8 @@ import java.util.List;
  */
 public enum NavDestination {
 
-  /** The planner. Until Phase 3 it points at the hello page, which is also {@code /}. */
-  PLAN("/", "nav.plan", IconName.CALENDAR, true),
+  /** The week planner (Phase 3). */
+  PLAN("/plan", "nav.plan", IconName.CALENDAR, true),
 
   /** The meal library (Phase 2, issue #88). */
   MEALS("/meals", "nav.meals", IconName.MEALS, true),

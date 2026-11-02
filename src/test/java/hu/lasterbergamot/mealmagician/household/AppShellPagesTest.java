@@ -98,7 +98,7 @@ class AppShellPagesTest {
     mvc.perform(get("/households").with(signedInAs(anna)))
         .andExpect(content().string(containsString("href=\"/households\"")))
         .andExpect(content().string(containsString("aria-current=\"page\"")))
-        .andExpect(content().string(containsString("href=\"/\"")))
+        .andExpect(content().string(containsString("href=\"/plan\"")))
         .andExpect(content().string(containsString("href=\"/meals\"")))
         .andExpect(content().string(not(containsString("href=\"/occasions\""))));
   }
