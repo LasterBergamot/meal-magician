@@ -5,6 +5,8 @@
 #  - Java 17+: only has to run the Gradle wrapper. The Gradle toolchain downloads Temurin 25 for
 #    compiling and testing (PLAN.md D21), so the machine's JDK does not need to be 25.
 #  - Docker Compose 2.24+: compose files may use newer syntax such as `env_file` with `required`.
+#  - Docker Buildx (optional): the Dockerfile uses `RUN --mount=type=cache`, which needs BuildKit,
+#    so `task build` and `task test-e2e` fail without it. Plain tests and `task serve` do not.
 # Exit status: 0 when every required tool is present and new enough, 1 otherwise.
 set -uo pipefail
 
@@ -77,6 +79,7 @@ check required "docker compose" 2.24 docker compose version
 check required gh 2 gh --version
 
 echo "Optional:"
+check optional "docker buildx" "" docker buildx version
 check optional gcloud "" gcloud --version
 check optional neon "" neon --version
 check optional apm "" apm --version

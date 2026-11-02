@@ -30,7 +30,8 @@ ate. A later AI assistant will learn the household's preferences and draft plans
   Temurin 25 by themselves (PLAN.md D21).
 - [Task](https://taskfile.dev). On Arch the binary is `go-task`, and `task` is often only a
   shell alias.
-- Docker + Docker Compose (Testcontainers, local Postgres, e2e)
+- Docker + Docker Compose (Testcontainers, local Postgres, e2e); Docker Buildx as well for
+  `task build` and `task test-e2e` (on Arch the separate `docker-buildx` package)
 - `gh` (GitHub CLI, 2.x), required; optionally the Google Cloud CLI (`gcloud`) and the Neon CLI (`neon`, npm package
   `neonctl`; <https://neon.com/docs/reference/neon-cli>), for looking at the deployed app and database
 - For Claude Code work: the [APM](https://github.com/microsoft/apm) CLI (only to update the shared skills)
