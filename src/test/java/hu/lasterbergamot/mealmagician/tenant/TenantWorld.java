@@ -16,6 +16,10 @@ package hu.lasterbergamot.mealmagician.tenant;
  * @param homeInviteId a pending invite of the home household
  * @param homeMealId a meal in the home household's library
  * @param homeSlotId a planned slot of the home household
+ * @param homeTemplateId a day template of the home household
+ * @param homeOccasionId an occasion of the home household
+ * @param homeOccasionItemId the occasion's one menu item
+ * @param homeOccasionTemplateId an occasion template of the home household
  */
 public record TenantWorld(
     long homeId,
@@ -26,7 +30,11 @@ public record TenantWorld(
     long outsider,
     long homeInviteId,
     long homeMealId,
-    long homeSlotId) {
+    long homeSlotId,
+    long homeTemplateId,
+    long homeOccasionId,
+    long homeOccasionItemId,
+    long homeOccasionTemplateId) {
 
   /**
    * Who sends a request in a check.

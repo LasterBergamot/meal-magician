@@ -23,7 +23,10 @@ paths:
   Repository methods take the household id explicitly (`findByIdAndHouseholdId`), and a missing
   row means 404 — never fetch by id alone and check afterwards.
 - Aggregates that users edit concurrently (`meal`, `meal_slot`, `plan_template`, `occasion`,
-  `household`) carry a `version` column (`@Version`).
+  `occasion_template`, `household`) carry a `version` column (`@Version`).
+- Child rows of a template or menu (`plan_template_item`, `occasion_item`,
+  `occasion_template_item`) carry `household_id` with composite foreign keys to their parent and to
+  `meal`; the `meal` side has no `ON DELETE`, so a used meal cannot be deleted.
 - The plan is stored **per date** (`meal_slot.date`); a week is a query over seven dates.
 - Timestamps: `timestamptz` / `Instant`; dates of the plan: `date` / `LocalDate`.
 - Migrations must be compatible with the previous release (expand/contract), since Flyway

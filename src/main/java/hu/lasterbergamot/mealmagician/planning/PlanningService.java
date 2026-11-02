@@ -5,9 +5,12 @@ import hu.lasterbergamot.mealmagician.catalog.MealView;
 import hu.lasterbergamot.mealmagician.household.HouseholdService;
 import hu.lasterbergamot.mealmagician.planning.internal.MealSlot;
 import hu.lasterbergamot.mealmagician.planning.internal.MealSlotRepository;
+import hu.lasterbergamot.mealmagician.planning.internal.SlotSeed;
+import hu.lasterbergamot.mealmagician.planning.internal.SlotWriter;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -20,8 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The weekly plan's public entry point: reading an ISO week, adding a meal to a day, moving,
- * reordering and removing slots, editing a slot's note, and listing recently planned meals. The
- * planner's controllers call only this class.
+ * reordering and removing slots, editing a slot's note, copying a day or a week, and listing
+ * recently planned meals. The planner's controllers call only this class.
  *
  * <p>Every method takes the asking person's id and the household id, and first checks membership
  * through {@link HouseholdService#require}, so a stranger gets 404 before any slot is read. A slot
@@ -36,8 +39,8 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Archiving a meal does not touch the plan. A slot that holds an archived meal keeps it, the
  * week view still shows it and it can still be moved or removed; the library's default list simply
  * no longer offers it. A meal that is still planned cannot be deleted at all: the database refuses,
- * so no plan entry disappears silently. Only {@code SlotPlanned} is published, and only on add and
- * move.
+ * so no plan entry disappears silently. Only {@code SlotPlanned} is published, on add, move and
+ * copy (one event per new slot).
  */
 @Service
 @Transactional
@@ -55,6 +58,7 @@ public class PlanningService {
   private final HouseholdService households;
   private final ApplicationEventPublisher events;
   private final Clock clock;
+  private final SlotWriter writer;
 
   /**
    * Creates the service.
@@ -64,18 +68,21 @@ public class PlanningService {
    * @param households the household service, which does the membership check
    * @param events publishes {@link SlotPlanned}
    * @param clock the application clock, for "today" in the recently-used list
+   * @param writer the shared writer that copying a day or a week uses
    */
   public PlanningService(
       MealSlotRepository slots,
       MealService meals,
       HouseholdService households,
       ApplicationEventPublisher events,
-      Clock clock) {
+      Clock clock,
+      SlotWriter writer) {
     this.slots = slots;
     this.meals = meals;
     this.households = households;
     this.events = events;
     this.clock = clock;
+    this.writer = writer;
   }
 
   /**
@@ -288,6 +295,77 @@ public class PlanningService {
   }
 
   /**
+   * Copies every meal of one day onto another day. {@link CopyMode#MERGE} appends the copies after
+   * the meals already there; {@link CopyMode#REPLACE} first empties the target day, even slot types
+   * the source has nothing in, so the target becomes a copy of the source. Notes are copied with
+   * the meals, and archived meals are copied as they are. Publishes one {@link SlotPlanned} per new
+   * slot.
+   *
+   * @param userId the {@code app_user} id of the person copying
+   * @param householdId the household whose plan it is
+   * @param from the day to copy
+   * @param to the day to copy onto
+   * @param mode merge or replace
+   * @return how many slots were written
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member of the household
+   * @throws InvalidPlanException with {@code SAME_TARGET} if both days are the same, or {@code
+   *     NOTHING_TO_COPY} if the source day is empty (so a replace never silently wipes a day);
+   *     nothing is written then
+   * @throws PlanConflictException if a replace finds that the target day changed meanwhile
+   */
+  public int copyDay(long userId, long householdId, LocalDate from, LocalDate to, CopyMode mode) {
+    households.require(householdId, userId);
+    if (from.equals(to)) {
+      throw new InvalidPlanException(PlanProblem.SAME_TARGET);
+    }
+    List<MealSlot> source = sortedSource(householdId, from, from);
+    List<SlotSeed> seeds =
+        source.stream()
+            .map(slot -> new SlotSeed(to, slot.getSlotType(), slot.getMealId(), slot.getNote()))
+            .toList();
+    return writer.write(householdId, to, to, seeds, mode);
+  }
+
+  /**
+   * Copies every meal of one ISO week onto another week, each meal keeping its weekday. Any day of
+   * either week may be given. Merge, replace, notes and events work as in {@link #copyDay}; a
+   * replace empties Monday to Sunday of the target week.
+   *
+   * @param userId the {@code app_user} id of the person copying
+   * @param householdId the household whose plan it is
+   * @param fromAnyDay any day of the week to copy
+   * @param toAnyDay any day of the week to copy onto
+   * @param mode merge or replace
+   * @return how many slots were written
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member of the household
+   * @throws InvalidPlanException with {@code SAME_TARGET} if both days are in the same week, or
+   *     {@code NOTHING_TO_COPY} if the source week is empty; nothing is written then
+   * @throws PlanConflictException if a replace finds that the target week changed meanwhile
+   */
+  public int copyWeek(
+      long userId, long householdId, LocalDate fromAnyDay, LocalDate toAnyDay, CopyMode mode) {
+    households.require(householdId, userId);
+    LocalDate fromMonday = fromAnyDay.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    LocalDate toMonday = toAnyDay.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    if (fromMonday.equals(toMonday)) {
+      throw new InvalidPlanException(PlanProblem.SAME_TARGET);
+    }
+    List<MealSlot> source = sortedSource(householdId, fromMonday, fromMonday.plusDays(6));
+    List<SlotSeed> seeds =
+        source.stream()
+            .map(slot ->
+                new SlotSeed(
+                    toMonday.plusDays(ChronoUnit.DAYS.between(fromMonday, slot.getSlotDate())),
+                    slot.getSlotType(),
+                    slot.getMealId(),
+                    slot.getNote()))
+            .toList();
+    return writer.write(householdId, toMonday, toMonday.plusDays(6), seeds, mode);
+  }
+
+  /**
    * The meals the household planned on or before today, most recent first, for "recently used
    * first" in the library. A meal appears once. The library page sorts its list by this order and
    * keeps the meals not in it at the end.
@@ -304,6 +382,21 @@ public class PlanningService {
   public List<Long> recentlyPlannedMealIds(long userId, long householdId, int limit) {
     households.require(householdId, userId);
     return slots.findRecentMealIds(householdId, LocalDate.now(clock), PageRequest.of(0, limit));
+  }
+
+  /**
+   * The slots of a date range in week order, for copying. An empty source is refused here, before
+   * anything is written.
+   */
+  private List<MealSlot> sortedSource(long householdId, LocalDate first, LocalDate last) {
+    List<MealSlot> source =
+        slots.findByHouseholdIdAndSlotDateBetween(householdId, first, last).stream()
+            .sorted(WEEK_ORDER)
+            .toList();
+    if (source.isEmpty()) {
+      throw new InvalidPlanException(PlanProblem.NOTHING_TO_COPY);
+    }
+    return source;
   }
 
   /** The tenant-scoped lookup every change goes through. */

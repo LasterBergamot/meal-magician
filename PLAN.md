@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phases 0–3 done (the week planner is live); UI redesign (#57): Waves 1–5 landed, R9 (the owner's walk-through) left; Phase 4 is planned and filed (#109–#113, §9), next is its Wave 6a (#109)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phases 0–3 done (the week planner is live); UI redesign (#57): Waves 1–5 landed, R9 (the owner's walk-through) left; Phase 4 is planned and filed (#109–#113, §9); its backend (#109, Wave 6a) has landed, next is Wave 6b (#110, #111, #112)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -245,7 +245,7 @@ no controllers or templates) and **the week view** (after R4 and the Phase 2 pag
 ### Phase 4 — Reuse and occasions (`M1`, epic #5)
 Split for subagents (D24, D25; planned 2026-11-02): one backend slice (Flyway **V9**, all six
 tables), then three page issues side by side, then the occasion menus and the docs close-out. Rules: D26.
-- [ ] #109 **Phase 4 backend** *(backend only)*: V9 `plan_template`/`plan_template_item`,
+- [x] #109 **Phase 4 backend** *(backend only; PR #115)*: V9 `plan_template`/`plan_template_item`,
       `occasion`/`occasion_item`, `occasion_template`/`occasion_template_item`; `PlanningService.copyDay`/`copyWeek`,
       `PlanTemplateService`, `OccasionService`, `OccasionTemplateService`, `SlotWriter`; tenant fixtures.
 - [ ] Copy a day onto another date, and copy a week onto another week (merge or replace). *(#110)*
@@ -496,7 +496,7 @@ meal-magician/
      | 6b | #110 plan page reuse (`sonnet` high), #111 plan templates page (`haiku` high), #112 occasions pages + Occasions tab (`haiku` high) | #111, #112, #110 |
      | 6c | #113 occasion menus + templates + Phase 4 docs close-out (`sonnet` high) | — |
 
-     V9 is reserved for #109; no other Phase 4 issue adds a migration (the next free number after it is V10).
+     #109 (Wave 6a) landed with V9; no other Phase 4 issue adds a migration (the next free number after it is V10).
      The Occasions tab appears with #112.
    - **Beside Phase 4, small and independent:** ~~#58, the post-deploy smoke test in `release.yml`~~
      *(Done 2026-11-02, PR #108.)*
@@ -552,3 +552,4 @@ meal-magician/
 | 2026-11-02 | **Wave 5 landed.** R8 (#99, PR #106): `web-ui.md` and `Current-State-Frontend.md` reordered into one story, `Roadmap-Frontend.md`, `Newcomer-Guide.md` (new glossary entries and a request walk-through for `GET /plan`), `README.md`, `Home.md`, `References.md` (six rows) and the `CLAUDE.md` status brought up to date; `Setup.md`'s status line fixed afterwards. With the week view (#97, #98), R5d (#96) and the retired hello page (#103) the UI redesign is built; only R9, the owner's walk-through on a phone and a laptop, is left. Next: Phase 4. | #57, #99, #106 |
 | 2026-11-02 | **Post-deploy smoke test landed** (#58, PR #108): `scripts/smoke.sh` and `task smoke -- <url>` check, anonymously, health, the login page, a protected path redirecting to sign-in, the security headers (HSTS only over https), the static assets and no 5xx; `release.yml` runs it after the health poll and before the tag push, so a failure leaves no tag. Tested against the built image with a bad case per check except HSTS, which first runs against the live https URL. | #58, #108 |
 | 2026-11-02 | **Phase 4 planned** (D25): an Opus planner wrote five briefs. They were filed as #109–#113 under epic #5, with blockers: the backend slice #109 (V9) first; then #110, #111 and #112 side by side (merge order #111, #112, #110); then #113. Decided D26 (merge/replace, nothing owner-only); amended §4.2 (item tables, no note on occasion items). The owner confirmed the four defaults (nothing owner-only; replace empties the whole target; no occasion menu onto the plan; no occasion-template rename). Docs only. | #5, #109–#113 |
+| 2026-11-02 | **Phase 4 backend landed** (Wave 6a, #109, PR #115, one `sonnet` high subagent): Flyway V9 with the six tables (composite foreign keys, so the database refuses a link across households), `PlanningService.copyDay`/`copyWeek` with `CopyMode` MERGE/REPLACE, `PlanTemplateService`, `OccasionService`, `OccasionTemplateService` and the shared `planning.internal.SlotWriter`; four new `TenantWorld` fixtures. No controllers or templates. Wave 6b (#110, #111, #112) is next. | #5, #109, #115 |

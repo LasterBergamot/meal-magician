@@ -179,6 +179,44 @@ week page, `planning/internal/PlanController`); no other business modules yet.
     meals not in the list last.
   - **Not modelled yet:** a slot with free text instead of a library meal (PLAN §4.2 sketches a
     `free_text` column; Phase 3 adds meals inline through the library, so it is not needed for it yet).
+- **Copy and plan templates (#109), module `planning`:** `PlanningService.copyDay` and `copyWeek`
+  copy a day or an ISO week onto another, and `PlanTemplateService` saves a day or a week as a named
+  template (scope DAY or WEEK), lists, finds, renames, deletes and applies it. Copy and apply share
+  one writer, `planning.internal.SlotWriter`, so the two modes mean the same thing everywhere
+  (`CopyMode`, PLAN D26). **MERGE** appends each copied meal after the meals already in the same date
+  and slot type, keeping the source order. **REPLACE** first removes every slot in the whole target
+  range (one date for a day, Monday to Sunday for a week, including slot types the source has
+  nothing in), then writes the copy from place 0, so the target becomes a copy of the source. Copying
+  onto the same day or week is refused with `SAME_TARGET`, and an empty source day, week or menu with
+  `NOTHING_TO_COPY`, both before anything is written, so a replace can never silently wipe a day.
+  Notes are copied with the slot, archived meals are copied as they are, and one `SlotPlanned` is
+  published per new slot (no new event types). A lost race in a replace is a `PlanConflictException`.
+  - **Data (V9):** `plan_template` (name, scope, `version`) and `plan_template_item` (`day_offset` 0
+    to 6, slot type, place, meal, note). Templates are frozen: they can be renamed (the version is
+    checked, `TemplateConflictException`, 409) or deleted, never edited. Items go with their template
+    by `ON DELETE CASCADE`.
+  - **Who and tenancy:** every member may do everything (D26); nothing is owner-only. Every method
+    checks membership first, another household's template is `TemplateNotFoundException` (404), and
+    the composite foreign keys `(template_id, household_id)` and `(meal_id, household_id)` make the
+    database refuse a cross-household link whatever the code does. The `meal` side has no
+    `ON DELETE`, so a meal a template still uses cannot be deleted.
+- **Occasions (#109), module `planning`:** `OccasionService` creates, finds, lists, edits and deletes
+  dated occasions (name 1 to 100 characters, date, `catalog.OccasionType`, notes up to 2000), lists
+  the ones between two days (`between`, for the week strip) and manages the menu: `addItem`,
+  `quickAddItem` (looks the occasion up first, then creates the meal through `MealService.quickAdd`),
+  `removeItem` and `moveItem` (the place is clamped, the rest is renumbered). Editing and deleting
+  take the version (`OccasionConflictException`, 409). A menu item has no note and no version:
+  adding only appends, and removing or moving an item that is gone is `MenuItemNotFoundException`
+  (404), like another household's occasion (`OccasionNotFoundException`) or meal
+  (`MealNotFoundException`). Data: `occasion` and `occasion_item` (V9), with composite foreign keys
+  to the parent and to `meal`. Every member may do everything (D26). Nothing is published.
+- **Occasion templates (#109), module `planning`:** `OccasionTemplateService` saves an occasion's
+  type, notes and menu as a named template (`saveFromOccasion`; an empty menu is
+  `NOTHING_TO_COPY`), lists and finds them, `use` creates a new occasion on a date with a copy of the
+  menu, and `delete` removes one. There is no rename in v1, so delete takes no version (the
+  `version` column is there for a later rename); occasions made from a template stay when it is
+  deleted. Data: `occasion_template` and `occasion_template_item` (V9). Every member may do
+  everything (D26), and the composite keys guard the tenant as above.
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
   "today" instead of calling `LocalDate.now()`, so tests can fix the date.
 - **Config:** `application.yml` turns on virtual threads and graceful shutdown, and tells JTE to
@@ -197,10 +235,11 @@ week page, `planning/internal/PlanController`); no other business modules yet.
     (`CREATE EXTENSION vector`, ready for the Phase 7 assistant) and `V3__identity.sql`
     (`app_user`, `allowed_email` and the Spring Session tables), `V4__household.sql`
     (`household` with a `version` column, and `membership` with the role OWNER or MEMBER),
-    `V5__invite.sql` (`invite`, which stores only the hash of its code) and `V6__catalog.sql`
+    `V5__invite.sql` (`invite`, which stores only the hash of its code), `V6__catalog.sql`
     (`meal`, `tag` and `meal_tag`, see the meal library below), `V7__planning.sql` (`meal_slot`,
-    see the weekly plan below) and `V8__meal_occasion_type.sql` (`meal_occasion_type`, see the meal
-    library below).
+    see the weekly plan below), `V8__meal_occasion_type.sql` (`meal_occasion_type`, see the meal
+    library below) and `V9__reuse_and_occasions.sql` (plan templates, occasions and occasion
+    templates with their items, see the copy, occasion and template bullets above).
   - **Profiles:** `dev` points at in-memory H2 in PostgreSQL mode; `postgres` points at the
     compose Postgres (override with `SPRING_DATASOURCE_URL`/`_USERNAME`/`_PASSWORD`) and adds the
     `postgresql/` folder. Use them together as `dev,postgres`. With no profile there is no
