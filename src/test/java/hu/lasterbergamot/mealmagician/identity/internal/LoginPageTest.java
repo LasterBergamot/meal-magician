@@ -1,6 +1,7 @@
 package hu.lasterbergamot.mealmagician.identity.internal;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -32,7 +33,9 @@ class LoginPageTest {
         .andExpect(content().string(containsString("href=\"/oauth2/authorization/google\"")))
         .andExpect(content().string(containsString("Sign in with Google")))
         .andExpect(content().string(not(containsString("Signing in did not work."))))
-        .andExpect(content().string(not(containsString("You have been signed out."))));
+        .andExpect(content().string(not(containsString("You have been signed out."))))
+        .andExpect(content().string(not(containsString("data-kind="))))
+        .andExpect(content().string(matchesPattern("(?s).*<h1[^>]*>Meal Magician</h1>.*")));
   }
 
   @Test
@@ -45,13 +48,16 @@ class LoginPageTest {
   @Test
   void failedSignInShowsAnErrorNotice() throws Exception {
     mvc.perform(get("/login").param("error", "").cookie(new Cookie(I18nConfig.COOKIE_NAME, "en")))
-        .andExpect(content().string(containsString("Signing in did not work.")));
+        .andExpect(content().string(containsString("Signing in did not work.")))
+        .andExpect(content().string(containsString("data-kind=\"danger\"")))
+        .andExpect(content().string(containsString("Sign-in failed")));
   }
 
   @Test
   void signingOutShowsAConfirmation() throws Exception {
     mvc.perform(get("/login").param("logout", "").cookie(new Cookie(I18nConfig.COOKIE_NAME, "en")))
-        .andExpect(content().string(containsString("You have been signed out.")));
+        .andExpect(content().string(containsString("You have been signed out.")))
+        .andExpect(content().string(containsString("data-kind=\"success\"")));
   }
 
   @Test
