@@ -33,25 +33,38 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   initials, `null` when anonymous, which is what picks the layout) and `active` (the navigation
   destination the page belongs to, see below).
 - `household/page.jte` + `_content.jte`, `_create.jte`, `_rename.jte`: the `/households` page
-  (#41). It lists my households with my role and marks the current one, with a link to the members
-  page; a rename form (owners of the current household only) and a create form. Switching to
-  another household is no longer on this page: it is the household switcher in the shell (R4). The
-  forms are htmx posts. A rejected form answers 422 (or 409 when someone else renamed the
-  household first) with just that form, error inside it and the typed text kept; a success sends
-  the browser on with `Htmx.redirect` (`HX-Redirect`, because a plain 302 would be followed
-  inside htmx's fetch and swap a whole page into the form).
-- `household/_invites.jte` (#42): the owner-only "Invite someone" section of that page, an e-mail
-  field, a lifetime select, the list of invites with status and a Revoke button. Posts swap the
-  whole `#invites` section (`hx-target="#invites"`); the new link appears in a read-only field in
-  that response only. `household/join.jte` is the page an invite link opens: the household name and
-  a Join button, or the reason the link was refused (the status code is 404, 403 or 410).
-- `household/members.jte` and `household/_members.jte` (#43): the page at `/households/members`
-  (linked from the current household's row on `/households`). Everyone sees the members with name,
-  e-mail and role, and a "Leave the household" button. Owners also get "Make owner" and "Remove" on
-  every other row. The buttons use `hx-confirm` (a browser dialog; it needs no inline script) and
-  swap the whole `#members` section. A refused action (the last owner leaving, an owner naming
-  themselves) answers 409 with the same section and a red message; a successful leave sends the
-  browser to `/households` with `HX-Redirect`.
+  (#41, restyled in R5b, #86). One h1, then cards built from the `ui/` components: a card of rows
+  (one per household, with an Owner or Member badge; the current one is a selected row with a
+  Current badge and a check, and carries the Members link), a rename card (owners of the current
+  household only) and a create card. A person with no household sees `ui/_empty` instead of the
+  list, and the Create button is the page's primary one only then (otherwise secondary). Switching
+  to another household is not on this page: it is the household switcher in the shell (R4). The
+  forms are htmx posts and the `<form>` is the root of its fragment (`display: contents`, so the
+  card inside lays out like the others). A rejected form answers 422 with just that form, the
+  message under the field (`ui/_field`) and the typed text kept; a 409 (someone else renamed the
+  household first) shows a warning alert with a Reload button instead, and keeps the typed name. A
+  success sends the browser on with `Htmx.redirect` (`HX-Redirect`, because a plain 302 would be
+  followed inside htmx's fetch and swap a whole page into the form).
+- `household/_invites.jte` (#42, R5b): the owner-only "Invite someone" card of that page, an e-mail
+  field, a lifetime select (`ui/_select`), and the list of invites as rows with a status badge
+  (Waiting, Used, Revoked, Expired), the expiry and, while pending, a Revoke button that opens a
+  `ui/_confirm` naming the address. With no invites the list is a dashed "No invites yet" box. Posts
+  swap the whole `#invites` section (`hx-target="#invites"`), which also closes the open dialog; the
+  new link appears in a success alert, in a read-only field, in that response only.
+  `household/join.jte` is the page an invite link opens: a centred card with the household name and
+  a Join button, or a danger alert with the reason the link was refused (the status code is 404,
+  403 or 410) and a way back.
+- `household/members.jte` and `household/_members.jte` (#43, R5b): the page at
+  `/households/members` (linked from the current household's row on `/households`). Everyone sees
+  the members as rows with an avatar (the initials come from `MemberRow.initials()`, which reuses
+  the shell's rule), name, e-mail and an Owner or Member badge, and a "Leave the household" button.
+  Owners also get "Make owner" and "Remove" on every other row. Each of these opens a `ui/_confirm`
+  that names the person (the old `hx-confirm` browser dialogs are gone); its confirm button posts and
+  swaps the whole `#members` section, which closes the dialog. A refused action (the last owner
+  leaving, an owner naming themselves) answers 409 with the same section and a danger alert; a
+  successful leave sends the browser to `/households` with `HX-Redirect`. The avatars use the
+  `soft` tone: on a phone the tab bar already spends the screen's one gold highlight on the current
+  tab.
 - `admin/allowlist.jte` and `admin/_allowlist.jte` (#45, restyled in R5c, #85): the page at
   `/admin/allowlist`, admins only, inside the shell in a reading-width column. Two cards: "Let
   someone in" (a `ui/_field` with the 422 message under it and a primary Add button) and the list

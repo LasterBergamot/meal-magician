@@ -1,5 +1,7 @@
 package hu.lasterbergamot.mealmagician.household.internal;
 
+import hu.lasterbergamot.mealmagician.shared.web.ShellUser;
+
 /**
  * One line of the members page.
  *
@@ -12,4 +14,16 @@ package hu.lasterbergamot.mealmagician.household.internal;
  *     the viewer is an owner and the row is somebody else
  */
 public record MemberRow(
-    long userId, String name, String email, boolean owner, boolean self, boolean manageable) {}
+    long userId, String name, String email, boolean owner, boolean self, boolean manageable) {
+
+  /**
+   * The one or two letters on the member's avatar. It reuses the rule of the app shell's own avatar
+   * ({@link ShellUser#initials()}), so a person's initials are the same wherever they appear.
+   *
+   * @return the initials, for example {@code KA} for "Kovács Anna", or {@code ?} for a name with no
+   *     letters
+   */
+  public String initials() {
+    return new ShellUser(name).initials();
+  }
+}

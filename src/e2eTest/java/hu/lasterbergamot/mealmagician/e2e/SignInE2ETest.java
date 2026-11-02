@@ -106,7 +106,9 @@ class SignInE2ETest {
       page.locator("#invites form button[type=submit]").click();
       page.locator("#invite-link").waitFor();
       assertThat(page.locator("#invite-link").inputValue()).contains("/join/");
-      page.locator("#invites li button").click();
+      // Revoking asks first: the row's button opens a confirm dialog, whose danger button sends it.
+      page.locator("#invites li button").first().click();
+      page.locator("#invites dialog[open] button:has-text('Visszavonás')").click();
       page.locator("#invites li:has-text('Visszavonva')").waitFor();
 
       assertThat(
