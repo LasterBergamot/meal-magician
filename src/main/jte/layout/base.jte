@@ -1,4 +1,5 @@
 @import gg.jte.Content
+@import hu.lasterbergamot.mealmagician.shared.web.Theme
 @import hu.lasterbergamot.mealmagician.shared.web.ViewContext
 
 @param ViewContext ctx
@@ -10,16 +11,19 @@
      onclick= style handlers and no style= attributes (the CSP forbids them; a test checks), and no
      literal text (use ctx.t("key")). --%>
 <!DOCTYPE html>
-<%-- data-theme drives the colour tokens in app.css: "system" (follow the OS) until R6 reads the
-     mm_theme cookie (UI-D8). Moonlight is :root, Midnight is [data-theme="dark"]. --%>
-<html lang="${ctx.language()}" data-theme="system" class="h-full">
+<%-- data-theme drives the colour tokens in app.css and comes from the mm_theme cookie (UI-D8), read by
+     the server so the first paint already has the right theme: "light" and "dark" are explicit,
+     "system" follows the OS. Moonlight is :root, Midnight is [data-theme="dark"]. The "theme"
+     component in app.js changes it when the person chooses. --%>
+<html lang="${ctx.language()}" data-theme="${ctx.theme().value()}" class="h-full">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <%-- The browser-chrome colour follows the OS theme; the values match the Moonlight brand and the
-       Midnight stage (app.css). --%>
-  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#6d3fe0">
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#130c2e">
+  <%-- The browser-chrome colour: the OS theme for "system", the chosen one otherwise (Theme.themeColorMedia
+       turns the other meta off); the "theme" component in app.js moves the media values on a change.
+       The values match the Moonlight brand and the Midnight stage (app.css). --%>
+  <meta name="theme-color" data-theme-color="light" media="${ctx.theme().themeColorMedia(Theme.LIGHT)}" content="#6d3fe0">
+  <meta name="theme-color" data-theme-color="dark" media="${ctx.theme().themeColorMedia(Theme.DARK)}" content="#130c2e">
   <%-- The two fonts used above the fold (plan §6.2); the @font-face rules are in app.css. --%>
   <link rel="preload" href="/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>

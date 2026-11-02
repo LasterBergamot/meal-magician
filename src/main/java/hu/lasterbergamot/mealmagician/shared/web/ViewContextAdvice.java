@@ -1,6 +1,7 @@
 package hu.lasterbergamot.mealmagician.shared.web;
 
 import hu.lasterbergamot.mealmagician.shared.i18n.Messages;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -46,8 +47,9 @@ public class ViewContextAdvice {
    * @param request the current request
    * @return the context: {@code csrf} is {@code null} when there is no token source or no token,
    *     {@code household} is {@code null} when there is no household to show, {@code user} is
-   *     {@code null} for an anonymous request, {@code admin} is {@code true} for instance admins
-   *     and {@code active} is the navigation destination the path belongs to
+   *     {@code null} for an anonymous request, {@code admin} is {@code true} for instance admins,
+   *     {@code active} is the navigation destination the path belongs to and {@code theme} comes
+   *     from the {@code mm_theme} cookie
    */
   @ModelAttribute("ctx")
   public ViewContext viewContext(HttpServletRequest request) {
@@ -61,6 +63,20 @@ public class ViewContextAdvice {
         // Answered by Spring Security's request wrapper ("ROLE_" is added); false when anonymous.
         request.isUserInRole("ADMIN"),
         users == null ? null : users.from(request),
-        NavDestination.matching(request.getRequestURI()));
+        NavDestination.matching(request.getRequestURI()),
+        theme(request));
+  }
+
+  /** Reads the {@code mm_theme} cookie; any problem with it means {@link Theme#SYSTEM}. */
+  private static Theme theme(HttpServletRequest request) {
+    Cookie[] cookies = request.getCookies();
+    if (cookies != null) {
+      for (Cookie cookie : cookies) {
+        if (Theme.COOKIE_NAME.equals(cookie.getName())) {
+          return Theme.fromCookie(cookie.getValue());
+        }
+      }
+    }
+    return Theme.SYSTEM;
   }
 }

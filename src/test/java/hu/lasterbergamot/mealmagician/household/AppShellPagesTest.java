@@ -12,7 +12,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import hu.lasterbergamot.mealmagician.shared.web.Theme;
 import jakarta.persistence.EntityManager;
+import jakarta.servlet.http.Cookie;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -72,6 +74,23 @@ class AppShellPagesTest {
         .andExpect(content().string(containsString("id=\"household-sheet-phone\"")))
         .andExpect(content().string(containsString("id=\"household-sheet-desktop\"")))
         .andExpect(content().string(containsString("aria-label=\"Fő navigáció\"")));
+  }
+
+  @Test
+  void bothThemeControlsMarkTheChosenThemeFromTheCookie() throws Exception {
+    String page =
+        mvc.perform(get("/").with(signedInAs(anna)).cookie(new Cookie(Theme.COOKIE_NAME, "dark")))
+            .andExpect(content().string(containsString("data-theme=\"dark\"")))
+            .andExpect(content().string(containsString("id=\"theme-switch-phone\"")))
+            .andExpect(content().string(containsString("id=\"theme-switch-desktop\"")))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    // Each of the two controls has one pressed button: the one for "dark".
+    assertThat(page.split("data-theme-choice=\"dark\" aria-pressed=\"true\"", -1)).hasSize(3);
+    assertThat(page.split("aria-pressed=\"true\"", -1)).hasSize(3);
+    assertThat(page.split("data-theme-choice=\"light\" aria-pressed=\"false\"", -1)).hasSize(3);
   }
 
   @Test

@@ -104,4 +104,43 @@ class HelloPageTest {
                     org.hamcrest.Matchers.matchesPattern(
                         "(?s).*lang=\"en\" aria-label=\"English\"\\s+aria-current=\"true\".*")));
   }
+
+  @Test
+  void theHtmlElementCarriesTheThemeFromTheCookie() throws Exception {
+    mvc.perform(get("/"))
+        .andExpect(content().string(org.hamcrest.Matchers.containsString("data-theme=\"system\"")));
+    for (String theme : new String[] {"light", "dark", "system"}) {
+      mvc.perform(get("/").cookie(new Cookie(Theme.COOKIE_NAME, theme)))
+          .andExpect(
+              content()
+                  .string(org.hamcrest.Matchers.containsString("data-theme=\"" + theme + "\"")));
+    }
+  }
+
+  @Test
+  void anUnknownThemeCookieFallsBackToSystem() throws Exception {
+    mvc.perform(get("/").cookie(new Cookie(Theme.COOKIE_NAME, "\"><script>")))
+        .andExpect(content().string(org.hamcrest.Matchers.containsString("data-theme=\"system\"")));
+  }
+
+  @Test
+  void anExplicitThemeLeavesOnlyItsOwnThemeColorMetaOn() throws Exception {
+    mvc.perform(get("/").cookie(new Cookie(Theme.COOKIE_NAME, "dark")))
+        .andExpect(
+            content()
+                .string(
+                    org.hamcrest.Matchers.containsString(
+                        "data-theme-color=\"light\" media=\"not all\"")))
+        .andExpect(
+            content()
+                .string(
+                    org.hamcrest.Matchers.containsString(
+                        "data-theme-color=\"dark\" media=\"all\"")));
+    mvc.perform(get("/"))
+        .andExpect(
+            content()
+                .string(
+                    org.hamcrest.Matchers.containsString(
+                        "data-theme-color=\"light\" media=\"(prefers-color-scheme: light)\"")));
+  }
 }
