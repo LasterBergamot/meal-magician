@@ -77,9 +77,9 @@ public enum NavDestination {
    * Finds the destination a request belongs to, so its tab can be highlighted.
    *
    * <p>A destination matches its own path and the pages below it, so {@code /households/members}
-   * highlights Household. The hello page at {@code /} belongs to no destination and highlights
-   * nothing. Destinations that are not available match too, so a page reached by URL still gets its
-   * highlight once its tab appears.
+   * highlights Household. The address {@code /} only redirects, so it belongs to no destination and
+   * highlights nothing. Destinations that are not available match too, so a page reached by URL
+   * still gets its highlight once its tab appears.
    *
    * @param requestPath the request's path, for example {@code /households/members}
    * @return the matching destination, or {@code null} when the page is in no navigation (the

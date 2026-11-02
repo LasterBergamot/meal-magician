@@ -194,8 +194,9 @@ ids in that file are replaced with the real numbers then.
 - [x] Wave 4: R5a sign-in/error/hello and R5c admin allowlist (#85, PR #90), R5b household pages
       (#86, PR #92), R6 theme preference (#87, PR #91), plus the Phase 2 pages (#88, PR #95).
 - [ ] Wave 5 (issues #96–#99, planned by Opus on 2026-11-02, D25): [x] R5d remove the old styles
-      (#96, PR #100); [x] week view 1/2 (#97, PR #101, beside it); [ ] week view 2/2 (#98); then
-      [ ] R8 docs final pass (#99), then R9 close-out with the owner.
+      (#96, PR #100); [x] week view 1/2 (#97, PR #101, beside it); [x] week view 2/2 (#98, PR #104);
+      [ ] retire the hello page (#103, PR #TBD); then [ ] R8 docs final pass (#99), then R9
+      close-out with the owner.
 - Order: Phase 2 and 3 **pages** are built from these components, so they start once R1–R4 have
   landed (Phase 2 pages in Wave 4, Phase 3's week view after them). Their **backend** (module,
   migrations, services, tests) does not wait: it runs beside the waves (§9). *(Amended 2026-11-01;
@@ -232,10 +233,13 @@ no controllers or templates) and **the week view** (after R4 and the Phase 2 pag
       meal cannot be hard-deleted.
 - [x] Week view: a grid on desktop, a list of days on phone; ISO-week navigation; today highlighted.
       *(#97, PR #101; read-only, at `/plan`. A 7 × 4 table from 1024 px, a week strip plus day
-      sections below that. The Plan tab now points to `/plan`; `/` is still the hello page.)*
-- [ ] Slots: BREAKFAST / LUNCH / DINNER / SNACK. Add a meal from the library or create one inline;
-      a note per slot; reorder and move slots.
-- [ ] Optimistic locking (`@Version`) with a friendly "someone else changed this, reload" message.
+      sections below that. The Plan tab now points to `/plan`. Since #103 `/` redirects there.)*
+- [x] Slots: BREAKFAST / LUNCH / DINNER / SNACK. Add a meal from the library or create one inline;
+      a note per slot; reorder and move slots. *(#98, PR #104: one shared pick sheet with search,
+      recent meals and quick add; a slot sheet for the note, move, reorder and remove, which asks
+      first.)*
+- [x] Optimistic locking (`@Version`) with a friendly "someone else changed this, reload" message.
+      *(#98, PR #104: the 409 shows a banner with a Reload button, tested with two browser tabs.)*
 
 ### Phase 4 — Reuse and occasions (`M1`, epic #5)
 - [ ] Copy a day onto another date, and copy a week onto another week (merge or replace).
@@ -516,3 +520,4 @@ meal-magician/
 | 2026-11-02 | Wave 4 resumed after the 5-hour usage limit stopped the first session: #85 (PR #90) and #87 (PR #91) had merged, #86 was in PR #92 (checks green), #88 was a pushed WIP branch. Owner decided **D25**: plans by Opus (high) with a full `## Execution` brief per issue, a Haiku (high) coordinator, Haiku/Sonnet subagents chosen per issue, latest releases by alias. Docs only for the rule (`workflow.md`, `issues.md`, `CLAUDE.md`, `plan-ui-redesign.md` §7.1). | #85, #86, #87, #88, #90, #91, #92 |
 | 2026-11-02 | **Wave 4 landed.** #85 (PR #90), #87 (PR #91) and #86 (PR #92) merged; the meal pages (#88, PR #95) finish Phase 2: the `/meals` list with search, tag filter, recently-used-first and an archived switch, the form with 422 and 409 states, quick add (phone sheet, desktop bar), archive and restore, `OccasionType` owned by `catalog` (V8), `RecentMealsProvider` implemented by `planning`. Checked at 390 and 1280 px in light and dark. Open for the owner: the phone Meals list shows the gold add button and the gold current tab together, which the spec itself prescribes (the "Add" row of its navigation table and the FAB row of its component table), so it is left for the R9 walk-through. Wave 5 (R5d, R8, then R9) and the Phase 3 week view are next. | #57, #3, #85, #86, #87, #88, #90, #91, #92, #95 |
 | 2026-11-02 | **Wave 5 planned and half-built.** An Opus planner wrote the briefs; issues #96 (R5d), #97 (week view 1/2), #98 (week view 2/2) and #99 (R8) were filed with parents and blockers. **R5d landed** (#96, PR #100): the old `brand-50…800` scale is gone and `UiGuardTest` now fails on `brand-<digit>`, `stone-` or a raw Tailwind colour in a template or `app.js`, and on the old scale in `app.css`. **Week view 1/2 landed** (#97, PR #101): `GET /plan?week=YYYY-Www` (read-only), the Plan tab on `/plan`, `htmx.config.refreshOnHistoryMiss`. **Owner decisions:** the planner's five week-view deviations from the design are accepted (table from 1024 px, no swipe, one shared sheet, slot chips as row headers, remove-confirm over the slot sheet); the gold stays exactly as designed and is judged live at R9; the hello page may be removed once `/` can redirect (to be filed after #98). | #57, #4, #96, #97, #98, #99, #100, #101 |
+| 2026-11-02 | **Week view 2/2 landed** (#98, PR #104): `PlanningService.slot` and `quickAddAndPlan`, eight routes under `/plan/slots`, the pick sheet (search, recent meals, quick add with a 422 state), the slot sheet (note, move, reorder, remove behind the confirm dialog) and the 409 conflict banner; tenant-guard registrations and `PlanEditingE2ETest` at 390 and 1280 px. **Phase 3 is done.** One find: `Htmx.redirect` to the page the browser is already on only jumps to the anchor, so the slot controller also sends `HX-Refresh` for the same page. **Hello page retired** (#103, PR #TBD): `/` now redirects to `/plan` (or `/households` for a person with no household), a household switch lands on `/plan`, and the hello controller, templates, message keys and test are gone; the slice tests that used `/` as a sample page use `/error`, `/meals` or `/households`, and the e2e sign-in helpers accept either landing page. R8 (#99) is next. | #4, #98, #103, #104 |

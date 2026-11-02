@@ -96,7 +96,7 @@ class HouseholdController {
    * @param householdId the household to switch to
    * @param request the current request
    * @param response the response
-   * @return a redirect to the home page
+   * @return a redirect to the week plan of the chosen household
    * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException (404) if the person
    *     is not a member
    */
@@ -108,7 +108,7 @@ class HouseholdController {
       HttpServletResponse response) {
     households.require(householdId, user.userId());
     resolver.select(request, householdId);
-    return Htmx.redirect(request, response, "/");
+    return Htmx.redirect(request, response, HomeController.PLAN_PATH);
   }
 
   /**

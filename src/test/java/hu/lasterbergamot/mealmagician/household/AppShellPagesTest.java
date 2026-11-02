@@ -67,7 +67,7 @@ class AppShellPagesTest {
 
   @Test
   void aSignedInPageIsDrawnInsideTheShellWithBothNavigations() throws Exception {
-    mvc.perform(get("/").with(signedInAs(anna)))
+    mvc.perform(get("/meals").with(signedInAs(anna)))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString("id=\"shell\"")))
         .andExpect(content().string(containsString("id=\"sidebar\"")))
@@ -79,7 +79,8 @@ class AppShellPagesTest {
   @Test
   void bothThemeControlsMarkTheChosenThemeFromTheCookie() throws Exception {
     String page =
-        mvc.perform(get("/").with(signedInAs(anna)).cookie(new Cookie(Theme.COOKIE_NAME, "dark")))
+        mvc.perform(
+                get("/meals").with(signedInAs(anna)).cookie(new Cookie(Theme.COOKIE_NAME, "dark")))
             .andExpect(content().string(containsString("data-theme=\"dark\"")))
             .andExpect(content().string(containsString("id=\"theme-switch-phone\"")))
             .andExpect(content().string(containsString("id=\"theme-switch-desktop\"")))
@@ -105,7 +106,7 @@ class AppShellPagesTest {
 
   @Test
   void theSwitcherListsOnlyMyHouseholdsAndOffersASwitchForEachOtherOne() throws Exception {
-    mvc.perform(get("/").with(signedInAs(anna)))
+    mvc.perform(get("/meals").with(signedInAs(anna)))
         .andExpect(content().string(containsString("Annas")))
         .andExpect(content().string(containsString("action=\"/households/" + belas + "/switch\"")))
         .andExpect(
@@ -117,7 +118,7 @@ class AppShellPagesTest {
 
   @Test
   void theSignOutButtonIsAPostWithTheCsrfField() throws Exception {
-    mvc.perform(get("/").with(signedInAs(anna)))
+    mvc.perform(get("/meals").with(signedInAs(anna)))
         .andExpect(content().string(containsString("method=\"post\" action=\"/logout\"")))
         .andExpect(content().string(containsString("name=\"_csrf\"")));
   }
@@ -143,7 +144,7 @@ class AppShellPagesTest {
 
   @Test
   void aGetWithALangParameterDoesNotChangeTheStoredLanguage() throws Exception {
-    mvc.perform(get("/").with(signedInAs(anna)).param("lang", "en"))
+    mvc.perform(get("/meals").with(signedInAs(anna)).param("lang", "en"))
         .andExpect(content().string(containsString("<html lang=\"hu\"")));
 
     em.flush();
@@ -159,7 +160,7 @@ class AppShellPagesTest {
 
   @Test
   void theLanguageButtonsArePostFormsWithTheCsrfField() throws Exception {
-    mvc.perform(get("/").with(signedInAs(anna)))
+    mvc.perform(get("/meals").with(signedInAs(anna)))
         .andExpect(content().string(containsString("method=\"post\" action=\"/language\"")))
         .andExpect(content().string(containsString("name=\"lang\" value=\"en\"")))
         .andExpect(content().string(not(containsString("href=\"?lang="))));

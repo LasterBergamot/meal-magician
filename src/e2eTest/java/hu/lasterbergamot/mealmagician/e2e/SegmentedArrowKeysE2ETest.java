@@ -88,7 +88,7 @@ class SegmentedArrowKeysE2ETest {
     Page page = context.newPage();
     page.navigate(BASE_URL + "/");
     page.locator("a[href='/oauth2/authorization/google']").click();
-    page.waitForURL(url -> URI.create(url).getPath().equals("/"));
+    page.waitForURL(url -> URI.create(url).getPath().matches("/(plan|households)"));
     return page;
   }
 

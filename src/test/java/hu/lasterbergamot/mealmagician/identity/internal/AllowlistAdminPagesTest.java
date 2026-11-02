@@ -142,7 +142,7 @@ class AllowlistAdminPagesTest {
   void anAdminSeesTheHeaderLinkAndAMemberDoesNot() throws Exception {
     mvc.perform(get("/admin/allowlist").with(signedIn(adminId, true)))
         .andExpect(content().string(containsString("href=\"/admin/allowlist\"")));
-    mvc.perform(get("/").with(signedIn(adminId, false)))
+    mvc.perform(get("/households").with(signedIn(adminId, false)))
         .andExpect(status().isOk())
         .andExpect(content().string(not(containsString("href=\"/admin/allowlist\""))));
   }

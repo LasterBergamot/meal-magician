@@ -83,7 +83,7 @@ What exists in `main` today:
     the profiles `dev,postgres`: the datasource variables win over the dev profile's H2, and `dev`
     serves the `/dev/ui` style guide that the component tests (R3) open.
   - `src/e2eTest` (Playwright for Java, Gradle task `e2eTest`) opens `/`, follows the sign-in and
-    checks the hello page at 390×844 and 1280×800, including that the page does not scroll
+    checks the landing page (the plan, or the households page for a new person) at 390×844 and 1280×800, including that the page does not scroll
     sideways. `task test-e2e` builds the image, runs the stack, the tests and tears the stack down
     even if they fail. Not covered: the `prod` profile and HTTPS (the stack runs plain HTTP on
     localhost) and real Google.

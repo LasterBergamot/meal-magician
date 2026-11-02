@@ -17,6 +17,6 @@ class NoCsrfSourceTest {
 
   @Test
   void rendersNoCsrfMetaTagsWithoutATokenSource() throws Exception {
-    mvc.perform(get("/")).andExpect(content().string(not(containsString("_csrf"))));
+    mvc.perform(get("/error")).andExpect(content().string(not(containsString("_csrf"))));
   }
 }

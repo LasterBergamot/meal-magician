@@ -1,8 +1,8 @@
 # Current State: Frontend
 
-What exists in `main` today (issue #13). The page is a hello page: the point is that the layout,
-translations, styling, htmx, Alpine, the PWA files and the security headers all work together
-before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
+What exists in `main` today (issue #13 started it). The layout, translations, styling, htmx, Alpine,
+the PWA files and the security headers work together, and the real screens (households, meals, the
+week plan) are built on top. Planned UI work: [[Roadmap: Frontend]].
 
 ## Pages and templates
 
@@ -10,11 +10,8 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   (`layout/_shell.jte`, see "App shell and navigation" below). An anonymous visitor (sign-in, error
   pages) gets a plain header with the HU/EN language links, `<main>` with an empty `#error-slot`, and
   a footer. Touch targets are at least 44 px.
-- `hello/page.jte` + `hello/_greeting.jte`: the temporary home page `/` (restyled in R5a, #85).
-  Inside the shell: an `h1` with one sparkle, the lead sentence and a `ui/_card` holding today's
-  date (clock icon) and a secondary "Refresh" `ui/_button`. The button
-  asks `/` again through htmx; because the request carries `HX-Request`, the controller returns
-  only the `_greeting` fragment. Every later screen follows this pattern (`Htmx.view(...)`).
+- `/` has no template: `household.internal.HomeController` redirects a signed-in person to `/plan`
+  (or to `/households` when they have no household yet). The Phase 0 hello page was removed in #103.
 - `error/page.jte` + `error/_message.jte`: our 404, 403 and 500 pages (`AppErrorController`;
   other statuses show the 500 text). A normal request gets a full page. An htmx request gets the
   fragment, and `HX-Retarget` puts it into `#error-slot` so the page around it stays intact.
@@ -176,7 +173,7 @@ is in [[Current State: Backend]].
 - **Tests:** `IsoWeekTest` (year boundaries, invalid codes), `PlanPageModelsTest`, `PlanPagesTest`
   (MockMvc: the page, an htmx fragment, planned meals, another household, a stranger, English) and
   the browser test `PlanWeekE2ETest` at phone and desktop size.
-- **Not yet:** swipe to change week, and `/` is still the hello page (it highlights no tab).
+- **Not yet:** swipe to change week (dropped from the design on 2026-11-02, see `plan-ui-redesign.md` §4).
 
 ### Editing the week (#98)
 
@@ -244,7 +241,7 @@ Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` 
   readers and a tooltip. It starts collapsed below 1024 px. The choice is kept in `localStorage`
   under `mm.sidebarCollapsed`, for this browser only; every access is in try/catch because some
   browsers refuse storage.
-- **Destinations** (`shared.web.NavDestination`): Plan (`/plan`, the week view; `/` is still the hello page and highlights no tab),
+- **Destinations** (`shared.web.NavDestination`): Plan (`/plan`, the week view; `/` only redirects, so it highlights no tab),
   Meals (`/meals`, the meal library, #88) and Household (`/households`). Occasions (`/occasions`)
   has no page yet, so it is **not listed** (a flag on the enum; switching one on is a one-word
   change). `NavDestination.matching` picks the current tab from the request path, so
@@ -264,8 +261,8 @@ Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` 
   to `SignInLanguage`, which writes the cookie, so the choice follows the person to a new browser.
   A stored value this version does not support falls back to Hungarian.
 - **Navigation is plain links**, so each destination is a full page load. Plan §4 asks for
-  `hx-boost`; it is not used yet, because some pages (the hello page) answer a normal request with
-  the whole page, and boosting would nest that inside the content area.
+  `hx-boost`; it is not used yet, because a page that answers a normal request with the whole
+  page would be nested inside the content area when boosted.
 - **Keyboard:** the segmented control (`ui/_segmented`) moves focus with the arrow keys, Home and
   End, through the Alpine `segmented` component; Enter follows the link as before.
 - **Landmarks:** a skip link, `<header>` (phone only), `<nav aria-label="Fő navigáció">` (the tab bar
@@ -443,7 +440,7 @@ per user in the database comes later, together with the per-user language.
 - **CSS:** no change was needed. `:root` is Moonlight, `[data-theme="dark"]` is Midnight, and the
   `prefers-color-scheme: dark` block applies only when `data-theme` is neither `light` nor `dark`,
   so an explicit choice beats the device.
-- **Tests:** `ThemeTest`, `ViewContextAdviceTest`, `HelloPageTest` and `AppShellPagesTest` cover the
+- **Tests:** `ThemeTest`, `ViewContextAdviceTest` and `AppShellPagesTest` cover the
   cookie, the fallback and the markup. `ThemePreferenceE2ETest` loads the sign-in page with
   JavaScript off and each cookie value (so `data-theme` must come from the server's HTML), then
   chooses each theme in the real shell at 390 and 1280 px with the device set to dark, reloads, and
@@ -472,7 +469,7 @@ expressions like `open = !open`, so a template only names a component (`x-data="
 ## Translations (i18n)
 
 - Texts live in `src/main/resources/messages_hu.properties` (default) and
-  `messages_en.properties`; a template writes `${ctx.t("hello.title")}`. Placeholders are
+  `messages_en.properties`; a template writes `${ctx.t("plan.week.title", …)}`. Placeholders are
   `{0}`, `{1}` (apostrophes must be doubled).
 - `shared.i18n.Messages` is the helper (public API of the `shared` module). A missing key throws
   on purpose.

@@ -68,11 +68,6 @@ class LoginPageTest {
   }
 
   @Test
-  void signedInPersonSeesTheHomePage() throws Exception {
-    mvc.perform(get("/").with(oidcLogin())).andExpect(status().isOk());
-  }
-
-  @Test
   void loginPageHasTheSecurityHeaders() throws Exception {
     mvc.perform(get("/login"))
         .andExpect(

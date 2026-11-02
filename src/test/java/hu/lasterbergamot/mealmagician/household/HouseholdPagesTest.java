@@ -135,12 +135,12 @@ class HouseholdPagesTest {
 
   @Test
   void theHeaderShowsTheCurrentHouseholdOrTheInvitationToCreateOne() throws Exception {
-    mvc.perform(get("/").with(signedInAs(anna)))
+    mvc.perform(get("/meals").with(signedInAs(anna)))
         .andExpect(content().string(containsString("id=\"household-sheet-phone\"")))
         .andExpect(content().string(containsString(">Annas</span>")));
 
     long newcomer = HouseholdTestSupport.insertUser(jdbc, "newcomer");
-    mvc.perform(get("/").with(signedInAs(newcomer)))
+    mvc.perform(get("/households").with(signedInAs(newcomer)))
         .andExpect(content().string(containsString("Háztartás létrehozása")));
   }
 
@@ -171,7 +171,7 @@ class HouseholdPagesTest {
         .filteredOn(h -> h.name().equals("Summer house"))
         .singleElement()
         .satisfies(h -> assertThat(h.role()).isEqualTo(HouseholdRole.OWNER));
-    mvc.perform(get("/").with(signedInAs(anna)).cookie(session))
+    mvc.perform(get("/meals").with(signedInAs(anna)).cookie(session))
         .andExpect(content().string(containsString(">Summer house</span>")));
   }
 
@@ -225,9 +225,9 @@ class HouseholdPagesTest {
                 .with(csrf())
                 .cookie(session))
         .andExpect(status().isOk())
-        .andExpect(header().string("HX-Redirect", "/"));
+        .andExpect(header().string("HX-Redirect", "/plan"));
 
-    mvc.perform(get("/").with(signedInAs(anna)).cookie(session))
+    mvc.perform(get("/meals").with(signedInAs(anna)).cookie(session))
         .andExpect(content().string(containsString(">Belas</span>")));
   }
 
@@ -242,7 +242,7 @@ class HouseholdPagesTest {
                 .cookie(session))
         .andExpect(status().isNotFound());
 
-    mvc.perform(get("/").with(signedInAs(bela)).cookie(session))
+    mvc.perform(get("/meals").with(signedInAs(bela)).cookie(session))
         .andExpect(content().string(not(containsString(">Annas</span>"))));
   }
 
@@ -254,12 +254,12 @@ class HouseholdPagesTest {
             .with(signedInAs(anna))
             .with(csrf())
             .cookie(session));
-    mvc.perform(get("/").with(signedInAs(anna)).cookie(session))
+    mvc.perform(get("/meals").with(signedInAs(anna)).cookie(session))
         .andExpect(content().string(containsString(">Belas</span>")));
 
     jdbc.update("delete from membership where household_id = ? and user_id = ?", belas, anna);
 
-    mvc.perform(get("/").with(signedInAs(anna)).cookie(session))
+    mvc.perform(get("/meals").with(signedInAs(anna)).cookie(session))
         .andExpect(content().string(containsString(">Annas</span>")));
     mvc.perform(
             post("/households/" + belas + "/switch")
