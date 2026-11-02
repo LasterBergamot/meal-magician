@@ -70,6 +70,9 @@ Explore and Plan subagents load neither this file nor the rules: put the rule fi
 - The generic skills and the `convention-reviewer` agent come from `ai-common` (pinned in
   `apm.yml`). Never edit them here: change the values in `.claude/context/`, or change the
   skill in `ai-common` and bump the tag.
+- **Coordinated work (D25):** plan with `opus` (high) and put a full `## Execution` brief in each
+  issue; the coordinator is `haiku` (high); subagents are `haiku` high, `sonnet` high or `sonnet`
+  medium as the issue says. Use the aliases, never a pinned version (`workflow.md`).
 - Before creating a PR, follow `.claude/context/pr-checklist.md`.
 - Never edit generated files (`build/`, generated JTE classes, `static/css/app.css` built by
   Tailwind); regenerate them with the `task` targets.

@@ -69,6 +69,7 @@ Postgres URL is missing.
   moved since CI ran. `task lint` and `task test` run side by side in worktrees; `task test-e2e`
   does not (`compose.e2e.yml` binds ports 18080/18081), so leave it to CI or run one at a time.
   Run `task serve` on another port per worktree with `SERVER_PORT=8081 task serve`.
+- **Models and effort for subagent work:** see the next section (PLAN.md D25).
 - **Releases (#51):** merging code to `main` releases it: `release.yml` starts when CI succeeds on
   `main`, takes the next patch version (`release:minor` / `release:major` on the PR raise the
   other parts) and skips merges that change only Markdown, `documentation/`, `.claude/` or
@@ -82,6 +83,54 @@ Postgres URL is missing.
   the same version. Needs the GitHub variables listed in `documentation/Hosting-Setup.md`.
   Flyway migrates at startup, so migrations must stay compatible with the previous release
   (expand/contract).
+
+## Models and effort for coordinated work (PLAN.md D25)
+
+Applies to **every** job run as a coordinator plus subagents: UI waves, backend tracks, audits and
+anything later. The goal is that the expensive model thinks once, in the plan, and cheaper models
+do the typing.
+
+**Names are aliases, never pinned versions.** Say `opus`, `sonnet` or `haiku` (the Agent tool's
+`model` values). They always mean the newest release of that family, so no plan, issue or prompt
+ever contains an ID such as `claude-sonnet-5-5`. "5.5" in the docs is only what was newest when
+they were written. Set the Agent tool's `effort` explicitly (it is allowed here because this file
+asks for it).
+
+| Role | Model | Effort | Does |
+|------|-------|--------|------|
+| Planner | `opus` | high | Writes the wave plan and every issue's `## Execution` brief (below), in an Opus session or a `Plan` subagent with `model: opus` (it loads neither `CLAUDE.md` nor the rules: name the rule files in its prompt). Makes every design decision up front. |
+| Coordinator | `haiku` | high | Files the issues from the plan, starts the subagents, merges the PRs one at a time, rebases when `main` moved, ticks `PLAN.md` and adds log rows (D24). Follows the plan literally and never redesigns; a missing decision goes back to the planner or the owner. The owner starts that session on Haiku at high effort. |
+| Subagent, default | `haiku` | high | Work that copies an existing pattern: restyling a page from the `ui/` components, docs, translations, CRUD that mirrors another module, tests from a listed table of cases. |
+| Subagent, harder | `sonnet` | high | New service or module logic, Flyway migrations, locking and concurrency, tenant- or security-sensitive code, cross-module wiring, anything the brief cannot spell out step by step. |
+| Subagent, mechanical | `sonnet` | medium | Edits with a complete recipe: renames, moving paragraphs, version bumps, applying one change across many files. |
+
+The planner picks the model and effort **per issue** and says why in one line. The coordinator
+uses exactly that. **Escalation:** if a subagent fails its gates twice, or reports it is blocked
+because the work was harder than the brief assumed, the coordinator reruns it one step up (haiku →
+sonnet high), not on Opus. If it is blocked on a *decision*, the coordinator stops and asks the
+planner or the owner; a cheaper model must not guess.
+
+**The brief is the plan.** A cheaper model works well only when nothing has to be guessed, so each
+issue worked by a subagent carries an `## Execution` section (`issues.md`) with:
+
+1. **Model and effort**, and why.
+2. **Files owned** (create or edit) by exact path, and the files it must not touch (D24: one writer
+   per file per wave).
+3. **Read first:** the rule files and the existing file to mirror ("copy the structure of
+   `household/_members.jte`"), with line ranges when only a part matters.
+4. **Steps in order,** with the exact names: classes, methods, routes, message keys, table and
+   column names, the Flyway number.
+5. **Tests:** the cases as a table (input → expected) and the guards that must stay green.
+6. **Docs:** the files to update and what each paragraph must say.
+7. **Commands and what green looks like** (`task lint`, `task test`, the visual check); what is left
+   to CI (`task test-e2e` runs one worktree at a time).
+8. **Pitfalls** learned in earlier waves that apply here.
+9. **Stop conditions:** when to stop and report instead of improvising.
+10. The issue's **Acceptance** list is the definition of done.
+
+If the issue is short on any of these, the coordinator sends it back to the planner before starting
+a subagent. The wave's table in `PLAN.md` §9 or `plan-ui-redesign.md` §7 lists the model per item
+so the owner sees the cost at a glance.
 
 ## CI
 
