@@ -439,6 +439,12 @@ beside them.
    each other unchecked (see "Merging" below);
 4. ticks the items, adds the log rows and starts the next wave.
 
+**Models (PLAN.md D25).** The wave is planned by `opus` (high), which writes a full `## Execution`
+brief into each sub-issue; the coordinator runs on `haiku` (high) and starts each subagent on the
+model and effort its issue names (`haiku` high for pattern-following restyles, `sonnet` high or
+medium for harder or mechanical items). Aliases only, never a pinned version. Details and the
+escalation rule: `.claude/context/workflow.md`.
+
 **One writer per file per wave.** A subagent edits only the files its item owns. If it needs a
 change in a file another item owns (say R2b needs a new icon), it reports that and the coordinator
 adds it to the owner's PR or to the next wave. Ownership:

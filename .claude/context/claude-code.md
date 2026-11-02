@@ -28,7 +28,7 @@ Which file to update when you change something:
 | test conventions, fixtures, coverage config | `.claude/rules/tests.md` |
 | Dockerfile, Compose, Cloud Run, workflows | `.claude/rules/container.md` |
 | docs rules, wiki pages | `.claude/rules/documentation.md` |
-| tasks, env vars, branches, release | `.claude/context/workflow.md` |
+| tasks, env vars, branches, release, which model/effort the planner, coordinator and subagents use | `.claude/context/workflow.md` |
 | PR rules, Dependabot rule, gates | `.claude/context/pr-checklist.md` |
 | labels, milestones, epics, board | `.claude/context/issues.md` |
 | docs pages added/removed | `.claude/context/docs.md` |

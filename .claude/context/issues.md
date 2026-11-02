@@ -11,6 +11,12 @@ The skill holds the procedure; this file holds the project's values.
 - `## Privacy & security`: add it to issues that touch personal data, auth, invites, share
   links, external services (Google, the AI provider) or logging. Say what data is involved and
   how it is protected.
+- `## Execution`: required on every issue a subagent will implement (PLAN.md D25). It names the
+  model alias and effort (`haiku`/`sonnet`, `high`/`medium`, never a version number) with a
+  one-line reason, then the brief in the ten points of `workflow.md` ("Models and effort for
+  coordinated work"): files owned, read-first list, ordered steps with exact names, test table,
+  docs to update, commands, pitfalls and stop conditions. Written by the planner (Opus, high).
+  Issues done by hand need no `## Execution`.
 - Audit-made issues end with `_Found in the <Mon YYYY> repository audit._`
 
 ## Labels
