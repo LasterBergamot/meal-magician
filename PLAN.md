@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phase 1 done; UI redesign (#57) next, worked in parallel waves (§9)** · Phase 0 owner checks open (#16, #18) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phase 1 done; UI redesign (#57) in parallel waves, Waves 1–3 landed, Wave 4 under way (§9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -112,11 +112,11 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       with a stub OIDC provider; one Playwright-Java e2e test (sign in → hello page) on phone
       and desktop viewports. *(PR #32. The cache is a JDK 25 AOT cache, see D17. Cold start
       measured: 1.3 s with the cache vs 2.9 s without on H2; the Cloud Run number comes with #18.)*
-- [ ] #16 CI: `ci.yml`, `docs-check.yml` (+ `scripts/check_docs_touched.sh`), `wiki-sync.yml`,
+- [x] #16 CI: `ci.yml`, `docs-check.yml` (+ `scripts/check_docs_touched.sh`), `wiki-sync.yml`,
       `dependabot.yml`, PR template already in place. *(PR #29. The E2E and Trivy steps pass
       without running until #15 adds the Dockerfile and `compose.e2e.yml`. The four checks are required in
       branch protection (2026-11-01, owner OK). Still open, owner: create the wiki's first page in
-      the web UI so the sync can push; then #16 can close.)*
+      the web UI so the sync can push; then #16 can close. Done 2026-11-02: the owner created the page and the docs sync.)*
 - [ ] #17 Hosting (D11): Cloud Run service + Neon Postgres, secrets in Secret Manager, deploy
       through Workload Identity Federation. The owner does all console steps in **one setup
       session** up front (Google Cloud project, billing + budget, OAuth client, Artifact Registry,
@@ -125,7 +125,7 @@ Each phase is an **epic** with sub-issues, created with the `new-issue` skill (c
       1–8 of `Hosting-Setup.md`, by hand; `gcloud` is signed in on the owner's machine, so agents
       can read Cloud Run status and logs. The setup is not yet verified by a script: #27, parked.)* Runbooks: `documentation/Hosting-Setup.md`,
       `documentation/Auth-Setup.md`.
-- [ ] #18 `release.yml` → first deploy **v0.1.0**: sign in on a phone and see the hello page.
+- [x] #18 `release.yml` → first deploy **v0.1.0**: sign in on a phone and see the hello page.
       Confirm that the app and the database really scale to zero when idle. *(Workflow written
       in PR #34; the first run failed on an env-var delimiter, fixed in PR #35; the second run
       deployed **v0.1.0** (2026-11-01): health 200, `/` redirects to `/login`, Flyway applied the
@@ -211,7 +211,7 @@ needs `meal_slot`, so it lands with the pages once B3 is in.
       `MealChanged`, tenant-scoped, recipe links limited to http/https. **Left out on purpose:**
       the occasion types a meal suits (which module owns the enum is undecided; decide before the
       meal pages or add a later migration) and "recently used first" (needs B3's `meal_slot`).
-- [ ] Meal CRUD: name, notes, recipe URL, tags, which occasion types it suits, archive.
+- [ ] Meal CRUD: name, notes, recipe URL, tags, which occasion types it suits, archive. *(Pages: #88, Wave 4. The occasion-type enum is owned by `catalog` (planning already depends on catalog, so the other way round would be a cycle), added with Flyway V8; owner OK'd 2026-11-02.)*
 - [ ] Tags per household; search and filter (name, tag), recently used meals first.
 - [ ] Quick-add from a phone (name only, add the details later).
 
@@ -448,8 +448,8 @@ meal-magician/
    |---|---|---|---|
    | 1 (now) | R1 tokens → R2a icons/button/`/dev/ui` (merged after R1) | #59 live sessions; B2 catalog backend (V6) | #16 create the wiki's first page; #18 sign in on a phone and confirm Neon suspends |
    | 2 | R2b, R2c, R3 | B3 planning backend (V7, after B2) | — |
-   | 3 | R4 shell (alone in the UI) | B3 if not done; #58 smoke test once #18 is closed | — |
-   | 4 | R5a + R5c (one agent), R5b, R6 | Phase 2 meal pages (uses R4 and B2) | confirm UI-D8 (theme cookie) before R6 |
+   | 3 | R4 shell (alone in the UI) | B3 if not done; #58 smoke test once #18 is closed (#18 closed 2026-11-02; #58 is unblocked and still open) | — |
+   | 4 | R5a + R5c (one agent), R5b, R6 | Phase 2 meal pages (uses R4 and B2) | UI-D8 (theme cookie) confirmed 2026-11-02 |
    | 5 | R5d, R8 | Phase 3 week view (uses R4, B2, B3) | R9 walk-through on a phone and a laptop |
 
    Never more than five subagents at once. Flyway versions are reserved so parallel branches do not
@@ -500,3 +500,4 @@ meal-magician/
 | 2026-11-01 | Wave 3 started (D24): sub-issues #79 (R4 shell, under #57) and #80 (B3 planning backend, under #4) filed. **B3 landed** (#80, PR #81): the `planning` module with Flyway V7 `meal_slot`, `PlanningService`, the 409 conflict exception and `SlotPlanned`, 100 % covered, no controllers or templates. `meal_slot` has no `free_text` and `meal_id` is `NOT NULL` (§4.2 amended). | #4, #79, #80, #81 |
 | 2026-11-02 | Wave 3 landed: the app shell (R4, #79, PR #82) with sign-out, the household switcher and the stored language, beside the planning backend (B3, #80, PR #81). Open questions for Wave 4 are in `plan-ui-redesign.md`'s log. | #57, #79, #82 |
 | 2026-11-02 | **R4 follow-ups** (#83): the owner decided both open questions. The shell's top-bar avatar uses a new `soft` tone of `ui/_avatar` (`brand-soft` with `brand-ink`), so a phone screen has one gold mark, the current tab; and the language switch is now `POST /language` (CSRF-protected, public, redirects to the same-origin page it came from) instead of a `?lang=` GET, which replaces `LanguageSwitchInterceptor`. Wave 3's open items (1) and (3) are done. | #57, #83 |
+| 2026-11-02 | Owner checks done: #16 (first wiki page created, docs sync) and #18 (sign-in on a phone works) closed. Owner confirmed UI-D8 (theme cookie) and the occasion-type decision (enum in `catalog`, V8). **Wave 4 started** (D24): #85 (R5a + R5c, one agent), #86 (R5b), #87 (R6) under #57, and #88 (Phase 2 meal pages) under #3, one worktree subagent each. Backups (#62) stay after Phase 5. | #16, #18, #57, #3, #85, #86, #87, #88 |
