@@ -154,8 +154,7 @@ paths:
   `warning` alert with a Reload link. The delete confirm (`ui/_confirm`) posts to a URL with the
   version in the query string, so the dialog needs no hidden input. A 409 from the delete goes into
   `#plan-conflict` (`HX-Retarget`), which `app.js` already uses to close open dialogs.
-- **Meal pages (#88), `meal/`:** built from the `ui/` components. A link that navigates is
-  The quick add is a
+- **Meal pages (#88), `meal/`:** built from the `ui/` components. The quick add is a
   name-only form in two copies, one in the phone's `ui/_sheet` and one inline from `md` up, with ids
   that differ by variant. A hidden `form` field says which copy posted, and `QuickAdd.variantOf`
   maps anything unknown to the inline copy, so a hand-edited value cannot reach an element id. A
@@ -168,7 +167,15 @@ paths:
   (`OccasionForm.parseDate` / `parseType`) and a bad value is refused by the service as a field
   error (422), never as an exception. A 409 on delete goes to `#occasion-conflict`, and `app.js`
   closes dialogs after a swap into it. Planning pages reuse the catalog's `meal.occasion.*` labels
-  through `OccasionTypes.key`, so the words are translated once.
+  through `OccasionTypes.key`, so the words are translated once. The menu (#113) is edited through
+  one page-level sheet, `occasion-pick-sheet`, at the end of `occasion/detail.jte` and outside
+  every section, opened by the `sheetOpener` link `#occasion-add-meal`; its content
+  (`occasion/_pick`) is a copy of the plan's pick sheet and reuses the `plan.pick.*` keys. A menu
+  action redirects to `/occasions/{id}` **without** a `#menu` fragment (a URL that differs only in
+  its fragment does not reload) and adds `HX-Refresh` when `PlanResponses.isSamePage` says htmx is
+  already on that page. The self-swapping forms answer with the same root id:
+  `occasion-pick-quick-form`, `occasion-save-template-form` and `occasion-use-form`. Read the
+  occasion or template before parsing `mealId` or `date`, so a stranger gets 404 first.
 - **Week view (#97), `plan/`:** one swap region, `#plan-week`, holds the stepper, the phone's
   strip and day list and the desktop table; `plan/_week` is the fragment and `plan/week` the page.
   The stepper links go through `HtmlAttributes.htmxFetch` and keep stable ids (`plan-prev`,

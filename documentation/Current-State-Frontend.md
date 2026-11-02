@@ -72,32 +72,6 @@ error and household pages. Planned UI work: [[Roadmap: Frontend]].
   section, which also closes the open dialog; a refused change answers 422 (add) or 409 (remove) with
   the same section and the message.
 
-## Plan templates (#111)
-
-The template list and one template's page, under `/plan/templates`. The controller is
-`PlanTemplateController` in `planning/internal`; its page models are `TemplatesPage`,
-`TemplateRow`, `TemplatePage`, `TemplateDayLines` and `TemplateLine`, built by
-`TemplatePageFactory`; the templates are `plan/templates.jte`, `plan/template.jte`,
-`plan/_template_rename.jte` and `plan/_template_conflict.jte`. Templates are made on the plan
-(#110); this page only lists, shows, renames and deletes them.
-
-- `GET /plan/templates` shows the household's day templates and week templates in two cards, sorted
-  by name, each row with the meal count. With no template at all it shows one empty state that links
-  back to the plan.
-- `GET /plan/templates/{id}` shows the meals per day in plan order with the slot chip, the note and
-  an Archived badge. A week template names the weekdays: the label comes from a reference Monday,
-  so only the weekday name is formatted. A hint says that the template is applied from the plan.
-- `POST /plan/templates/{id}/rename` (`version`, `name`): a blank or too-long name is 422 with the
-  message under the field and the typed name kept; a stale version is 409 with a warning above the
-  field and a Reload link. A success sends the browser back to the page.
-- `POST /plan/templates/{id}/delete?version=`: behind a `ui/_confirm`. A success goes to the list; a
-  stale version is 409 and, for htmx, the banner goes into `#plan-conflict` and the dialog closes.
-- Every member may rename and delete (PLAN.md D26). A template of another household is 404 on all
-  four routes, and the four are registered in `TenantEndpoints`.
-- Tests: `PlanTemplatePagesTest` drives the pages through MockMvc (Anna and Bela, the 404s, both
-  answers with and without htmx); `PlanTemplateModelsTest` covers the page records and the message
-  keys.
-
 ## Meal pages (#88)
 
 The meal library: a searchable list with filters, one meal's page, the create and edit form, the
@@ -153,39 +127,6 @@ behaviour is in [[Current State: Backend]].
   fragments, the form, the tenant cases), `MealPageModelsTest` covers the page models, and the
   browser test `MealPagesE2ETest` adds, finds, edits, archives and restores a meal at phone and
   desktop size.
-
-## Occasions (#112)
-
-An occasion is a dated event (a birthday, a holiday, a party or another day) with a name and notes,
-and later a menu of library meals. Every member may do everything with them (PLAN.md D26), and the
-pages are scoped to the household, so another household's occasion is a 404 on every route.
-
-| Route | What it does |
-|-------|--------------|
-| `GET /occasions` | The list. The nearest occasion on or after today is the gold-soft card, with its Today badge when it is today. The later ones follow in date order, then the past ones, newest first. With no occasions, an empty state invites the first one. |
-| `GET /occasions/new`, `POST /occasions` | The create form. A saved form redirects to the new occasion. |
-| `GET /occasions/{id}` | The detail page: the name, kind badge, date, notes, the menu and the actions Edit and Delete. |
-| `GET /occasions/{id}/edit`, `POST /occasions/{id}` | The edit form and its save. |
-| `POST /occasions/{id}/delete?version=N` | Delete, behind a confirm dialog. |
-
-- **Form (`occasion/_form`):** name, date, kind (birthday, holiday, party, other) and notes. A
-  rejected form returns the same fragment with **422**, the message under the one wrong field and
-  what was typed. The date and the kind are read leniently (`OccasionForm.parseDate` /
-  `parseType`): anything that is not a date or a kind becomes a field error from the service, never
-  an error page. A stale edit returns **409** with the warning and a Reload link.
-- **Delete:** a stale delete (the occasion changed since the page was drawn) is **409**. With htmx
-  the banner goes into `#occasion-conflict` (`HX-Retarget`), and `app.js` closes the open dialog
-  after that swap. Without htmx the detail page is drawn again with the banner.
-- **Menu:** the detail page draws the menu read-only, with each meal linked and an Archived badge
-  on archived meals. Issue #113 makes the menu editable; `MenuLine` already carries the move
-  positions it needs.
-- **Models:** `planning.internal.OccasionPageFactory` builds the pages; `OccasionsPage`,
-  `OccasionCard`, `OccasionDetailPage`, `MenuLine`, `OccasionForm` and `OccasionFormPage` are the
-  records the templates read. Dates are formatted there, never in a template.
-- **Tests:** `OccasionPagesTest` runs the routes through MockMvc (the list order, the form states,
-  the tenant cases and the stale delete), `OccasionModelsTest` covers the records, and
-  `OccasionPagesE2ETest` creates, views, edits and deletes an occasion at phone and desktop size and
-  saves screenshots under `build/e2e-screenshots/`.
 
 ## Week view (Phase 3, #97)
 
@@ -332,6 +273,101 @@ occasions) on the week page. All routes are registered in `TenantEndpoints` and 
 - **Tests:** `PlanReusePagesTest` (MockMvc, every route and status), `PlanReuseModelsTest`,
   `PlanParamsTest`, the six new rows in `TenantIsolationTests`, `PlanEditingPagesTest` (guards the
   `PlanResponses` refactor) and the browser test `PlanReuseE2ETest` at phone and desktop size.
+
+## Plan templates (#111)
+
+The template list and one template's page, under `/plan/templates`. The controller is
+`PlanTemplateController` in `planning/internal`; its page models are `TemplatesPage`,
+`TemplateRow`, `TemplatePage`, `TemplateDayLines` and `TemplateLine`, built by
+`TemplatePageFactory`; the templates are `plan/templates.jte`, `plan/template.jte`,
+`plan/_template_rename.jte` and `plan/_template_conflict.jte`. Templates are made on the plan
+(#110); this page only lists, shows, renames and deletes them.
+
+- `GET /plan/templates` shows the household's day templates and week templates in two cards, sorted
+  by name, each row with the meal count. With no template at all it shows one empty state that links
+  back to the plan.
+- `GET /plan/templates/{id}` shows the meals per day in plan order with the slot chip, the note and
+  an Archived badge. A week template names the weekdays: the label comes from a reference Monday,
+  so only the weekday name is formatted. A hint says that the template is applied from the plan.
+- `POST /plan/templates/{id}/rename` (`version`, `name`): a blank or too-long name is 422 with the
+  message under the field and the typed name kept; a stale version is 409 with a warning above the
+  field and a Reload link. A success sends the browser back to the page.
+- `POST /plan/templates/{id}/delete?version=`: behind a `ui/_confirm`. A success goes to the list; a
+  stale version is 409 and, for htmx, the banner goes into `#plan-conflict` and the dialog closes.
+- Every member may rename and delete (PLAN.md D26). A template of another household is 404 on all
+  four routes, and the four are registered in `TenantEndpoints`.
+- Tests: `PlanTemplatePagesTest` drives the pages through MockMvc (Anna and Bela, the 404s, both
+  answers with and without htmx); `PlanTemplateModelsTest` covers the page records and the message
+  keys.
+
+## Occasions (#112, #113)
+
+An occasion is a dated event (a birthday, a holiday, a party or another day) with a name, notes and
+a menu of library meals. The menu can be saved as an **occasion template** and planned again on
+another date. Every member may do everything with them (PLAN.md D26), and the pages are scoped to
+the household, so another household's occasion, menu item or template is a 404 on every route.
+
+| Route | What it does |
+|-------|--------------|
+| `GET /occasions` | The list. The nearest occasion on or after today is the gold-soft card, with its Today badge when it is today. The later ones follow in date order, then the past ones, newest first. With no occasions, an empty state invites the first one. Below it, a **Templates** section lists the household's occasion templates (also under the empty state). |
+| `GET /occasions/new`, `POST /occasions` | The create form. A saved form redirects to the new occasion. |
+| `GET /occasions/{id}` | The detail page: the name, kind badge, date, notes, the editable menu, "Save as a template" and the actions Edit and Delete. |
+| `GET /occasions/{id}/edit`, `POST /occasions/{id}` | The edit form and its save. |
+| `POST /occasions/{id}/delete?version=N` | Delete, behind a confirm dialog. |
+| `GET /occasions/{id}/pick?q=` | The pick sheet's content (also a page of its own, `occasion/pick.jte`). |
+| `POST /occasions/{id}/menu` (`mealId`) | Adds a library meal to the end of the menu. |
+| `POST /occasions/{id}/menu/quick` (`name`) | Creates a meal from a name and adds it. |
+| `POST /occasions/{id}/menu/{itemId}/move` (`position`) | Moves a line to a place; the other lines are renumbered. |
+| `POST /occasions/{id}/menu/{itemId}/remove` | Takes a line off the menu (the meal stays in the library). |
+| `POST /occasions/{id}/template` (`name`) | Saves the menu, kind and notes as a template and goes to its page. |
+| `GET /occasions/templates/{id}` | The template page: kind, notes, menu, "Plan it again" and Delete. |
+| `POST /occasions/templates/{id}/use` (`date`) | Creates an occasion with the template's name, kind, notes and menu on that date and opens it. |
+| `POST /occasions/templates/{id}/delete` | Deletes the template; occasions made from it stay. |
+
+- **Form (`occasion/_form`):** name, date, kind (birthday, holiday, party, other) and notes. A
+  rejected form returns the same fragment with **422**, the message under the one wrong field and
+  what was typed. The date and the kind are read leniently (`OccasionForm.parseDate` /
+  `parseType`): anything that is not a date or a kind becomes a field error from the service, never
+  an error page. A stale edit returns **409** with the warning and a Reload link.
+- **Delete:** a stale delete (the occasion changed since the page was drawn) is **409**. With htmx
+  the banner goes into `#occasion-conflict` (`HX-Retarget`), and `app.js` closes the open dialog
+  after that swap. Without htmx the detail page is drawn again with the banner.
+- **Menu (#113):** `OccasionMenuController` holds the menu routes. Each meal is linked and has an
+  Archived badge when archived. "Add a meal" (`#occasion-add-meal`) opens the page-level
+  `occasion-pick-sheet`, a `ui/_sheet` at the end of `detail.jte`, outside every section, through
+  the Alpine `sheetOpener` (the link also works without JavaScript, as the page `occasion/pick`).
+  The sheet is a copy of the plan's: library meals with recently planned ones first, a search that
+  swaps only `#occasion-pick-results`, at most 20 meals, and "Create and add" by name. It reuses
+  the `plan.pick.*` texts. A rejected name is **422** with the same `occasion-pick-quick-form` and
+  the typed text. Each line has Move up and Move down (only where the move is possible; they have
+  no icon, because the UP icon is a thumbs-up) and Remove behind a `ui/_confirm` (`remove-item-<id>`).
+- **Success redirects without a fragment.** Every menu action ends with `Htmx.redirect` to
+  `/occasions/{id}` and no `#menu`, because a URL that differs only in its fragment is a jump
+  within the page and does not reload. When htmx says (`HX-Current-URL`) the person is already on
+  that page, the answer adds `HX-Refresh`, through `PlanResponses.isSamePage`. The page reloads, so
+  no swap ever removes an open confirm.
+- **Save as a template:** under the menu, only when it has meals. `occasion-save-template-form`
+  has a name field pre-filled with the occasion's name. A blank or long name, or an empty menu, is
+  **422** with the message under the field and the typed name; a save goes to the new template's
+  page.
+- **Template page:** shows the kind, notes and menu (meal names link to the library), the
+  "Plan it again" form (`occasion-use-form`: a date; none or a malformed one is **422** under the
+  field) and Delete behind a confirm (`delete-occasion-template`). The template is read before the
+  date is parsed, so a stranger gets 404 first.
+- **Models:** `planning.internal.OccasionPageFactory` builds the list, detail and template pages,
+  and `OccasionPickPageFactory` the pick sheet; `OccasionsPage`, `OccasionCard`,
+  `OccasionTemplateRow`, `OccasionDetailPage`, `MenuLine`, `OccasionTemplatePage`, `MealLine`,
+  `OccasionPickPage`, `OccasionForm` and `OccasionFormPage` are the records the templates read.
+  Dates are formatted there, never in a template.
+- **Templates:** `occasion/list`, `_row`, `detail`, `_menu`, `_pick`, `_pick_quick`, `pick`,
+  `_save_template`, `template`, `_use_form`, `form`, `_form`, `_conflict`.
+- **Tests:** `OccasionPagesTest` runs the routes of #112 through MockMvc (the list order, the form
+  states, the tenant cases and the stale delete); `OccasionMenuPagesTest` and
+  `OccasionTemplatePagesTest` the routes of #113; `OccasionModelsTest` and
+  `OccasionMenuModelsTest` cover the records; the nine routes of #113 are rows in
+  `TenantIsolationTests`. `OccasionPagesE2ETest` creates, views, edits and deletes an occasion, and
+  `OccasionMenuE2ETest` builds a menu, saves it as a template and plans it again, both at phone and
+  desktop size with screenshots under `build/e2e-screenshots/`.
 
 ## App shell and navigation (R4, #79)
 

@@ -14,6 +14,7 @@ Planned UI work (JTE + htmx + Alpine + Tailwind), by `PLAN.md` phase. Move items
 - **Phase 1:** household create/switch/rename landed in #41, the invite section and join page in
   #42, the members page in #43 and the allowlist admin page in #45; a "copy link" button is still
   open.
-- **Phase 4:** copy day/week dialogs, template picker, occasion pages.
+- **Phase 4:** done (#110–#113), see [[Current State: Frontend]]: the reuse sheets on the plan,
+  the plan template pages, and the occasion pages with their menus and templates.
 - **Phase 5:** rating prompts, print view, share link page, PWA install hint and a Lighthouse check on a phone.
 - **Phase 7:** "suggest my week" and chat-style refinement UI.

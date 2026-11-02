@@ -218,6 +218,7 @@ Rules shared by both:
 Destinations and their routes today: Plan (new, Phase 3; until it exists the tab points to the
 hello page), Meals (Phase 2), Occasions (Phase 4), Household (`/households`). Tabs whose page does
 not exist yet are **hidden**, not dead, and appear as their phase lands (see R4).
+*(Amended 2026-11-02, #113; was: Occasions listed as a Phase 4 destination with no page. Occasions has its page at `/occasions` since #112, with the menu and templates added in #113.)*
 
 ---
 
@@ -241,10 +242,10 @@ design-system names. The behaviour column is the contract.
 | **Rating** | `feedback/_rating.jte`, `feedback/_stars.jte` | Thumbs up/down (`aria-pressed`; up violet, down cherry; the icon differs), then optional 1–5 stars (gold when pressed) and a comment. Phase 5. |
 | **Icon** | `ui/_icon.jte` (`name`, `size`) | Switch over the names in Appendix B; renders the inline `<svg>`. One place to add icons. |
 | **Shell** | `layout/_shell.jte`, `layout/_tabbar.jte`, `layout/_sidebar.jte`, `layout/_household_switcher.jte`, `layout/_topbar.jte`; Alpine `shell`, `theme` | §4. `base.jte` keeps the `<head>` (CSP-safe metas, htmx config) and wraps `_shell` for signed-in pages. |
-| **Week (desktop)** | `plan/week.jte`, `plan/_grid.jte`, `plan/_cell.jte`, `plan/_panel.jte` | 7 × 4 grid built row by row (one grid row = one slot across the seven days, so rows line up), today column gold, occasion strip above, legend below, side panel for the meal picker. Phase 3. |
+| **Week (desktop)** | `plan/week.jte`, `plan/_grid.jte`, `plan/_cell.jte`, `plan/_panel.jte` | 7 × 4 grid built row by row (one grid row = one slot across the seven days, so rows line up), today column gold, occasion strip above, legend below, side panel for the meal picker. Phase 3. *(Amended 2026-11-02, #113; was: the occasion strip above the grid on desktop only. The strip is `plan/_occasions.jte`, drawn above the days in both layouts.)* |
 | **Week (phone)** | `plan/_day.jte`, `plan/_slot_row.jte`, `plan/_strip.jte`, `plan/_pick_sheet.jte` | Week strip (7 numbers, today = gold disc), day sections with four slot rows (≥ 56 px; empty = dashed "Add lunch"), pick sheet with search, recent meals and **Quick add** by name. Phase 3. |
 | **Meals** | `catalog/meals.jte`, `_list.jte`, `_card.jte`, `_quick_add.jte`, `_detail.jte` | Search + tag chips + meal cards; quick-add bar pinned above the tab bar on phone; two-column (three from `xl`) grid on desktop. Phase 2. |
-| **Occasions** | `planning/occasions.jte`, `_occasion_card.jte`, `occasion.jte`, `feedback/_prompt.jte` | Next occasion as a gold-soft card, templates as rows, occasion detail with a menu and "Save as template"; the "How did it go?" card on Plan. Phase 4–5. |
+| **Occasions** | `occasion/list.jte`, `_row.jte`, `detail.jte`, `_menu.jte`, `template.jte` (Phase 4, built); `feedback/_prompt.jte` (Phase 5) | Next occasion as a gold-soft card, templates as rows, occasion detail with a menu and "Save as template"; the "How did it go?" card on Plan. Phase 4–5. *(Amended 2026-11-02, #113; was: `planning/occasions.jte`, `_occasion_card.jte` and `occasion.jte`. The built fragments are the ones listed; the menu's pick sheet (`occasion/_pick.jte`) is a copy of the plan's, and the card is drawn inside `list.jte`.)* |
 
 ---
 
@@ -520,6 +521,7 @@ not depend on the redesign and runs beside it (`PLAN.md` §9).
   buttons.
 - **Plan (Phase 3):** §5 "Week (desktop)" and "Week (phone)". Fixed slot order; today in gold;
   conflict banner; Quick add; copy day/week from the page header (Phase 4).
+  *(Amended 2026-11-02, #113; was: copy day/week from the page header. Copy and templates come from a Reuse control on each day and a "Reuse this week" button under the stepper, #110; the header only links to the templates page.)*
 - **Meals (Phase 2):** search, tag chips, cards with slot chip, name, tags, use count; quick-add bar;
   detail in a side panel (desktop) or a page (phone); empty library = EmptyState.
 - **Occasions (Phase 4) and rating (Phase 5):** §5 "Occasions" and "Rating"; at most one rating

@@ -1,5 +1,6 @@
 @import java.util.Map
 @import hu.lasterbergamot.mealmagician.planning.internal.OccasionCard
+@import hu.lasterbergamot.mealmagician.planning.internal.OccasionTemplateRow
 @import hu.lasterbergamot.mealmagician.planning.internal.OccasionsPage
 @import hu.lasterbergamot.mealmagician.shared.web.IconName
 @import hu.lasterbergamot.mealmagician.shared.web.ViewContext
@@ -65,6 +66,26 @@
           `)
         </section>
       @endif
+    @endif
+
+    @if(!page.templates().isEmpty())
+      <section aria-labelledby="occasion-templates-title" class="flex flex-col gap-3">
+        <h2 id="occasion-templates-title" class="font-display text-[22px] font-semibold leading-7 text-ink">${ctx.t("occasion.templates.heading")}</h2>
+        <p class="text-sm text-ink-muted">${ctx.t("occasion.templates.hint")}</p>
+        @template.ui._card(variant = "default", content = @`
+          <ul class="-mx-3 flex flex-col">
+            @for(OccasionTemplateRow row : page.templates())
+              @template.ui._row(selected = false, content = @`
+                <a href="${row.href()}" data-occasion-template-id="${row.id()}" class="flex min-h-11 flex-1 flex-col justify-center gap-0.5 hover:text-brand">
+                  <span class="font-extrabold text-ink">${row.name()}</span>
+                  <span class="text-sm text-ink-muted">${ctx.t("occasion.meals", String.valueOf(row.mealCount()))}</span>
+                </a>
+                @template.ui._badge(tone = "accent", label = ctx.t(row.typeKey()), icon = null)
+              `)
+            @endfor
+          </ul>
+        `)
+      </section>
     @endif
   </section>
 `)

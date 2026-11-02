@@ -5,9 +5,10 @@ invite the family, and plan meals day by day: breakfasts, lunches, dinners, and 
 occasions like birthdays or Christmas. Reuse meals, single days and whole weeks; rate what you
 ate. A later AI assistant will learn the household's preferences and draft plans.
 
-> **Status:** Phases 0–2 and the week planner (Phase 3) are live: sign in, households, invites,
-> members, the meal library and planning the week, in a storybook design with light and dark themes.
-> Next: reuse and occasions (Phase 4). The plan, decisions and phases are in
+> **Status:** Phases 0–4 are live: sign in, households, invites, members, the meal library,
+> planning the week, reusing days and weeks, templates and occasions with their menus, in a
+> storybook design with light and dark themes.
+> Next: feedback, sharing and PWA polish (Phase 5) → v1.0.0. The plan, decisions and phases are in
 > [`PLAN.md`](PLAN.md); the redesign of the look and navigation is in
 > [`plan-ui-redesign.md`](plan-ui-redesign.md).
 

@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * The Occasions pages: the list, the create and edit form, the detail page and delete (issue #112).
- * The menu is read-only here; issue #113 adds its actions.
+ * The menu's actions and the templates live in {@link OccasionMenuController} and {@link
+ * OccasionTemplateController} (issue #113).
  *
  * <p>Every member may use every route (PLAN.md D26). Each one takes the {@link CurrentHousehold},
  * so the service looks up occasions in that household only, and another household's occasion is a

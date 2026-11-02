@@ -7,6 +7,8 @@ import hu.lasterbergamot.mealmagician.catalog.OccasionType;
 import hu.lasterbergamot.mealmagician.planning.MenuItemView;
 import hu.lasterbergamot.mealmagician.planning.OccasionService;
 import hu.lasterbergamot.mealmagician.planning.OccasionSummary;
+import hu.lasterbergamot.mealmagician.planning.OccasionTemplateService;
+import hu.lasterbergamot.mealmagician.planning.OccasionTemplateView;
 import hu.lasterbergamot.mealmagician.planning.OccasionView;
 import hu.lasterbergamot.mealmagician.shared.i18n.Messages;
 import hu.lasterbergamot.mealmagician.shared.web.FormOption;
@@ -21,7 +23,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Builds the models of the Occasions pages: the list (the next occasion, the later ones, the past
- * ones), the detail page with its menu, and the choices of the kind list.
+ * ones, and the templates), the detail page with its menu, the template page, and the choices of
+ * the kind list.
  *
  * <p>The date labels are formatted here in the reader's language, and "today" comes from the {@link
  * Clock} bean, so tests can fix the day. Meal names come from the catalog's search, which includes
@@ -31,13 +34,19 @@ import org.springframework.stereotype.Component;
 class OccasionPageFactory {
 
   private final OccasionService occasions;
+  private final OccasionTemplateService templates;
   private final MealService meals;
   private final Messages messages;
   private final Clock clock;
 
   OccasionPageFactory(
-      OccasionService occasions, MealService meals, Messages messages, Clock clock) {
+      OccasionService occasions,
+      OccasionTemplateService templates,
+      MealService meals,
+      Messages messages,
+      Clock clock) {
     this.occasions = occasions;
+    this.templates = templates;
     this.meals = meals;
     this.messages = messages;
     this.clock = clock;
@@ -68,7 +77,42 @@ class OccasionPageFactory {
     }
     Collections.reverse(past);
     OccasionCard next = upcoming.isEmpty() ? null : upcoming.remove(0);
-    return new OccasionsPage(next, List.copyOf(upcoming), List.copyOf(past));
+    List<OccasionTemplateRow> rows =
+        templates.list(userId, householdId).stream()
+            .map(s -> new OccasionTemplateRow(s.id(), s.name(), s.type(), s.itemCount()))
+            .toList();
+    return new OccasionsPage(next, List.copyOf(upcoming), List.copyOf(past), rows);
+  }
+
+  /**
+   * Builds one occasion template's page: its kind, notes and menu with the meal names, and a fresh
+   * "Plan it again" form.
+   *
+   * @param userId the signed-in person's id
+   * @param householdId the household
+   * @param templateId the template to show
+   * @return the page model, with an empty date field and no error
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member of the household
+   * @throws hu.lasterbergamot.mealmagician.planning.TemplateNotFoundException (404) if the template
+   *     does not exist in this household
+   */
+  OccasionTemplatePage template(long userId, long householdId, long templateId) {
+    OccasionTemplateView template = templates.find(userId, householdId, templateId);
+    Map<Long, MealView> byId = mealsById(userId, householdId);
+    List<MealLine> menu = new ArrayList<>();
+    for (MenuItemView item : template.menu()) {
+      MealView meal = byId.get(item.mealId());
+      menu.add(new MealLine(item.mealId(), meal.name(), meal.archived()));
+    }
+    return new OccasionTemplatePage(
+        template.id(),
+        template.name(),
+        template.type(),
+        template.notes(),
+        List.copyOf(menu),
+        "",
+        null);
   }
 
   /**
@@ -102,7 +146,9 @@ class OccasionPageFactory {
         occasion.notes(),
         List.copyOf(menu),
         occasion.version(),
-        false);
+        false,
+        occasion.name(),
+        null);
   }
 
   /**

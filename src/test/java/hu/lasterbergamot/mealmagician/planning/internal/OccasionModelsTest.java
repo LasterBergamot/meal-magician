@@ -121,9 +121,14 @@ class OccasionModelsTest {
   void theListIsEmptyOnlyWithoutANextOccasionOrAnyPastOne() {
     OccasionCard card = new OccasionCard(1, "A", "d", OccasionType.OTHER, 0, false);
 
-    assertThat(new OccasionsPage(null, List.of(), List.of()).empty()).isTrue();
-    assertThat(new OccasionsPage(card, List.of(), List.of()).empty()).isFalse();
-    assertThat(new OccasionsPage(null, List.of(), List.of(card)).empty()).isFalse();
+    OccasionTemplateRow template = new OccasionTemplateRow(1, "T", OccasionType.OTHER, 2);
+
+    assertThat(new OccasionsPage(null, List.of(), List.of(), List.of()).empty()).isTrue();
+    assertThat(new OccasionsPage(card, List.of(), List.of(), List.of()).empty()).isFalse();
+    assertThat(new OccasionsPage(null, List.of(), List.of(card), List.of()).empty()).isFalse();
+    assertThat(new OccasionsPage(null, List.of(), List.of(), List.of(template)).empty())
+        .as("templates alone do not make the list non-empty")
+        .isTrue();
   }
 
   @Test
@@ -147,7 +152,7 @@ class OccasionModelsTest {
   void theDetailPageBuildsItsAddresses() {
     OccasionDetailPage page =
         new OccasionDetailPage(
-            7, "Anna", "Monday", OccasionType.HOLIDAY, null, List.of(), 2, false);
+            7, "Anna", "Monday", OccasionType.HOLIDAY, null, List.of(), 2, false, "Anna", null);
 
     assertThat(page.href()).isEqualTo("/occasions/7");
     assertThat(page.editHref()).isEqualTo("/occasions/7/edit");

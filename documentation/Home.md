@@ -3,8 +3,9 @@
 A private, household-only meal planner: plan breakfasts, lunches, dinners and special occasions,
 reuse meals, days and weeks, rate what you ate — and later get AI-drafted plans.
 
-**Status:** Phases 0–2 and the week planner (Phase 3) are live; reuse and occasions (Phase 4) come
-next. The working plan lives in the repo's `PLAN.md`.
+**Status:** Phases 0–4 are live: planning the week, reusing days and weeks, templates and
+occasions with their menus. Feedback, sharing and PWA polish (Phase 5) come next. The working plan
+lives in the repo's `PLAN.md`.
 
 ## Pages
 
