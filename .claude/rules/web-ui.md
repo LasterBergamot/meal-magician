@@ -138,4 +138,15 @@ paths:
   `AllowlistRow.domId()` and `badgeTone()`: JTE's `loop` variable does not exist here, and
   `UiGuardTest` reads an inline `!{var ...}` in a template as visible text. The whole `#allowlist` section is the swap target, so a
   successful remove also closes the dialog.
+- **Household pages (R5b, #86):** every `household/*` template is built from the `ui/` components
+  and tokens, with no `brand-\d`/`stone-` class left. A form fragment (`_create`, `_rename`) keeps
+  its `<form>` as the root (htmx swaps it, and tests read `<form id="create-form"`) with
+  `class="contents"` and a `ui/_card` inside; do not `scrollIntoView` such a form in a browser test,
+  it has no box (use its input). A destructive button (remove a member, revoke an invite, leave,
+  hand over) is a `ui/_confirm` with its `hx-post` in `attrs`, never `hx-confirm`; the response swaps
+  the section the dialog sits in, which closes it. Give each dialog a unique id
+  (`"remove-" + row.userId()`). The 409 of a rename is a `warning` alert with a Reload button, the
+  other 4xx are a field error or a `danger` alert. Avatars in a list inside the shell use the `soft`
+  tone, because the phone tab bar's current tab is the screen's gold highlight. An empty list in a
+  card is a dashed `border-border-strong` box; a whole empty page is `ui/_empty`.
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.
