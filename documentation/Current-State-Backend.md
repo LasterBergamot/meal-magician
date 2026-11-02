@@ -143,7 +143,10 @@ week page, `planning/internal/PlanController`); no other business modules yet.
   type, at the end of that group. `move` changes the date and slot type and joins the end of the new
   group. `reorder` moves a slot inside its group (a place below 0 or past the end is clamped).
   `editNote` sets or clears the note, `remove` takes a slot out and `recentlyPlannedMealIds` lists the
-  meals planned on or before today, most recent first, each once. Every method checks membership
+  meals planned on or before today, most recent first, each once. `slot` reads one slot (the editor
+  opens on it, #98), and `quickAddAndPlan` creates a library meal from a name and plans it in one
+  transaction (`MealService.quickAdd`, then `add`): a rejected name (`InvalidMealException`) leaves
+  neither a meal nor a slot, and a good one publishes `MealChanged` and `SlotPlanned`. Every method checks membership
   through `HouseholdService.require` (a stranger gets 404). A slot of another household is
   `SlotNotFoundException` (404), and `add` asks `MealService.find`, so another household's meal is
   `MealNotFoundException` (404).
