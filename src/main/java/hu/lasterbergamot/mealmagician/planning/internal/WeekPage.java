@@ -14,9 +14,25 @@ import java.util.List;
  *     8.}
  * @param current whether today is in this week; if not the page offers a way back
  * @param days the seven days, Monday first
+ * @param conflict whether the page opens with the "someone else changed the plan" banner, which a
+ *     stale edit without htmx gets
  */
 public record WeekPage(
-    IsoWeek week, String title, String range, boolean current, List<DayPlan> days) {
+    IsoWeek week,
+    String title,
+    String range,
+    boolean current,
+    List<DayPlan> days,
+    boolean conflict) {
+
+  /**
+   * The same page with the conflict banner switched on.
+   *
+   * @return a copy whose {@link #conflict()} is {@code true}
+   */
+  public WeekPage withConflict() {
+    return new WeekPage(week, title, range, current, days, true);
+  }
 
   /**
    * The address of a week's page.

@@ -1,6 +1,7 @@
 package hu.lasterbergamot.mealmagician.planning;
 
 import hu.lasterbergamot.mealmagician.catalog.MealService;
+import hu.lasterbergamot.mealmagician.catalog.MealView;
 import hu.lasterbergamot.mealmagician.household.HouseholdService;
 import hu.lasterbergamot.mealmagician.planning.internal.MealSlot;
 import hu.lasterbergamot.mealmagician.planning.internal.MealSlotRepository;
@@ -101,6 +102,24 @@ public class PlanningService {
   }
 
   /**
+   * Reads one planned slot, for the editor that opens on it. The slot's version is the one the
+   * editor sends back with every change.
+   *
+   * @param userId the {@code app_user} id of the person asking
+   * @param householdId the household whose plan it is
+   * @param slotId the slot
+   * @return the slot as it is now
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member of the household
+   * @throws SlotNotFoundException if the slot does not exist in this household
+   */
+  @Transactional(readOnly = true)
+  public SlotView slot(long userId, long householdId, long slotId) {
+    households.require(householdId, userId);
+    return view(findOwned(householdId, slotId));
+  }
+
+  /**
    * Puts a library meal on a day, after the meals already in that date and slot type.
    *
    * @param userId the {@code app_user} id of the person adding it
@@ -126,6 +145,28 @@ public class PlanningService {
         slots.save(new MealSlot(householdId, date, slotType, group.size(), mealId, cleanNote));
     events.publishEvent(new SlotPlanned(householdId, slot.getId(), date, slotType, mealId));
     return view(slot);
+  }
+
+  /**
+   * Creates a new library meal from its name and plans it in one step, for the pick sheet's "Create
+   * and add". Both writes share this transaction, so a rejected name leaves neither a meal nor a
+   * slot behind. It publishes {@code MealChanged} (from the catalog) and {@link SlotPlanned}.
+   *
+   * @param userId the {@code app_user} id of the person adding it
+   * @param householdId the household whose plan and library it is
+   * @param date the day
+   * @param slotType the slot type
+   * @param mealName the new meal's name; trimmed and checked by the catalog
+   * @return the new slot, without a note
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member of the household
+   * @throws hu.lasterbergamot.mealmagician.catalog.InvalidMealException if the name is blank or too
+   *     long; nothing is written then
+   */
+  public SlotView quickAddAndPlan(
+      long userId, long householdId, LocalDate date, SlotType slotType, String mealName) {
+    MealView meal = meals.quickAdd(userId, householdId, mealName);
+    return add(userId, householdId, date, slotType, meal.id(), null);
   }
 
   /**

@@ -32,7 +32,12 @@ class PlanPageModelsTest {
   private static WeekPage week() {
     IsoWeek week = new IsoWeek(MONDAY);
     return new WeekPage(
-        week, "45. hét", "range", true, week.days().stream().map(PlanPageModelsTest::day).toList());
+        week,
+        "45. hét",
+        "range",
+        true,
+        week.days().stream().map(PlanPageModelsTest::day).toList(),
+        false);
   }
 
   @Test

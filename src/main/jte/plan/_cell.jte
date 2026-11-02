@@ -3,7 +3,7 @@
 
 @param ViewContext ctx
 @param SlotGroup group
-<%-- One cell of the desktop table: the meals of one day and slot type, or an empty note. The slot-*
+<%-- One cell of the desktop table: the meals of one day and slot type and the add control. The slot-*
      class sets the colour variables that bg-slot-soft and text-slot-ink read in the meal items.
      data-group is for the tests. --%>
 <div data-group="${group.key()}"
@@ -14,5 +14,5 @@
        @elseif(group.slotName().equals("SNACK")) slot-snack
        @endif
        @if(group.empty()) border-dashed border-border-strong @else border-outline @endif">
-  @template.plan._slot_items(ctx = ctx, group = group)
+  @template.plan._slot_items(ctx = ctx, group = group, variant = "grid")
 </div>

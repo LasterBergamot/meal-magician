@@ -89,7 +89,7 @@ class WeekPageFactory {
             "plan.week.range",
             PlanDates.mediumDate(week.monday(), locale),
             PlanDates.mediumDate(week.sunday(), locale));
-    return new WeekPage(week, title, range, week.contains(today), days);
+    return new WeekPage(week, title, range, week.contains(today), days, false);
   }
 
   private static PlannedMeal planned(SlotView slot, Map<Long, MealView> byId) {
