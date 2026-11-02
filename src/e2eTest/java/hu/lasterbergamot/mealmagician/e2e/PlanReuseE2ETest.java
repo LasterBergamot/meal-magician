@@ -106,7 +106,9 @@ class PlanReuseE2ETest {
       page.locator("dialog#reuse-sheet[open]").waitFor();
       sheetLoaded(page, "#copy-form");
       shots(page, device, "week-sheet");
-      click(page.locator("#reuse-sheet-body button:text-is('Csere')"));
+      // The button's label sits in a span, so match the span; the copy form's own trigger comes
+      // before the buttons that apply a template, hence first().
+      click(page.locator("#reuse-sheet-body button:has(span:text-is('Csere'))").first());
       page.locator("dialog#copy-replace[open]").waitFor();
       page.locator("#copy-replace button:has-text('Igen, lecserélem')").click();
       page.waitForURL(url -> url.contains("week=" + nextWeek));
