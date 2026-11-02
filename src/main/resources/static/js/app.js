@@ -196,8 +196,15 @@
             }
           });
           // Runs for Escape, the X, the backdrop, a swipe and hide(); the opener gets focus back.
+          // The browser fires "close" late (in Chrome up to a frame later), and by then focus may
+          // already be somewhere on purpose: the browser's own restore put it back, the person moved
+          // on, or the conflict handler below focused the banner's action. So the opener only gets
+          // focus when focus was lost (on the body, or still in the closed dialog). Taking it back
+          // regardless sent a quick Enter on another control to this sheet's opener instead.
           dialog.addEventListener('close', () => {
-            if (opener?.isConnected) {
+            const active = document.activeElement;
+            const lost = !active || active === document.body || dialog.contains(active);
+            if (lost && opener?.isConnected) {
               opener.focus();
             }
             opener = null;
@@ -331,8 +338,9 @@
   });
 
   // A 409 or an error lands outside the open sheets; close them so the person sees it, then put
-  // focus on its action (after the dialogs' own close handlers have run). #occasion-conflict is
-  // the stale-delete banner of the occasion detail page (#112).
+  // focus on its action once the browser's own focus restore is done. The sheets' late close
+  // handlers see that focus has moved and leave it there. #occasion-conflict is the stale-delete
+  // banner of the occasion detail page (#112).
   document.addEventListener('htmx:afterSwap', (event) => {
     const target = event.detail.target;
     if (

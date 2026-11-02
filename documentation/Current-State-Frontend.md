@@ -577,6 +577,12 @@ and closes it on Escape.
   Tab and Shift+Tab stay inside the dialog, focus goes back to the control that opened it when it
   closes, and a drag down on the grabber closes a phone sheet (released past a third of its
   height, at most 120 px; a short drag springs back). A click on the backdrop closes it too.
+  Chrome fires the dialog's `close` event a frame after the dialog has closed, so by then focus may
+  already have moved on: a keyboard user who pressed Enter on the next control, or the conflict
+  banner's Reload link. The component therefore gives the opener focus only when focus was lost
+  (it is on the page body); otherwise it leaves focus where it went. Before this check, a quick
+  Enter on a meal right after closing the pick sheet sent focus back to the add link, which
+  reopened the pick sheet instead of the slot sheet.
 - Rules for callers: a sheet is never opened from a sheet, and a confirm dialog must sit outside
   any region that htmx swaps, or the swap removes the open dialog.
 - `/dev/ui` shows both in `dev/_overlays.jte`. `SheetAndConfirmE2ETest` drives them from the
