@@ -248,12 +248,12 @@ tables), then three page issues side by side, then the occasion menus and the do
 - [x] #109 **Phase 4 backend** *(backend only; PR #115)*: V9 `plan_template`/`plan_template_item`,
       `occasion`/`occasion_item`, `occasion_template`/`occasion_template_item`; `PlanningService.copyDay`/`copyWeek`,
       `PlanTemplateService`, `OccasionService`, `OccasionTemplateService`, `SlotWriter`; tenant fixtures.
-- [ ] Copy a day onto another date, and copy a week onto another week (merge or replace). *(#110)*
-- [ ] `PlanTemplate` with scope DAY or WEEK: save from a plan, apply to a date or week (merge
-      or replace) *(#110)*, rename and delete *(#111, PR #116: the `/plan/templates` list and detail pages; rename and delete are done)*.
+- [x] Copy a day onto another date, and copy a week onto another week (merge or replace). *(#110, PR #118)*
+- [x] `PlanTemplate` with scope DAY or WEEK: save from a plan, apply to a date or week (merge
+      or replace) *(#110, PR #118)*, rename and delete *(#111, PR #116: the `/plan/templates` list and detail pages; rename and delete are done)*.
 - [ ] Occasions: a dated event (name, date, type: birthday, holiday, party, other) with its own
       menu items; shown on the week view; save as a template and reuse next year. *(#112 pages and
-      the Occasions tab, PR #117: done; #110 the strip on the week; #113 the menu and occasion templates)*
+      the Occasions tab, PR #117: done; #110 the strip on the week, PR #118: done; #113 the menu and occasion templates)*
 
 ### Phase 5 — Feedback, sharing, PWA polish (`M1`, epic #6) → **v1.0.0**
 - [ ] Rate an eaten meal: each member gives a thumbs up/down or 1–5, with an optional comment;
@@ -555,3 +555,4 @@ meal-magician/
 | 2026-11-02 | **Phase 4 backend landed** (Wave 6a, #109, PR #115, one `sonnet` high subagent): Flyway V9 with the six tables (composite foreign keys, so the database refuses a link across households), `PlanningService.copyDay`/`copyWeek` with `CopyMode` MERGE/REPLACE, `PlanTemplateService`, `OccasionService`, `OccasionTemplateService` and the shared `planning.internal.SlotWriter`; four new `TenantWorld` fixtures. No controllers or templates. Wave 6b (#110, #111, #112) is next. | #5, #109, #115 |
 | 2026-11-02 | **Wave 6b started** (D24, D25): #110 (`sonnet` high), #111 and #112 (`haiku` high), one worktree subagent each. **Plan templates page landed** (#111, PR #116): `/plan/templates` (list, grouped by day and week), `/plan/templates/{id}` (the frozen items by day), rename with a 422 and a 409 state, and delete behind a confirm; four tenant-guard registrations. Covered by MockMvc tests only; not yet looked at in a browser. Known gap: after a 409 the rename form carries the current version, so sending it again without reloading overwrites the other person's rename (same as the household rename). The link to the page comes with #110. | #5, #110, #111, #112, #116 |
 | 2026-11-02 | **Occasion pages landed** (#112, PR #117): `/occasions` (the next occasion, the rest of the upcoming ones, past ones), the create and edit form with 422 and 409 states, the detail page with a read-only menu, delete behind a confirm, and the **Occasions tab** in the bottom bar and the sidebar (`NavDestination.OCCASIONS`); seven tenant-guard registrations and `OccasionPagesE2ETest`. Covered by MockMvc tests and CI's E2E; not yet looked at on a phone. The occasion strip on the week is #110; menu editing and occasion templates are #113. | #5, #112, #117 |
+| 2026-11-02 | **Plan page reuse landed** (#110, PR #118, one `sonnet` high subagent; Wave 6b is complete with #111 and #112): the week view gets a reuse sheet to copy a day or a week onto another date or week (merge, or replace behind a confirm), save it as a template or apply a template, a link to `/plan/templates`, and a strip of the week's occasions; six tenant-guard registrations and `PlanReuseE2ETest`. `PlanResponses` now holds the redirect helpers that `PlanSlotController` had. Not yet looked at on a phone; `PlanReuseE2ETest` writes screenshots to `build/e2e-screenshots/plan-reuse-*` for that. Wave 6c (#113) is next. | #5, #110, #118 |
