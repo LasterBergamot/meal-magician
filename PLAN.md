@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phases 0–3 done (the week planner is live); UI redesign (#57): Waves 1–5 landed, R9 (the owner's walk-through) left; next is Phase 4 (§9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phases 0–3 done (the week planner is live); UI redesign (#57): Waves 1–5 landed, R9 (the owner's walk-through) left; Phase 4 is planned and filed (#109–#113, §9), next is its Wave 6a (#109)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -68,6 +68,7 @@ after a server.
 | D21 | **JDK: Eclipse Temurin 25** (Adoptium's OpenJDK build), used the same way everywhere. The **Gradle wrapper** (`./gradlew`, committed) pins Gradle. The **Gradle toolchain** (`languageVersion = 25`, `vendor = ADOPTIUM`) with the foojay resolver plugin downloads the JDK automatically, so nobody installs Java 25 by hand. The container uses `eclipse-temurin:25-jdk` for the build and `eclipse-temurin:25-jre` at runtime, both pinned by digest. Railway runs our image, so production uses exactly that JRE: there's no separate host JVM to match. | Decided |
 | D24 | **Parallel work with subagents, in waves.** Work that touches different files runs at once: one subagent per issue, each in its own git worktree and branch. The session the owner talks to is the coordinator: it files a wave's issues first, gives every subagent the list of files it owns (one writer per file per wave), and merges the PRs itself, one at a time, rebasing on `main` first when `main` has moved (branch protection does not require up-to-date branches). Workers never append to the checklists or progress logs; the coordinator does. At most five subagents at once, across all tracks. Local `task test-e2e` uses fixed ports, so parallel workers leave E2E to CI. The UI waves and file table are in `plan-ui-redesign.md` §7; the tracks are in §9 below. | Decided (owner asked, 2026-11-01) |
 | D25 | **Models and effort for coordinated work.** Whenever a coordinator runs subagents (D24 waves and anything later): the **plan is written by Opus at high effort** with every detail a cheaper model needs, as an `## Execution` section in each issue (files owned, read-first list, ordered steps with exact names, test table, docs, commands, pitfalls, stop conditions); the **coordinator is Haiku at high effort**; each **subagent is Haiku high, Sonnet high or Sonnet medium**, chosen per issue by the planner (pattern-following work → Haiku; migrations, concurrency, security, new logic → Sonnet high; recipe-style edits → Sonnet medium). A subagent that fails twice goes one step up, not to Opus; a missing decision goes back to the planner or owner. **Always the newest release of each family:** plans, issues and prompts use the aliases `opus`, `sonnet`, `haiku`, never a pinned model ID ("5.5" is only what was newest on 2026-11-02). Detail: `.claude/context/workflow.md`. | Decided (owner asked, 2026-11-02) |
+| D26 | **Phase 4 reuse rules (planned 2026-11-02 by Opus, D25).** These rules apply to copy and to templates alike. (1) **Merge** appends copied meals after the meals already in each target date and slot type. **Replace** first removes every slot of the whole target day or week, then writes the copy. (2) Copying onto the same day or week, or copying or saving something empty, is refused before any write (422). (3) Notes and archived meals are copied as they are. Copy and apply publish one `SlotPlanned` per new slot; no new event types. (4) Template items are frozen: plan templates can be renamed and deleted, and occasion templates only deleted. (5) Occasion menus are ordered meal lists without notes or versions. "Reuse next year" is save-as-template, then "plan it again" on a date. (6) **Nothing in Phase 4 is owner-only**: every member may do all of it. Another household's data is 404 (D8). (7) Everything lives in `planning`. Flyway V9 holds all six tables. | Decided (planner, 2026-11-02; owner confirmed the four defaults, 2026-11-02) |
 
 ---
 
@@ -242,11 +243,17 @@ no controllers or templates) and **the week view** (after R4 and the Phase 2 pag
       *(#98, PR #104: the 409 shows a banner with a Reload button, tested with two browser tabs.)*
 
 ### Phase 4 — Reuse and occasions (`M1`, epic #5)
-- [ ] Copy a day onto another date, and copy a week onto another week (merge or replace).
+Split for subagents (D24, D25; planned 2026-11-02): one backend slice (Flyway **V9**, all six
+tables), then three page issues side by side, then the occasion menus and the docs close-out. Rules: D26.
+- [ ] #109 **Phase 4 backend** *(backend only)*: V9 `plan_template`/`plan_template_item`,
+      `occasion`/`occasion_item`, `occasion_template`/`occasion_template_item`; `PlanningService.copyDay`/`copyWeek`,
+      `PlanTemplateService`, `OccasionService`, `OccasionTemplateService`, `SlotWriter`; tenant fixtures.
+- [ ] Copy a day onto another date, and copy a week onto another week (merge or replace). *(#110)*
 - [ ] `PlanTemplate` with scope DAY or WEEK: save from a plan, apply to a date or week (merge
-      or replace), rename and delete.
+      or replace) *(#110)*, rename and delete *(#111)*.
 - [ ] Occasions: a dated event (name, date, type: birthday, holiday, party, other) with its own
-      menu items; shown on the week view; save as a template and reuse next year.
+      menu items; shown on the week view; save as a template and reuse next year. *(#112 pages and
+      the Occasions tab; #110 the strip on the week; #113 the menu and occasion templates)*
 
 ### Phase 5 — Feedback, sharing, PWA polish (`M1`, epic #6) → **v1.0.0**
 - [ ] Rate an eaten meal: each member gives a thumbs up/down or 1–5, with an optional comment;
@@ -316,9 +323,10 @@ support. Other modules may only use the root package; the Modulith test enforces
   adds a meal inline through the library, so free text is not needed yet.)*
   The plan is stored **per date**. A "week" is just a query over its seven dates, which keeps
   copying a day or a week trivial.
-- `plan_template(id, household_id, name, scope DAY|WEEK)`, `plan_template_item(template_id, day_offset, slot_type, position, meal_id, note)`
-- `occasion(id, household_id, name, date, type, notes)`, `occasion_item(occasion_id, position, meal_id, note)`,
-  and an occasion template (the same shape, without a date).
+- `plan_template(id, household_id, name, scope DAY|WEEK, created_at, version)`, `plan_template_item(id, template_id, household_id, day_offset 0–6, slot_type, position, meal_id, note)`
+- `occasion(id, household_id, name, date, occasion_type, notes, created_at, version)`, `occasion_item(id, occasion_id, household_id, position, meal_id)`,
+  and `occasion_template(id, household_id, name, occasion_type, notes, created_at, version)` with `occasion_template_item(id, template_id, household_id, position, meal_id)`.
+  *(Amended 2026-11-02, D26; was: `occasion_item(occasion_id, position, meal_id, note)` and "an occasion template (the same shape, without a date)". Item tables carry their own id and the household for the composite keys; menu items have no note.)*
 - `rating(slot_id, user_id, score, comment, created_at)`
 - `share_link(id, household_id, token_hash, scope, expires_at, revoked_at)`
 - Spring Session tables (`spring_session*`). Phase 7 adds `vector_store` (pgvector).
@@ -480,11 +488,16 @@ meal-magician/
      the gold on the Plan and Meals screens is judged live; Lighthouse accessibility and PWA; the
      PWA installed on a real phone, which is also #13). Then the owner may close the finished
      epics #2, #3 and #4 and the redesign epic #57 (agents do not close epics).
-   - **Phase 4, reuse and occasions (epic #5)**, the next build phase. An Opus planner writes the
-     briefs first (D25), then the usual split: a backend slice (Flyway **V9** is the next free
-     number: plan templates and occasions; `OccasionType` already lives in `catalog`) and the
-     pages (copy a day or week, save and apply templates, the Occasions tab, which stays hidden
-     until its page exists). The planner decides the exact split; it should keep one writer per file.
+   - **Phase 4, reuse and occasions (epic #5)**, planned by Opus on 2026-11-02 (D25, D26) as five issues:
+
+     | Wave | Items (model) | Merge order |
+     |---|---|---|
+     | 6a | #109 backend, Flyway V9 (`sonnet` high) | — |
+     | 6b | #110 plan page reuse (`sonnet` high), #111 plan templates page (`haiku` high), #112 occasions pages + Occasions tab (`haiku` high) | #111, #112, #110 |
+     | 6c | #113 occasion menus + templates + Phase 4 docs close-out (`sonnet` high) | — |
+
+     V9 is reserved for #109; no other Phase 4 issue adds a migration (the next free number after it is V10).
+     The Occasions tab appears with #112.
    - **Beside Phase 4, small and independent:** ~~#58, the post-deploy smoke test in `release.yml`~~
      *(Done 2026-11-02, PR #108.)*
    - **Then** Phase 5 (ratings, sharing, PWA polish) → **v1.0.0**, then backups (#62), Phase 6
@@ -538,3 +551,4 @@ meal-magician/
 | 2026-11-02 | **Week view 2/2 landed** (#98, PR #104): `PlanningService.slot` and `quickAddAndPlan`, eight routes under `/plan/slots`, the pick sheet (search, recent meals, quick add with a 422 state), the slot sheet (note, move, reorder, remove behind the confirm dialog) and the 409 conflict banner; tenant-guard registrations and `PlanEditingE2ETest` at 390 and 1280 px. **Phase 3 is done.** One find: `Htmx.redirect` to the page the browser is already on only jumps to the anchor, so the slot controller also sends `HX-Refresh` for the same page. **Hello page retired** (#103, PR #105): `/` now redirects to `/plan` (or `/households` for a person with no household), a household switch lands on `/plan`, and the hello controller, templates, message keys and test are gone; the slice tests that used `/` as a sample page use `/error`, `/meals` or `/households`, and the e2e sign-in helpers accept either landing page. R8 (#99) is next. | #4, #98, #103, #104 |
 | 2026-11-02 | **Wave 5 landed.** R8 (#99, PR #106): `web-ui.md` and `Current-State-Frontend.md` reordered into one story, `Roadmap-Frontend.md`, `Newcomer-Guide.md` (new glossary entries and a request walk-through for `GET /plan`), `README.md`, `Home.md`, `References.md` (six rows) and the `CLAUDE.md` status brought up to date; `Setup.md`'s status line fixed afterwards. With the week view (#97, #98), R5d (#96) and the retired hello page (#103) the UI redesign is built; only R9, the owner's walk-through on a phone and a laptop, is left. Next: Phase 4. | #57, #99, #106 |
 | 2026-11-02 | **Post-deploy smoke test landed** (#58, PR #108): `scripts/smoke.sh` and `task smoke -- <url>` check, anonymously, health, the login page, a protected path redirecting to sign-in, the security headers (HSTS only over https), the static assets and no 5xx; `release.yml` runs it after the health poll and before the tag push, so a failure leaves no tag. Tested against the built image with a bad case per check except HSTS, which first runs against the live https URL. | #58, #108 |
+| 2026-11-02 | **Phase 4 planned** (D25): an Opus planner wrote five briefs. They were filed as #109–#113 under epic #5, with blockers: the backend slice #109 (V9) first; then #110, #111 and #112 side by side (merge order #111, #112, #110); then #113. Decided D26 (merge/replace, nothing owner-only); amended §4.2 (item tables, no note on occasion items). The owner confirmed the four defaults (nothing owner-only; replace empties the whole target; no occasion menu onto the plan; no occasion-template rename). Docs only. | #5, #109–#113 |
