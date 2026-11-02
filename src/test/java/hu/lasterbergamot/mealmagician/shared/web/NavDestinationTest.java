@@ -15,7 +15,11 @@ class NavDestinationTest {
   @Test
   void onlyDestinationsWhosePagesExistAreShown() {
     assertThat(NavDestination.visible())
-        .containsExactly(NavDestination.PLAN, NavDestination.MEALS, NavDestination.HOUSEHOLD);
+        .containsExactly(
+            NavDestination.PLAN,
+            NavDestination.MEALS,
+            NavDestination.OCCASIONS,
+            NavDestination.HOUSEHOLD);
   }
 
   @ParameterizedTest

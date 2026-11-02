@@ -154,6 +154,39 @@ behaviour is in [[Current State: Backend]].
   browser test `MealPagesE2ETest` adds, finds, edits, archives and restores a meal at phone and
   desktop size.
 
+## Occasions (#112)
+
+An occasion is a dated event (a birthday, a holiday, a party or another day) with a name and notes,
+and later a menu of library meals. Every member may do everything with them (PLAN.md D26), and the
+pages are scoped to the household, so another household's occasion is a 404 on every route.
+
+| Route | What it does |
+|-------|--------------|
+| `GET /occasions` | The list. The nearest occasion on or after today is the gold-soft card, with its Today badge when it is today. The later ones follow in date order, then the past ones, newest first. With no occasions, an empty state invites the first one. |
+| `GET /occasions/new`, `POST /occasions` | The create form. A saved form redirects to the new occasion. |
+| `GET /occasions/{id}` | The detail page: the name, kind badge, date, notes, the menu and the actions Edit and Delete. |
+| `GET /occasions/{id}/edit`, `POST /occasions/{id}` | The edit form and its save. |
+| `POST /occasions/{id}/delete?version=N` | Delete, behind a confirm dialog. |
+
+- **Form (`occasion/_form`):** name, date, kind (birthday, holiday, party, other) and notes. A
+  rejected form returns the same fragment with **422**, the message under the one wrong field and
+  what was typed. The date and the kind are read leniently (`OccasionForm.parseDate` /
+  `parseType`): anything that is not a date or a kind becomes a field error from the service, never
+  an error page. A stale edit returns **409** with the warning and a Reload link.
+- **Delete:** a stale delete (the occasion changed since the page was drawn) is **409**. With htmx
+  the banner goes into `#occasion-conflict` (`HX-Retarget`), and `app.js` closes the open dialog
+  after that swap. Without htmx the detail page is drawn again with the banner.
+- **Menu:** the detail page draws the menu read-only, with each meal linked and an Archived badge
+  on archived meals. Issue #113 makes the menu editable; `MenuLine` already carries the move
+  positions it needs.
+- **Models:** `planning.internal.OccasionPageFactory` builds the pages; `OccasionsPage`,
+  `OccasionCard`, `OccasionDetailPage`, `MenuLine`, `OccasionForm` and `OccasionFormPage` are the
+  records the templates read. Dates are formatted there, never in a template.
+- **Tests:** `OccasionPagesTest` runs the routes through MockMvc (the list order, the form states,
+  the tenant cases and the stale delete), `OccasionModelsTest` covers the records, and
+  `OccasionPagesE2ETest` creates, views, edits and deletes an occasion at phone and desktop size and
+  saves screenshots under `build/e2e-screenshots/`.
+
 ## Week view (Phase 3, #97)
 
 The week planner page `GET /plan`, which shows the plan and (since #98, see "Editing the week"
@@ -271,9 +304,9 @@ Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` 
   under `mm.sidebarCollapsed`, for this browser only; every access is in try/catch because some
   browsers refuse storage.
 - **Destinations** (`shared.web.NavDestination`): Plan (`/plan`, the week view; `/` only redirects, so it highlights no tab),
-  Meals (`/meals`, the meal library, #88) and Household (`/households`). Occasions (`/occasions`)
-  has no page yet, so it is **not listed** (a flag on the enum; switching one on is a one-word
-  change). `NavDestination.matching` picks the current tab from the request path, so
+  Meals (`/meals`, the meal library, #88), Occasions (`/occasions`, #112) and Household
+  (`/households`). All four are listed; a destination whose page is not built yet would be left
+  out (a flag on the enum, so switching one on is a one-word change). `NavDestination.matching` picks the current tab from the request path, so
   `/households/members` highlights Household and `/` highlights no tab.
 - **The household switcher** (`layout/_household_switcher.jte`) is in both shells. Its button opens
   a `ui/_sheet` (a bottom sheet on a phone, a centred dialog on a desktop) that lists **only the

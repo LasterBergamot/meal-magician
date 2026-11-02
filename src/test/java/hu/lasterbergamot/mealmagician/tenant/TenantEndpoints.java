@@ -57,6 +57,20 @@ public final class TenantEndpoints {
               POST,
               "/households/invites/{inviteId}/revoke",
               w -> Map.of("inviteId", w.homeInviteId())),
+          // occasions (#112): every member may plan occasions
+          TenantEndpoint.forMembers(GET, "/occasions", w -> NONE),
+          TenantEndpoint.forMembers(GET, "/occasions/new", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/occasions", w -> NONE),
+          TenantEndpoint.forMembers(
+              GET, "/occasions/{occasionId}", w -> Map.of("occasionId", w.homeOccasionId())),
+          TenantEndpoint.forMembers(
+              GET, "/occasions/{occasionId}/edit", w -> Map.of("occasionId", w.homeOccasionId())),
+          TenantEndpoint.forMembers(
+              POST, "/occasions/{occasionId}", w -> Map.of("occasionId", w.homeOccasionId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/occasions/{occasionId}/delete",
+              w -> Map.of("occasionId", w.homeOccasionId())),
           // plan (planning): every member may plan
           TenantEndpoint.forMembers(GET, "/plan", w -> NONE),
           // plan templates (#111): every member may rename and delete
