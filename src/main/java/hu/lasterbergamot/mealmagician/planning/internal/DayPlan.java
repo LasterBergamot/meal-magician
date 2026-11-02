@@ -44,6 +44,15 @@ public record DayPlan(
   }
 
   /**
+   * The address of this day's reuse sheet, which also works as a page without JavaScript.
+   *
+   * @return for example {@code /plan/reuse/day?date=2026-11-02}
+   */
+  public String reuseHref() {
+    return "/plan/reuse/day?date=" + date;
+  }
+
+  /**
    * The day of the month, for the big number in the strip and the table header.
    *
    * @return 1 to 31

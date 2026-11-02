@@ -16,6 +16,9 @@ import java.util.List;
  * @param days the seven days, Monday first
  * @param conflict whether the page opens with the "someone else changed the plan" banner, which a
  *     stale edit without htmx gets
+ * @param occasions the week's occasions, shown as links above the days
+ * @param reuseError the message key of a refused copy that a request without htmx shows as a
+ *     banner, or {@code null}
  */
 public record WeekPage(
     IsoWeek week,
@@ -23,7 +26,9 @@ public record WeekPage(
     String range,
     boolean current,
     List<DayPlan> days,
-    boolean conflict) {
+    boolean conflict,
+    List<OccasionChip> occasions,
+    String reuseError) {
 
   /**
    * The same page with the conflict banner switched on.
@@ -31,7 +36,26 @@ public record WeekPage(
    * @return a copy whose {@link #conflict()} is {@code true}
    */
   public WeekPage withConflict() {
-    return new WeekPage(week, title, range, current, days, true);
+    return new WeekPage(week, title, range, current, days, true, occasions, reuseError);
+  }
+
+  /**
+   * The same page with the "nothing to copy" or "same target" banner switched on.
+   *
+   * @param key the message key of the refusal
+   * @return a copy whose {@link #reuseError()} is {@code key}
+   */
+  public WeekPage withReuseError(String key) {
+    return new WeekPage(week, title, range, current, days, conflict, occasions, key);
+  }
+
+  /**
+   * The address of this week's reuse sheet, which also works as a page without JavaScript.
+   *
+   * @return for example {@code /plan/reuse/week?week=2026-W45}
+   */
+  public String reuseHref() {
+    return "/plan/reuse/week?week=" + week.code();
   }
 
   /**

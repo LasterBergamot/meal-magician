@@ -1,6 +1,8 @@
 package hu.lasterbergamot.mealmagician.planning.internal;
 
+import hu.lasterbergamot.mealmagician.planning.CopyMode;
 import hu.lasterbergamot.mealmagician.planning.SlotType;
+import hu.lasterbergamot.mealmagician.planning.TemplateScope;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import org.springframework.http.HttpStatus;
@@ -71,6 +73,53 @@ final class PlanParams {
     } catch (NumberFormatException notANumber) {
       throw bad();
     }
+  }
+
+  /**
+   * Parses a copy mode by its enum name, {@code MERGE} or {@code REPLACE}.
+   *
+   * @param raw the request parameter, possibly {@code null}
+   * @return the mode
+   * @throws ResponseStatusException with status 400 if it is missing or names no mode
+   */
+  static CopyMode mode(String raw) {
+    if (raw == null) {
+      throw bad();
+    }
+    try {
+      return CopyMode.valueOf(raw);
+    } catch (IllegalArgumentException unknown) {
+      throw bad();
+    }
+  }
+
+  /**
+   * Parses a template scope by its enum name, {@code DAY} or {@code WEEK}.
+   *
+   * @param raw the request parameter, possibly {@code null}
+   * @return the scope
+   * @throws ResponseStatusException with status 400 if it is missing or names no scope
+   */
+  static TemplateScope scope(String raw) {
+    if (raw == null) {
+      throw bad();
+    }
+    try {
+      return TemplateScope.valueOf(raw);
+    } catch (IllegalArgumentException unknown) {
+      throw bad();
+    }
+  }
+
+  /**
+   * Parses a week code such as {@code 2026-W45}.
+   *
+   * @param raw the request parameter, possibly {@code null}
+   * @return the week
+   * @throws ResponseStatusException with status 400 if it is missing or not a real week
+   */
+  static IsoWeek week(String raw) {
+    return IsoWeek.parse(raw).orElseThrow(PlanParams::bad);
   }
 
   /**

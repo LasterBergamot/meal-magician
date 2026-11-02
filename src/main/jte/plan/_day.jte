@@ -10,9 +10,17 @@
 <section id="${day.id()}" aria-labelledby="${day.id()}-title" class="flex scroll-mt-4 flex-col gap-3">
   <div class="flex items-center justify-between gap-2 rounded-md border-2 border-outline px-4 py-2 @if(day.today()) bg-accent-soft text-accent-ink @else bg-surface-raised text-ink @endif">
     <h2 id="${day.id()}-title" class="font-display text-[22px] font-semibold leading-7">${day.name()} <span class="font-sans text-base font-bold">${day.dateLabel()}</span></h2>
-    @if(day.today())
-      @template.ui._badge(tone = "accent", label = ctx.t("plan.today"), icon = IconName.SPARKLE)
-    @endif
+    <div class="flex items-center gap-2">
+      @if(day.today())
+        @template.ui._badge(tone = "accent", label = ctx.t("plan.today"), icon = IconName.SPARKLE)
+      @endif
+      <a href="${day.reuseHref()}" data-reuse="${day.date().toString()}" x-data="sheetOpener" x-on:click="open" data-sheet="reuse-sheet"
+         hx-get="${day.reuseHref()}" hx-target="#reuse-sheet-body"
+         class="inline-flex size-11 shrink-0 items-center justify-center rounded-md border-2 border-outline bg-surface-raised text-ink hover:bg-surface-sunken">
+        @template.ui._icon(name = IconName.COPY, size = 20, filled = false)
+        <span class="sr-only">${ctx.t("plan.reuse.day.open", day.name())}</span>
+      </a>
+    </div>
   </div>
   <ul class="flex flex-col gap-2">
     @for(SlotGroup group : day.groups())

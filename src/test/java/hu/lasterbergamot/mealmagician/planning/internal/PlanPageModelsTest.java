@@ -37,7 +37,9 @@ class PlanPageModelsTest {
         "range",
         true,
         week.days().stream().map(PlanPageModelsTest::day).toList(),
-        false);
+        false,
+        List.of(),
+        null);
   }
 
   @Test
