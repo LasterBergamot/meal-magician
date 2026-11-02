@@ -71,6 +71,39 @@ public final class TenantEndpoints {
               POST,
               "/occasions/{occasionId}/delete",
               w -> Map.of("occasionId", w.homeOccasionId())),
+          // occasion menus and occasion templates (#113): every member may edit and reuse them
+          TenantEndpoint.forMembers(
+              GET, "/occasions/{occasionId}/pick", w -> Map.of("occasionId", w.homeOccasionId())),
+          TenantEndpoint.forMembers(
+              POST, "/occasions/{occasionId}/menu", w -> Map.of("occasionId", w.homeOccasionId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/occasions/{occasionId}/menu/quick",
+              w -> Map.of("occasionId", w.homeOccasionId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/occasions/{occasionId}/template",
+              w -> Map.of("occasionId", w.homeOccasionId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/occasions/{occasionId}/menu/{itemId}/remove",
+              w -> Map.of("occasionId", w.homeOccasionId(), "itemId", w.homeOccasionItemId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/occasions/{occasionId}/menu/{itemId}/move",
+              w -> Map.of("occasionId", w.homeOccasionId(), "itemId", w.homeOccasionItemId())),
+          TenantEndpoint.forMembers(
+              GET,
+              "/occasions/templates/{templateId}",
+              w -> Map.of("templateId", w.homeOccasionTemplateId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/occasions/templates/{templateId}/use",
+              w -> Map.of("templateId", w.homeOccasionTemplateId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/occasions/templates/{templateId}/delete",
+              w -> Map.of("templateId", w.homeOccasionTemplateId())),
           // plan (planning): every member may plan
           TenantEndpoint.forMembers(GET, "/plan", w -> NONE),
           // plan templates (#111): every member may rename and delete

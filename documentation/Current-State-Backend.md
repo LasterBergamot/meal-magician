@@ -111,7 +111,7 @@ week page, `planning/internal/PlanController`); no other business modules yet.
   - **The enum** `catalog.OccasionType` (BIRTHDAY, HOLIDAY, PARTY, OTHER) lives in `catalog`, not in
     `planning`, because `planning` already depends on `catalog`. If the enum were in `planning`,
     the catalog would have to import it to store a meal's types, and Spring Modulith would see a
-    module cycle. Phase 4's occasions will import the same enum from `catalog`. The owner agreed to
+    module cycle. Phase 4's occasions import the same enum from `catalog`. The owner agreed to
     this on 2026-11-02 (issue #88). A new constant needs a new migration, because the `CHECK` lists
     the values. The words shown come from the `meal.occasion.*` message keys (`OccasionLabels`), not
     from the enum.

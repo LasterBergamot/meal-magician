@@ -5,8 +5,9 @@
 
 @param ViewContext ctx
 @param OccasionDetailPage page
-<%-- One occasion (#112): its name, kind and date, the notes, the menu (read-only here; #113 makes it
-     editable), and the actions Edit and Delete. Delete is behind a confirm dialog and posts with
+<%-- One occasion (#112, #113): its name, kind and date, the notes, the editable menu, "Save as a
+     template" under the menu, and the actions Edit and Delete. The pick sheet is page-level, outside
+     every section, and is filled by the "Add a meal" link. Delete is behind a confirm dialog and posts with
      htmx to /occasions/{id}/delete?version=N. A stale delete answers 409 with the banner in
      #occasion-conflict, which is empty (and hidden) unless the page was drawn after such a delete. --%>
 @template.layout.base(ctx = ctx, title = page.name(), content = @`
@@ -39,6 +40,10 @@
       @template.occasion._menu(ctx = ctx, page = page)
     </section>
 
+    @if(page.canSave())
+      @template.occasion._save_template(ctx = ctx, page = page)
+    @endif
+
     <div class="flex flex-wrap gap-3">
       @template.meal._link_button(variant = "secondary", href = page.editHref(), label = ctx.t("occasion.edit"), icon = IconName.EDIT)
       @template.ui._confirm(id = "delete-occasion", title = ctx.t("occasion.delete.title", page.name()), message = ctx.t("occasion.delete.message"),
@@ -47,4 +52,6 @@
         trigger = @`@template.ui._button(variant = "danger", size = "md", type = "button", label = ctx.t("occasion.delete"), icon = IconName.TRASH, busy = false, disabled = false, attrs = Map.of("x-on:click", "show"))`)
     </div>
   </section>
+  @template.ui._sheet(id = "occasion-pick-sheet", title = ctx.t("occasion.pick.title"), closeLabel = ctx.t("sheet.close"), role = "dialog", centred = false, closable = true,
+    trigger = @``, body = @`<div id="occasion-pick-sheet-body"></div>`)
 `)

@@ -2,10 +2,10 @@ package hu.lasterbergamot.mealmagician.planning.internal;
 
 /**
  * One meal on an occasion's menu as the detail page shows it, with its place so the page can know
- * whether a move up or down is possible. The read-only menu of #112 only draws them; #113 adds the
- * move and remove actions that use the last four methods.
+ * whether a move up or down is possible. The menu draws a Move up and a Move down form for the
+ * places that are open, using {@link #upPosition()} and {@link #downPosition()}.
  *
- * @param itemId the menu item's id, used by the actions of #113
+ * @param itemId the menu item's id, used by the move and remove actions
  * @param mealId the library meal, linked from the menu
  * @param mealName the meal's name, taken from the catalog
  * @param archived whether the meal is archived; the menu then shows an Archived badge

@@ -10,12 +10,18 @@ import java.util.List;
  * @param next the nearest occasion on or after today, or {@code null} when there is none
  * @param upcoming the later occasions, earliest first (without {@code next})
  * @param past the occasions before today, newest first
+ * @param templates the household's saved occasion menus, by name; shown whether or not there are
+ *     occasions
  */
 public record OccasionsPage(
-    OccasionCard next, List<OccasionCard> upcoming, List<OccasionCard> past) {
+    OccasionCard next,
+    List<OccasionCard> upcoming,
+    List<OccasionCard> past,
+    List<OccasionTemplateRow> templates) {
 
   /**
-   * Whether the household has no occasions at all, so the page shows the empty state.
+   * Whether the household has no occasions at all, so the page shows the empty state. Templates do
+   * not count: a household with only templates still sees them below the empty state.
    *
    * @return {@code true} when there is no next, upcoming or past occasion
    */

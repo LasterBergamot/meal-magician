@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phases 0–3 done (the week planner is live); UI redesign (#57): Waves 1–5 landed, R9 (the owner's walk-through) left; Phase 4 is planned and filed (#109–#113, §9); its backend (#109, Wave 6a) has landed, next is Wave 6b (#110, #111, #112)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phases 0–4 done (the week planner, reuse and occasions are live); UI redesign (#57): Waves 1–5 landed, R9 (the owner's walk-through) left; Phase 4 landed in Waves 6a–6c (#109–#113, §9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -251,9 +251,9 @@ tables), then three page issues side by side, then the occasion menus and the do
 - [x] Copy a day onto another date, and copy a week onto another week (merge or replace). *(#110, PR #118)*
 - [x] `PlanTemplate` with scope DAY or WEEK: save from a plan, apply to a date or week (merge
       or replace) *(#110, PR #118)*, rename and delete *(#111, PR #116: the `/plan/templates` list and detail pages; rename and delete are done)*.
-- [ ] Occasions: a dated event (name, date, type: birthday, holiday, party, other) with its own
+- [x] Occasions: a dated event (name, date, type: birthday, holiday, party, other) with its own
       menu items; shown on the week view; save as a template and reuse next year. *(#112 pages and
-      the Occasions tab, PR #117: done; #110 the strip on the week, PR #118: done; #113 the menu and occasion templates)*
+      the Occasions tab, PR #117: done; #110 the strip on the week, PR #118: done; #113 the menu and occasion templates, PR #119: done)*
 
 ### Phase 5 — Feedback, sharing, PWA polish (`M1`, epic #6) → **v1.0.0**
 - [ ] Rate an eaten meal: each member gives a thumbs up/down or 1–5, with an optional comment;
@@ -556,3 +556,4 @@ meal-magician/
 | 2026-11-02 | **Wave 6b started** (D24, D25): #110 (`sonnet` high), #111 and #112 (`haiku` high), one worktree subagent each. **Plan templates page landed** (#111, PR #116): `/plan/templates` (list, grouped by day and week), `/plan/templates/{id}` (the frozen items by day), rename with a 422 and a 409 state, and delete behind a confirm; four tenant-guard registrations. Covered by MockMvc tests only; not yet looked at in a browser. Known gap: after a 409 the rename form carries the current version, so sending it again without reloading overwrites the other person's rename (same as the household rename). The link to the page comes with #110. | #5, #110, #111, #112, #116 |
 | 2026-11-02 | **Occasion pages landed** (#112, PR #117): `/occasions` (the next occasion, the rest of the upcoming ones, past ones), the create and edit form with 422 and 409 states, the detail page with a read-only menu, delete behind a confirm, and the **Occasions tab** in the bottom bar and the sidebar (`NavDestination.OCCASIONS`); seven tenant-guard registrations and `OccasionPagesE2ETest`. Covered by MockMvc tests and CI's E2E; not yet looked at on a phone. The occasion strip on the week is #110; menu editing and occasion templates are #113. | #5, #112, #117 |
 | 2026-11-02 | **Plan page reuse landed** (#110, PR #118, one `sonnet` high subagent; Wave 6b is complete with #111 and #112): the week view gets a reuse sheet to copy a day or a week onto another date or week (merge, or replace behind a confirm), save it as a template or apply a template, a link to `/plan/templates`, and a strip of the week's occasions; six tenant-guard registrations and `PlanReuseE2ETest`. `PlanResponses` now holds the redirect helpers that `PlanSlotController` had. Not yet looked at on a phone; `PlanReuseE2ETest` writes screenshots to `build/e2e-screenshots/plan-reuse-*` for that. Wave 6c (#113) is next. | #5, #110, #118 |
+| 2026-11-02 | **Occasion menus and the Phase 4 close-out landed** (#113, PR #119, one `sonnet` high subagent; Wave 6c, Phase 4 is complete): an occasion's menu can be edited on `/occasions/{id}` (a page-level pick sheet that copies the plan's, with library search and create-and-add; move up and down; remove behind a confirm), a menu can be saved as an occasion template, `/occasions/templates/{id}` shows a template and plans it again on a date or deletes it (the occasions made from it stay), and `/occasions` lists the templates. Nine new tenant-guard rows, `OccasionMenuE2ETest` and `PlanTemplatesE2ETest` (the first browser test of the #111 pages). The docs now say Phase 4 is built (README, `CLAUDE.md`, Current State, Roadmap, glossary, `plan-ui-redesign.md` amendments). The slot-sheet E2E flake on the phone viewport is still being investigated separately. Not yet checked on a real phone (the owner's R9 walk-through). | #5, #113, #119 |

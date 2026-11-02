@@ -32,8 +32,14 @@ allowlisted emails get in; households are shared through email-bound invite link
   last one cannot leave, they hand the household over first.
 - **Meal:** a reusable library entry (name, tags, notes, recipe link).
 - **Slot:** one planned meal on a date for a slot type (breakfast, lunch, …).
-- **Template:** a saved day or week of slots that can be applied to new dates.
-- **Occasion:** a dated event (birthday, Christmas) with its own menu.
+- **Template:** a saved day or week of the plan (`plan_template`), applied with merge or replace.
+- **Merge / replace:** the two ways to copy or apply a day or week onto a target that already has
+  meals. Merge adds the copy after what is there; replace empties the target first and always asks
+  for a confirm (PLAN.md D26).
+- **Occasion:** a dated event (birthday, Christmas) with its own menu of library meals, which
+  members add, reorder and remove.
+- **Occasion template:** a saved occasion menu (with its kind and notes), used to plan it again on
+  a new date, for example next Christmas.
 - **Allowlist:** emails allowed to sign in at all; invites add to it.
 - **Invite:** an owner's single-use, expiring `/join/<code>` link for one e-mail address; only the
   code's hash is stored.
