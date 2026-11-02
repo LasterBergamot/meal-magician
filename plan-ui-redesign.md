@@ -378,7 +378,7 @@ R7's rest moved into R1, and each Alpine component and shared template has one o
 
 **Wave 3: after Wave 2. One UI item only.**
 
-- [ ] **R4 Shell and navigation.** `layout/_shell`, `_tabbar`, `_sidebar`, `_topbar`,
+- [x] **R4 Shell and navigation.** *(#79, PR #82.)* `layout/_shell`, `_tabbar`, `_sidebar`, `_topbar`,
       `_household_switcher`; the Alpine `shell` component; `ViewContext` additions; `base.jte`'s
       `<body>` wraps the shell for signed-in pages; hide tabs whose page does not exist yet; the
       household switcher in both shells; sign-out button and the stored per-user language hook (the
@@ -924,3 +924,4 @@ All on a `viewBox="0 0 24 24"`, `fill="none"`, `stroke="currentColor"`, `stroke-
 | `outline` on `slot-snack-soft` | 3 | 12.34 | 4.44 |
 
 The slot mark on its own soft tile (`slot-<type>` on `slot-<type>-soft`, minimum 2.5) is decoration next to a text label, so it is allowed below 3. `accent` is a fill only and has no text pair.
+| 2026-11-02 | **Wave 3 landed** (#79, PR #82; B3 #80, PR #81 beside it): the app shell (phone top bar and 64 px tab bar, desktop sidebar that collapses to icons, household switcher in both, avatar menu, sign-out as a CSRF POST, stored per-user language, arrow keys for `ui/_segmented`), tabs for pages that do not exist are hidden, 25 e2e tests at 390 and 1280 px, and a screenshot check in light and dark. **Open for the owner or Wave 4:** (1) on a phone the gold avatar disc and the gold current-tab outline are two gold marks (§3.1 says one): pick a `brand-soft` avatar variant for the shell or a neutral active-tab pill; (2) no `hx-boost` yet, because pages return whole documents (revisit when they return fragments); (3) `?lang=` saves the stored language on a GET, so a cross-site link could flip it (low impact; consider a POST in R6); (4) old pages still have white cards on the dark theme until R5; (5) the on-screen keyboard and safe-area inset were not checked (headless Chromium has neither), so R9 checks them on a real phone. | #57, #79, #80, #81, #82 |

@@ -4,6 +4,7 @@ import hu.lasterbergamot.mealmagician.shared.ClockConfig;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.TimeZone;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +28,18 @@ import org.springframework.web.servlet.i18n.CookieLocaleResolver;
  */
 @Configuration(proxyBeanMethods = false)
 public class I18nConfig implements WebMvcConfigurer {
+
+  private final ObjectProvider<LanguageStore> languageStores;
+
+  /**
+   * Creates the configuration.
+   *
+   * @param languageStores the store that keeps a signed-in person's language; the switch
+   *     interceptor asks it for each change
+   */
+  public I18nConfig(ObjectProvider<LanguageStore> languageStores) {
+    this.languageStores = languageStores;
+  }
 
   /** Name of the cookie that stores the chosen language ({@code hu} or {@code en}). */
   public static final String COOKIE_NAME = "mm_lang";
@@ -79,6 +92,6 @@ public class I18nConfig implements WebMvcConfigurer {
 
   @Override
   public void addInterceptors(InterceptorRegistry registry) {
-    registry.addInterceptor(new LanguageSwitchInterceptor());
+    registry.addInterceptor(new LanguageSwitchInterceptor(languageStores));
   }
 }

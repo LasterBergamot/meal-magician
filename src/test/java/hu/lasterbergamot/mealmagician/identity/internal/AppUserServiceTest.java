@@ -41,6 +41,24 @@ class AppUserServiceTest {
   }
 
   @Test
+  void aChosenLanguageIsSavedOnTheRowSoItSurvivesTheNextSignIn() {
+    var user = service.recordSignIn("sub-lang", "lang@x.hu", "Lang Person");
+
+    service.chooseLocale(user.getId(), "en");
+
+    assertThat(users.findById(user.getId()).orElseThrow().getLocale()).isEqualTo("en");
+    assertThat(service.recordSignIn("sub-lang", "lang@x.hu", "Lang Person").getLocale())
+        .isEqualTo("en");
+  }
+
+  @Test
+  void choosingALanguageForAVanishedUserChangesNothing() {
+    service.chooseLocale(-1L, "en");
+
+    assertThat(users.findAll()).noneMatch(user -> user.getId() == -1L);
+  }
+
+  @Test
   void allowlistEntriesRoundTripThroughTheDatabase() {
     allowedEmails.saveAndFlush(
         AllowedEmail.builder()

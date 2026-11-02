@@ -15,7 +15,7 @@
      fetches its href into that target and pushes the URL, so Back and reload work. When it is null
      the segments are plain links, which is what the style guide uses so that a click does not swap
      the page it is on. --%>
-<div role="tablist" aria-label="${label}"
+<div role="tablist" aria-label="${label}" x-data="segmented" x-on:keydown="move"
      class="inline-flex max-w-full flex-wrap gap-1 rounded-full border-2 border-border-strong bg-surface-sunken p-1">
   @for(SegmentOption option : options)
     @if(option.value().equals(selected))

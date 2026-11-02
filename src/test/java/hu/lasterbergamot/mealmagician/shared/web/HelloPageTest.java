@@ -30,7 +30,14 @@ class HelloPageTest {
         .andExpect(content().string(org.hamcrest.Matchers.containsString("Szia, Meal Magician!")))
         .andExpect(
             content().string(org.hamcrest.Matchers.containsString("Ma 2026. október 31., szombat")))
-        .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"household-slot\"")))
+        // No one is signed in in this slice, so the page is the anonymous layout with the language
+        // choice in its header; the app shell is covered by AppShellPagesTest.
+        .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"?lang=en\"")))
+        .andExpect(
+            content()
+                .string(
+                    org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("id=\"shell\""))))
         .andExpect(content().string(org.hamcrest.Matchers.containsString("/css/app.css")))
         .andExpect(header().string("Vary", "HX-Request"));
   }

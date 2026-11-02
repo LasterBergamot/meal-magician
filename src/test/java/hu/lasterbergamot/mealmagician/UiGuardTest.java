@@ -109,6 +109,18 @@ class UiGuardTest {
     }
   }
 
+  @Test
+  void iconOnlyButtonsHaveAnAccessibleName() {
+    List<String> violations = new ArrayList<>();
+    for (Path template : templates()) {
+      violations.addAll(prefixed(template, unnamedButtonsIn(read(template))));
+    }
+
+    assertThat(violations)
+        .as("an icon-only button needs an aria-label or a visually hidden text")
+        .isEmpty();
+  }
+
   // ---- the guards guard: tests of the scanner ----
 
   @Test
@@ -148,6 +160,17 @@ class UiGuardTest {
   }
 
   @Test
+  void scannerFlagsAButtonWithNoTextAndNoLabel() {
+    assertThat(unnamedButtonsIn("<button type=\"button\"><svg></svg></button>")).hasSize(1);
+    assertThat(
+            unnamedButtonsIn("<button type=\"button\" aria-label=\"Bezárás\"><svg></svg></button>"))
+        .isEmpty();
+    assertThat(unnamedButtonsIn("<button type=\"button\"><span>${label}</span></button>"))
+        .isEmpty();
+    assertThat(unnamedButtonsIn("<button type=\"submit\">Mentés</button>")).isEmpty();
+  }
+
+  @Test
   void scannerFlagsInlineScriptsHandlersAndStyles() {
     assertThat(cspViolationsIn("<script>alert(1)</script>")).isNotEmpty();
     assertThat(cspViolationsIn("<button onclick=\"go()\">${x}</button>")).isNotEmpty();
@@ -170,6 +193,29 @@ class UiGuardTest {
     String withoutScripts = markup.replaceAll("(?s)<(script|style)\\b.*?</\\1>", "");
     for (String text : TAG.matcher(withoutScripts).replaceAll("\n").split("\n")) {
       addIfLetters(found, text.strip());
+    }
+    return found;
+  }
+
+  /**
+   * Buttons that show no text and have no {@code aria-label}, so a screen reader would announce
+   * nothing. A button counts as named when its content has a translated text (a {@code ${...}}
+   * expression, which is how {@code ctx.t} appears here) or any letters.
+   */
+  static List<String> unnamedButtonsIn(String template) {
+    String markup = new JteMarkup(withoutComments(template)).markup();
+    List<String> found = new ArrayList<>();
+    Matcher buttons = Pattern.compile("(?s)<button\\b([^>]*)>(.*?)</button>").matcher(markup);
+    while (buttons.find()) {
+      String attributes = buttons.group(1);
+      String content = buttons.group(2);
+      boolean labelled = attributes.contains("aria-label=");
+      boolean named =
+          content.contains(EXPRESSION)
+              || LETTER.matcher(TAG.matcher(content).replaceAll("")).find();
+      if (!labelled && !named) {
+        found.add(buttons.group());
+      }
     }
     return found;
   }

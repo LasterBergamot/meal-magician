@@ -88,7 +88,10 @@ class HouseholdPagesTest {
         .andExpect(content().string(containsString("Tulajdonos")))
         .andExpect(content().string(containsString("Tag")))
         .andExpect(content().string(containsString("aria-current=\"true\"")))
-        .andExpect(content().string(containsString("hx-post=\"/households/" + belas + "/switch\"")))
+        // The switch buttons moved to the app shell's switcher: a form per other household.
+        .andExpect(content().string(containsString("action=\"/households/" + belas + "/switch\"")))
+        .andExpect(
+            content().string(not(containsString("action=\"/households/" + annas + "/switch\""))))
         .andExpect(header().string("Vary", "HX-Request"));
   }
 
@@ -133,8 +136,8 @@ class HouseholdPagesTest {
   @Test
   void theHeaderShowsTheCurrentHouseholdOrTheInvitationToCreateOne() throws Exception {
     mvc.perform(get("/").with(signedInAs(anna)))
-        .andExpect(content().string(containsString("id=\"household-slot\"")))
-        .andExpect(content().string(containsString(">Annas</a>")));
+        .andExpect(content().string(containsString("id=\"household-sheet-phone\"")))
+        .andExpect(content().string(containsString(">Annas</span>")));
 
     long newcomer = HouseholdTestSupport.insertUser(jdbc, "newcomer");
     mvc.perform(get("/").with(signedInAs(newcomer)))
@@ -144,7 +147,7 @@ class HouseholdPagesTest {
   @Test
   void theHeaderLinksNothingBeforeSignIn() throws Exception {
     mvc.perform(get("/login"))
-        .andExpect(content().string(containsString("id=\"household-slot\"")))
+        .andExpect(content().string(not(containsString("household-sheet"))))
         .andExpect(content().string(not(containsString("/households"))));
   }
 
@@ -169,7 +172,7 @@ class HouseholdPagesTest {
         .singleElement()
         .satisfies(h -> assertThat(h.role()).isEqualTo(HouseholdRole.OWNER));
     mvc.perform(get("/").with(signedInAs(anna)).cookie(session))
-        .andExpect(content().string(containsString(">Summer house</a>")));
+        .andExpect(content().string(containsString(">Summer house</span>")));
   }
 
   @Test
@@ -225,7 +228,7 @@ class HouseholdPagesTest {
         .andExpect(header().string("HX-Redirect", "/"));
 
     mvc.perform(get("/").with(signedInAs(anna)).cookie(session))
-        .andExpect(content().string(containsString(">Belas</a>")));
+        .andExpect(content().string(containsString(">Belas</span>")));
   }
 
   @Test
@@ -240,7 +243,7 @@ class HouseholdPagesTest {
         .andExpect(status().isNotFound());
 
     mvc.perform(get("/").with(signedInAs(bela)).cookie(session))
-        .andExpect(content().string(not(containsString(">Annas</a>"))));
+        .andExpect(content().string(not(containsString(">Annas</span>"))));
   }
 
   @Test
@@ -252,12 +255,12 @@ class HouseholdPagesTest {
             .with(csrf())
             .cookie(session));
     mvc.perform(get("/").with(signedInAs(anna)).cookie(session))
-        .andExpect(content().string(containsString(">Belas</a>")));
+        .andExpect(content().string(containsString(">Belas</span>")));
 
     jdbc.update("delete from membership where household_id = ? and user_id = ?", belas, anna);
 
     mvc.perform(get("/").with(signedInAs(anna)).cookie(session))
-        .andExpect(content().string(containsString(">Annas</a>")));
+        .andExpect(content().string(containsString(">Annas</span>")));
     mvc.perform(
             post("/households/" + belas + "/switch")
                 .with(signedInAs(anna))

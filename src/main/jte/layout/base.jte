@@ -4,9 +4,11 @@
 @param ViewContext ctx
 @param String title
 @param Content content
-<%-- The page frame: header (brand, household slot, language switcher), main area, footer.
-     Rules for everything in here: no inline <script>, no onclick= style handlers and no style=
-     attributes (the CSP forbids them; a test checks), and no literal text (use ctx.t("key")). --%>
+<%-- The page frame. A signed-in person gets the app shell (sidebar on desktop, top bar and bottom tab
+     bar on a phone: layout/_shell); an anonymous visitor (sign-in, error) gets a plain header with the
+     language choice, the content and a footer. Rules for everything in here: no inline <script>, no
+     onclick= style handlers and no style= attributes (the CSP forbids them; a test checks), and no
+     literal text (use ctx.t("key")). --%>
 <!DOCTYPE html>
 <%-- data-theme drives the colour tokens in app.css: "system" (follow the OS) until R6 reads the
      mm_theme cookie (UI-D8). Moonlight is :root, Midnight is [data-theme="dark"]. --%>
@@ -42,46 +44,29 @@
   <script src="/js/alpine-csp.min.js" defer></script>
   <script src="/js/sw-register.js" defer></script>
 </head>
-<body class="flex min-h-full flex-col bg-stone-100 text-stone-900 antialiased">
-  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-10 focus:rounded focus:bg-white focus:px-3 focus:py-2">${ctx.t("nav.skip")}</a>
+<body class="flex min-h-full flex-col antialiased text-ink">
+  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:border-2 focus:border-outline focus:bg-surface-raised focus:px-3 focus:py-2 focus:text-ink">${ctx.t("nav.skip")}</a>
 
-  <header class="bg-brand-700 text-white" x-data="menu" x-on:keydown.escape.window="close">
-    <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 px-4">
-      <a href="/" class="inline-flex min-h-11 items-center text-lg font-semibold">${ctx.t("app.name")}</a>
-      <button type="button" class="inline-flex min-h-11 min-w-11 items-center justify-center rounded hover:bg-brand-800 md:hidden"
-              aria-controls="site-menu" x-bind:aria-expanded="open" x-on:click="toggle">
-        <span class="sr-only">${ctx.t("nav.menu")}</span>
-        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-      </button>
-      <%-- Hidden on phones until the button opens it (Alpine adds max-md:flex); always shown from md up. --%>
-      <div id="site-menu" class="hidden w-full flex-col gap-2 pb-3 md:flex md:w-auto md:flex-row md:items-center md:gap-4 md:pb-0" x-bind:class="panelClass">
-        <%-- The current household (or the invitation to create one) once someone is signed in. --%>
-        <div id="household-slot" class="min-h-11 content-center text-sm text-brand-100">
-          @if(ctx.household() != null)
-            <a href="/households" class="inline-flex min-h-11 items-center underline">${ctx.household().name() != null ? ctx.household().name() : ctx.t("household.create.link")}</a>
-          @endif
-        </div>
-        @if(ctx.admin())
-          <a href="/admin/allowlist" class="inline-flex min-h-11 items-center text-sm text-brand-100 underline">${ctx.t("admin.link")}</a>
-        @endif
-        <nav class="flex gap-1" aria-label="${ctx.t("lang.label")}">
-          @template.layout._lang_link(ctx = ctx, code = "hu", label = ctx.t("lang.hu.short"), name = ctx.t("lang.hu.name"))
-          @template.layout._lang_link(ctx = ctx, code = "en", label = ctx.t("lang.en.short"), name = ctx.t("lang.en.name"))
-        </nav>
-      </div>
-    </div>
-  </header>
+  @if(ctx.user() != null)
+    @template.layout._shell(ctx = ctx, content = content)
+  @else
+    <header class="mx-auto flex w-full max-w-[var(--mm-reading)] items-center justify-between gap-3 px-4 pt-4">
+      <span class="font-display text-xl font-semibold text-ink">${ctx.t("app.name")}</span>
+      <nav class="flex gap-1" aria-label="${ctx.t("lang.label")}">
+        @template.layout._lang_link(ctx = ctx, code = "hu", label = ctx.t("lang.hu.short"), name = ctx.t("lang.hu.name"))
+        @template.layout._lang_link(ctx = ctx, code = "en", label = ctx.t("lang.en.short"), name = ctx.t("lang.en.name"))
+      </nav>
+    </header>
 
-  <main id="main" class="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
-    <%-- htmx error fragments land here (HX-Retarget); empty:hidden keeps it invisible until then. --%>
-    <div id="error-slot" class="mb-4 empty:hidden" role="alert"></div>
-    ${content}
-  </main>
+    <main id="main" class="mx-auto w-full max-w-[var(--mm-reading)] flex-1 px-4 py-6">
+      <%-- htmx error fragments land here (HX-Retarget); empty:hidden keeps it invisible until then. --%>
+      <div id="error-slot" class="mb-4 empty:hidden" role="alert"></div>
+      ${content}
+    </main>
 
-  <footer class="border-t border-stone-300 bg-white">
-    <p class="mx-auto max-w-5xl px-4 py-4 text-sm text-stone-600">${ctx.t("footer.tagline")}</p>
-  </footer>
+    <footer class="mx-auto w-full max-w-[var(--mm-reading)] px-4 py-4 text-sm text-ink-muted">
+      <p>${ctx.t("footer.tagline")}</p>
+    </footer>
+  @endif
 </body>
 </html>
