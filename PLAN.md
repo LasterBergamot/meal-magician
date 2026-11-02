@@ -189,7 +189,7 @@ ids in that file are replaced with the real numbers then.
       R1; PRs #69, #70). R7 app icons landed early (PR #61); its manifest colours moved into R1.
 - [x] Wave 2: R2b content and status components, R2c form components, R3 sheet and confirm dialog
       (PRs #77, #76, #78).
-- [ ] Wave 3: R4 shell and navigation (the only UI item).
+- [x] Wave 3: R4 shell and navigation (the only UI item; PR #82, with B3 in PR #81).
 - [ ] Wave 4: R5a sign-in/error/hello, R5b household pages, R5c admin allowlist, R6 theme preference,
       plus the Phase 2 pages.
 - [ ] Wave 5: R5d remove the old styles, R8 docs final pass, then R9 close-out with the owner.
@@ -498,3 +498,4 @@ meal-magician/
 | 2026-11-01 | Wave 1 started (D24): sub-issues #64 (R1), #65 (R2a, blocked by #64) and #66 (B2 catalog backend, under #3) filed; one worktree subagent each, plus #59. #59 landed: removing an address from the allowlist now ends that person's live sessions. | #57, #59, #64, #65, #66, #67 |
 | 2026-11-01 | Catalog backend (#66, B2): the `catalog` module with Flyway V6, `MealService` and the `MealChanged` event, tenant-scoped, 100 % covered, no controllers or templates. Occasion types on a meal are not in V6 (open decision). Known gap: two people creating the same new tag at the same instant can get a constraint error on one save. | #3, #66, #68 |
 | 2026-11-01 | Wave 3 started (D24): sub-issues #79 (R4 shell, under #57) and #80 (B3 planning backend, under #4) filed. **B3 landed** (#80, PR #81): the `planning` module with Flyway V7 `meal_slot`, `PlanningService`, the 409 conflict exception and `SlotPlanned`, 100 % covered, no controllers or templates. `meal_slot` has no `free_text` and `meal_id` is `NOT NULL` (§4.2 amended). | #4, #79, #80, #81 |
+| 2026-11-02 | Wave 3 landed: the app shell (R4, #79, PR #82) with sign-out, the household switcher and the stored language, beside the planning backend (B3, #80, PR #81). Open questions for Wave 4 are in `plan-ui-redesign.md`'s log. | #57, #79, #82 |
