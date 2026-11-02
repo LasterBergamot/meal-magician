@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phase 1 done; UI redesign (#57) in parallel waves, Waves 1–3 landed, Wave 4 under way (§9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phase 1 done; UI redesign (#57) in parallel waves, Waves 1–4 landed, Wave 5 next (§9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -191,8 +191,8 @@ ids in that file are replaced with the real numbers then.
 - [x] Wave 2: R2b content and status components, R2c form components, R3 sheet and confirm dialog
       (PRs #77, #76, #78).
 - [x] Wave 3: R4 shell and navigation (the only UI item; PR #82, with B3 in PR #81).
-- [ ] Wave 4: R5a sign-in/error/hello, R5b household pages, R5c admin allowlist, R6 theme preference,
-      plus the Phase 2 pages.
+- [x] Wave 4: R5a sign-in/error/hello and R5c admin allowlist (#85, PR #90), R5b household pages
+      (#86, PR #92), R6 theme preference (#87, PR #91), plus the Phase 2 pages (#88, PR #95).
 - [ ] Wave 5: R5d remove the old styles, R8 docs final pass, then R9 close-out with the owner.
 - Order: Phase 2 and 3 **pages** are built from these components, so they start once R1–R4 have
   landed (Phase 2 pages in Wave 4, Phase 3's week view after them). Their **backend** (module,
@@ -212,9 +212,11 @@ needs `meal_slot`, so it lands with the pages once B3 is in.
       `MealChanged`, tenant-scoped, recipe links limited to http/https. **Left out on purpose:**
       the occasion types a meal suits (which module owns the enum is undecided; decide before the
       meal pages or add a later migration) and "recently used first" (needs B3's `meal_slot`).
-- [ ] Meal CRUD: name, notes, recipe URL, tags, which occasion types it suits, archive. *(Pages: #88, Wave 4. The occasion-type enum is owned by `catalog` (planning already depends on catalog, so the other way round would be a cycle), added with Flyway V8; owner OK'd 2026-11-02.)*
-- [ ] Tags per household; search and filter (name, tag), recently used meals first.
-- [ ] Quick-add from a phone (name only, add the details later).
+- [x] Meal CRUD: name, notes, recipe URL, tags, which occasion types it suits, archive. *(Pages: #88, PR #95. The occasion-type enum is owned by `catalog` (planning already depends on catalog, so the other way round would be a cycle), added with Flyway V8; owner OK'd 2026-11-02.)*
+- [x] Tags per household; search and filter (name, tag), recently used meals first. *(#88, PR #95; the
+      library sorts by `RecentMealsProvider`, which `planning` implements.)*
+- [x] Quick-add from a phone (name only, add the details later). *(#88, PR #95: a floating button and
+      sheet on a phone, an inline bar on a desktop.)*
 
 ### Phase 3 — Weekly plan (`M1`, epic #4)
 Also split (D24, §9): **B3 planning backend** (the `planning` module, Flyway **V7** `meal_slot`
@@ -503,3 +505,4 @@ meal-magician/
 | 2026-11-02 | **R4 follow-ups** (#83): the owner decided both open questions. The shell's top-bar avatar uses a new `soft` tone of `ui/_avatar` (`brand-soft` with `brand-ink`), so a phone screen has one gold mark, the current tab; and the language switch is now `POST /language` (CSRF-protected, public, redirects to the same-origin page it came from) instead of a `?lang=` GET, which replaces `LanguageSwitchInterceptor`. Wave 3's open items (1) and (3) are done. | #57, #83 |
 | 2026-11-02 | Owner checks done: #16 (first wiki page created, docs sync) and #18 (sign-in on a phone works) closed. Owner confirmed UI-D8 (theme cookie) and the occasion-type decision (enum in `catalog`, V8). **Wave 4 started** (D24): #85 (R5a + R5c, one agent), #86 (R5b), #87 (R6) under #57, and #88 (Phase 2 meal pages) under #3, one worktree subagent each. Backups (#62) stay after Phase 5. | #16, #18, #57, #3, #85, #86, #87, #88 |
 | 2026-11-02 | Wave 4 resumed after the 5-hour usage limit stopped the first session: #85 (PR #90) and #87 (PR #91) had merged, #86 was in PR #92 (checks green), #88 was a pushed WIP branch. Owner decided **D25**: plans by Opus (high) with a full `## Execution` brief per issue, a Haiku (high) coordinator, Haiku/Sonnet subagents chosen per issue, latest releases by alias. Docs only for the rule (`workflow.md`, `issues.md`, `CLAUDE.md`, `plan-ui-redesign.md` §7.1). | #85, #86, #87, #88, #90, #91, #92 |
+| 2026-11-02 | **Wave 4 landed.** #85 (PR #90), #87 (PR #91) and #86 (PR #92) merged; the meal pages (#88, PR #95) finish Phase 2: the `/meals` list with search, tag filter, recently-used-first and an archived switch, the form with 422 and 409 states, quick add (phone sheet, desktop bar), archive and restore, `OccasionType` owned by `catalog` (V8), `RecentMealsProvider` implemented by `planning`. Checked at 390 and 1280 px in light and dark. Open for the owner: the phone Meals list shows the gold add button and the gold current tab together, which the spec itself prescribes (the "Add" row of its navigation table and the FAB row of its component table), so it is left for the R9 walk-through. Wave 5 (R5d, R8, then R9) and the Phase 3 week view are next. | #57, #3, #85, #86, #87, #88, #90, #91, #92, #95 |

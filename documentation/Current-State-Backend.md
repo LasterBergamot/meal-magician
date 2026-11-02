@@ -1,16 +1,17 @@
 # Current State: Backend
 
-What exists in `main` today: the build skeleton, the database, the `identity` module (sign-in) and
-the first part of the `household` module (create, rename, switch) and the services of the `catalog`
-module (the meal library) and the weekly plan's services of the `planning` module, both without
-pages yet; no other business modules yet.
+What exists in `main` today: the build skeleton, the database, the `identity` module (sign-in), the
+first part of the `household` module (create, rename, switch), the `catalog` module (the meal
+library, services and pages, #88) and the weekly plan's services of the `planning` module, which
+have no pages yet; no other business modules yet.
 
 - **Application class** `MealMagicianApplication` starts Spring Boot; everything lives below its
   package `hu.lasterbergamot.mealmagician`.
 - **Modules** (Spring Modulith): `identity`, `household`, `catalog`, `planning`, `feedback`,
   `sharing` and the open shared kernel `shared`. Each has a `package-info.java` that says what the
-  module owns; `catalog` and `planning` have their services; `feedback` and `sharing` are still empty. The rule: a module's root package is
-  its public API, everything else goes in `internal/` and other modules may not import it.
+  module owns; `catalog` and `planning` have their services, and `catalog` also has the meal pages;
+  `feedback` and `sharing` are still empty. The rule: a module's root package is its public API,
+  everything else goes in `internal/` and other modules may not import it.
   `ModularityTests` fails the build on a violation and writes module docs to
   `build/spring-modulith-docs`.
 - **Guard tests (#14)** enforce the conventions so nobody has to remember them:
@@ -83,9 +84,10 @@ pages yet; no other business modules yet.
   `quickAdd` (name only, for a phone), `edit`, `archive` and `restore`, `find`, `search` (part of
   the name and/or a tag, ignoring case, archived meals left out unless asked for) and `tagNames`.
   Every method takes the asking person's id and the household id, and first checks membership
-  through `HouseholdService.require`, so a stranger gets 404. A meal of another household is 404
-  as well, because every meal lookup is scoped by household. Every member may use the library, so
-  nothing here is owner-only and nothing answers 403.
+  through `HouseholdService.require`, so a stranger gets 404. A meal of another household is 404 as
+  well, because every meal lookup is scoped by household. Every member may use the library, so
+  nothing here is owner-only and nothing answers 403. The pages that call these methods (the
+  library, the form, the quick add) are described in [[Current State: Frontend]].
   - **Data (V6):** `meal` (name up to 200 characters, notes and recipe link up to 2000, `archived`,
     `version` for optimistic locking), `tag` (one set per household; `name_key` is the lower-case
     name, so "Vegan" and "vegan" are one tag) and `meal_tag`. Each `meal_tag` row carries
@@ -95,17 +97,45 @@ pages yet; no other business modules yet.
     `https`, because the link is shown as a clickable anchor and a `javascript:` link would run
     code; blank notes or links are stored as "none"; a tag is 1 to 50 characters. A refused input
     throws `InvalidMealException` with a `MealProblem` and nothing is written (not even a tag). The
-    pages will choose the message for each problem.
+    pages choose the message for each problem (`MealFormPage`).
   - **Edits** replace the whole tag set by difference: a tag that stays keeps its link row, so the
     database only sees the links that were added or dropped. A tag created by an edit is created
     for the household, and a tag no meal uses any more is not offered by `tagNames`.
+  - **Occasion types (V8):** `meal_occasion_type` has one row per (meal, occasion type): `meal_id`,
+    `occasion_type` (`VARCHAR(10)`, with a `CHECK` that allows only the four values) and
+    `household_id`. Its primary key is (`meal_id`, `occasion_type`), and it has the same composite
+    foreign key to `meal` as `meal_tag` in V6, so the database refuses a link across households. The
+    rows are removed with their meal (`ON DELETE CASCADE`). Unlike a tag, a type has no table of its
+    own: the enum is the list.
+  - **The enum** `catalog.OccasionType` (BIRTHDAY, HOLIDAY, PARTY, OTHER) lives in `catalog`, not in
+    `planning`, because `planning` already depends on `catalog`. If the enum were in `planning`,
+    the catalog would have to import it to store a meal's types, and Spring Modulith would see a
+    module cycle. Phase 4's occasions will import the same enum from `catalog`. The owner agreed to
+    this on 2026-11-02 (issue #88). A new constant needs a new migration, because the `CHECK` lists
+    the values. The words shown come from the `meal.occasion.*` message keys (`OccasionLabels`), not
+    from the enum.
+  - **Occasion types on the views:** `MealDetails` has an `occasionTypes` collection that, on an
+    edit, is the complete set, like the tags: a type left out is removed, and `null` means none.
+    `MealView` carries the types in enum order. The four-argument `MealDetails` constructor is for a
+    meal with no types.
+  - **Edit with a version check:** `edit(userId, householdId, mealId, details, expectedVersion)`
+    refuses the change when the meal is no longer at the version the form was opened with, by
+    throwing `OptimisticLockingFailureException`, which the page turns into 409. The `@Version`
+    check at save only catches two saves that overlap in time. The common case is someone saving
+    while a form sits open in another tab, and that is what the version check catches. The
+    four-argument `edit` does no such check.
+  - **Recently used first:** `RecentMealsProvider` (in `catalog`) answers "which meals were
+    planned lately". `planning.internal.PlanningRecentMeals` implements it by calling
+    `PlanningService.recentlyPlannedMealIds`. This is dependency inversion: the module arrow stays
+    `planning` -> `catalog`, so there is no cycle. `MealsPageFactory` asks for up to 500 meal ids
+    for the default sort, and puts the planned meals first (most recently planned first), then the
+    other meals, newest first. Where no provider exists (a catalog-only test), the sort is newest
+    first.
   - **Events:** each create, edit, archive and restore publishes `MealChanged(householdId,
     mealId)` in the same transaction. Reads publish nothing. Nothing listens yet; the assistant
     (Phase 7) will re-index on it.
   - **Known gaps:** two people creating the same new tag name at the same moment can make one of
-    their saves fail with a database constraint error (a rare race, not yet retried). The occasion
-    types a meal suits (PLAN §4.2) are not in V6 yet. "Recently used first" now has its data from
-    `PlanningService.recentlyPlannedMealIds`; the sorting itself comes with the meal pages.
+    their saves fail with a database constraint error (a rare race, not yet retried).
 - **Weekly plan (#80), module `planning`:** `PlanningService` is the public entry point. `week`
   returns the ISO week (Monday to Sunday) that holds any given date, with its slots ordered by date,
   slot type (breakfast, lunch, dinner, snack) and place. `add` puts a library meal on a date and slot
@@ -138,9 +168,11 @@ pages yet; no other business modules yet.
     on `move` when the slot really changes place. Reordering, editing a note and removing publish
     nothing. Nothing listens yet, and PLAN §4.1 names no listener for it.
   - **What the pages call:** a `SlotView` carries the meal id, not the name, so the week view calls
-    `week(...)` and gets the names from one `MealService.search(…, new MealSearch(null, null, true))`,
-    joined by meal id. "Recently used first" calls `recentlyPlannedMealIds(userId, householdId, limit)`
-    and sorts the library by that order, with meals not in the list last.
+    `week(...)` and gets the names from one
+    `MealService.search(…, new MealSearch(null, null, true))`, joined by meal id. "Recently used
+    first" reaches `recentlyPlannedMealIds(userId, householdId, limit)` through
+    `RecentMealsProvider` (see the meal library above) and sorts the library by that order, with
+    meals not in the list last.
   - **Not modelled yet:** a slot with free text instead of a library meal (PLAN §4.2 sketches a
     `free_text` column; Phase 3 adds meals inline through the library, so it is not needed for it yet).
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
@@ -153,8 +185,8 @@ pages yet; no other business modules yet.
   `AppErrorController`, `ManifestController`, and the temporary `HelloController`). They are
   described from the UI side in [[Current State: Frontend]].
 - **Database (#11):** Spring Data JPA (Hibernate set to `ddl-auto: validate`, so it only checks
-  the schema) plus **Flyway**, which owns the schema. There are only the identity entities so far; the rest
-  arrive with the modules that need them (identity's came with #12).
+  the schema) plus **Flyway**, which owns the schema. Entities arrive with the modules that need them
+  (identity's came with #12, the meal library's with #66).
   - Migrations live in `src/main/resources/db/migration/`. `common/` holds portable SQL that
     runs on H2 and Postgres; `postgresql/` holds Postgres-only SQL. Version numbers are shared by
     both folders. Today: `V1__init.sql` (an empty baseline), `postgresql/V2__pgvector.sql`
@@ -162,8 +194,9 @@ pages yet; no other business modules yet.
     (`app_user`, `allowed_email` and the Spring Session tables), `V4__household.sql`
     (`household` with a `version` column, and `membership` with the role OWNER or MEMBER),
     `V5__invite.sql` (`invite`, which stores only the hash of its code) and `V6__catalog.sql`
-    (`meal`, `tag` and `meal_tag`, see the meal library below) and `V7__planning.sql` (`meal_slot`,
-    see the weekly plan below).
+    (`meal`, `tag` and `meal_tag`, see the meal library below), `V7__planning.sql` (`meal_slot`,
+    see the weekly plan below) and `V8__meal_occasion_type.sql` (`meal_occasion_type`, see the meal
+    library below).
   - **Profiles:** `dev` points at in-memory H2 in PostgreSQL mode; `postgres` points at the
     compose Postgres (override with `SPRING_DATASOURCE_URL`/`_USERNAME`/`_PASSWORD`) and adds the
     `postgresql/` folder. Use them together as `dev,postgres`. With no profile there is no

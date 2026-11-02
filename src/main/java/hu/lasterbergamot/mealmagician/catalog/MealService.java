@@ -1,6 +1,8 @@
 package hu.lasterbergamot.mealmagician.catalog;
 
 import hu.lasterbergamot.mealmagician.catalog.internal.Meal;
+import hu.lasterbergamot.mealmagician.catalog.internal.MealOccasionType;
+import hu.lasterbergamot.mealmagician.catalog.internal.MealOccasionTypeRepository;
 import hu.lasterbergamot.mealmagician.catalog.internal.MealRepository;
 import hu.lasterbergamot.mealmagician.catalog.internal.MealTag;
 import hu.lasterbergamot.mealmagician.catalog.internal.MealTagName;
@@ -11,6 +13,7 @@ import hu.lasterbergamot.mealmagician.household.HouseholdService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +46,7 @@ public class MealService {
   private final MealRepository meals;
   private final TagRepository tags;
   private final MealTagRepository mealTags;
+  private final MealOccasionTypeRepository occasionTypes;
   private final HouseholdService households;
   private final ApplicationEventPublisher events;
   private final Clock clock;
@@ -52,6 +57,7 @@ public class MealService {
    * @param meals persistence for meals
    * @param tags persistence for tags
    * @param mealTags persistence for the meal-tag links
+   * @param occasionTypes persistence for the occasion types a meal suits
    * @param households the household service, which does the membership check
    * @param events publishes {@link MealChanged}
    * @param clock the application clock, for the creation time
@@ -60,12 +66,14 @@ public class MealService {
       MealRepository meals,
       TagRepository tags,
       MealTagRepository mealTags,
+      MealOccasionTypeRepository occasionTypes,
       HouseholdService households,
       ApplicationEventPublisher events,
       Clock clock) {
     this.meals = meals;
     this.tags = tags;
     this.mealTags = mealTags;
+    this.occasionTypes = occasionTypes;
     this.households = households;
     this.events = events;
     this.clock = clock;
@@ -91,8 +99,9 @@ public class MealService {
             new Meal(
                 householdId, clean.name(), clean.notes(), clean.recipeUrl(), Instant.now(clock)));
     List<String> names = attachTags(householdId, meal, clean.tags());
+    List<OccasionType> types = attachOccasionTypes(householdId, meal, clean.occasionTypes());
     publish(meal);
-    return view(meal, names);
+    return view(meal, names, types);
   }
 
   /**
@@ -112,17 +121,19 @@ public class MealService {
   }
 
   /**
-   * Replaces a meal's details and its tag set. The tags are the new complete set: a tag not in the
-   * list is removed from the meal, and a new one is created for the household if it does not exist.
+   * Replaces a meal's details, its tag set and its occasion types. The tags are the new complete
+   * set: a tag not in the list is removed from the meal, and a new one is created for the household
+   * if it does not exist. The occasion types work the same way.
    *
    * <p>A concurrent edit of the same meal fails with JPA's optimistic-lock exception when the
    * change is written, because the meal's {@code version} has moved on. The page turns that into a
-   * "someone else changed this, reload" message.
+   * "someone else changed this, reload" message. Use {@link #edit(long, long, long, MealDetails,
+   * long)} when the edit starts from a form that was opened earlier.
    *
    * @param userId the {@code app_user} id of the person editing
    * @param householdId the household the meal belongs to
    * @param mealId the meal to edit
-   * @param details the new name, notes, recipe link and tags
+   * @param details the new name, notes, recipe link, tags and occasion types
    * @return the meal after the change
    * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
    *     not a member of the household
@@ -132,14 +143,51 @@ public class MealService {
    *     meal at the same moment
    */
   public MealView edit(long userId, long householdId, long mealId, MealDetails details) {
+    return edit(userId, householdId, mealId, details, null);
+  }
+
+  /**
+   * Like {@link #edit(long, long, long, MealDetails)}, but refuses the change when the meal is no
+   * longer at the version the form was opened with. The transaction's own lock check only catches
+   * two edits that overlap in time; this catches the usual case, where someone else saved while the
+   * form sat open in a browser tab.
+   *
+   * @param userId the {@code app_user} id of the person editing
+   * @param householdId the household the meal belongs to
+   * @param mealId the meal to edit
+   * @param details the new name, notes, recipe link, tags and occasion types
+   * @param expectedVersion the {@link MealView#version()} the form was built from
+   * @return the meal after the change
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member of the household
+   * @throws MealNotFoundException if the meal does not exist in this household (checked before the
+   *     input, so a meal of another household is a 404 whatever was typed)
+   * @throws InvalidMealException if a field breaks its rule; nothing is changed then
+   * @throws org.springframework.dao.OptimisticLockingFailureException if the meal's version is not
+   *     {@code expectedVersion}, or someone else changed it at the same moment
+   */
+  public MealView edit(
+      long userId, long householdId, long mealId, MealDetails details, long expectedVersion) {
+    return edit(userId, householdId, mealId, details, Long.valueOf(expectedVersion));
+  }
+
+  private MealView edit(
+      long userId, long householdId, long mealId, MealDetails details, Long expectedVersion) {
     households.require(householdId, userId);
-    Normalized clean = normalize(details);
+    // Looked up before the input is checked: another household's meal is a 404 even when the form
+    // is also invalid, so a stranger learns nothing from the answer.
     Meal meal = findOwned(householdId, mealId);
+    if (expectedVersion != null && meal.getVersion() != expectedVersion) {
+      throw new OptimisticLockingFailureException(
+          "Meal " + mealId + " is at version " + meal.getVersion() + ", not " + expectedVersion);
+    }
+    Normalized clean = normalize(details);
     meal.change(clean.name(), clean.notes(), clean.recipeUrl());
     List<String> names = attachTags(householdId, meal, clean.tags());
+    List<OccasionType> types = attachOccasionTypes(householdId, meal, clean.occasionTypes());
     meals.saveAndFlush(meal);
     publish(meal);
-    return view(meal, names);
+    return view(meal, names, types);
   }
 
   /**
@@ -189,7 +237,7 @@ public class MealService {
   public MealView find(long userId, long householdId, long mealId) {
     households.require(householdId, userId);
     Meal meal = findOwned(householdId, mealId);
-    return view(meal, mealTags.findTagNames(householdId, mealId));
+    return view(meal, mealTags.findTagNames(householdId, mealId), occasionTypesOf(meal));
   }
 
   /**
@@ -218,8 +266,13 @@ public class MealService {
       tagId = tag.get().getId();
     }
     Map<Long, List<String>> namesByMeal = tagNamesByMeal(householdId);
+    Map<Long, List<OccasionType>> typesByMeal = occasionTypesByMeal(householdId);
     return meals.search(householdId, pattern, tagId, search.includeArchived()).stream()
-        .map(meal -> view(meal, namesByMeal.getOrDefault(meal.getId(), List.of())))
+        .map(meal ->
+            view(
+                meal,
+                namesByMeal.getOrDefault(meal.getId(), List.of()),
+                typesByMeal.getOrDefault(meal.getId(), List.of())))
         .toList();
   }
 
@@ -249,7 +302,7 @@ public class MealService {
     }
     meals.saveAndFlush(meal);
     publish(meal);
-    return view(meal, mealTags.findTagNames(householdId, mealId));
+    return view(meal, mealTags.findTagNames(householdId, mealId), occasionTypesOf(meal));
   }
 
   /** The tenant-scoped lookup every change and read goes through. */
@@ -268,7 +321,8 @@ public class MealService {
         MealRules.name(details.name()),
         MealRules.notes(details.notes()),
         MealRules.recipeUrl(details.recipeUrl()),
-        MealRules.tags(details.tags()));
+        MealRules.tags(details.tags()),
+        MealRules.occasionTypes(details.occasionTypes()));
   }
 
   /**
@@ -300,6 +354,47 @@ public class MealService {
     return wantedTags.stream().map(Tag::getName).sorted(String.CASE_INSENSITIVE_ORDER).toList();
   }
 
+  /**
+   * Makes the meal carry exactly the wanted occasion types, writing only the links that were added
+   * or dropped (the same difference approach as {@link #attachTags}).
+   *
+   * @return the types now on the meal, in enum order
+   */
+  private List<OccasionType> attachOccasionTypes(
+      long householdId, Meal meal, Set<OccasionType> wanted) {
+    List<MealOccasionType> current = occasionTypes.findLinks(householdId, meal.getId());
+    Set<OccasionType> currentTypes =
+        current.stream().map(link -> link.getId().getOccasionType()).collect(Collectors.toSet());
+    occasionTypes.deleteAll(
+        current.stream().filter(link -> !wanted.contains(link.getId().getOccasionType())).toList());
+    occasionTypes.saveAll(
+        wanted.stream()
+            .filter(type -> !currentTypes.contains(type))
+            .map(type -> new MealOccasionType(householdId, meal.getId(), type))
+            .toList());
+    return List.copyOf(wanted);
+  }
+
+  /** The occasion types of one stored meal, in enum order. */
+  private List<OccasionType> occasionTypesOf(Meal meal) {
+    return occasionTypes.findLinks(meal.getHouseholdId(), meal.getId()).stream()
+        .map(link -> link.getId().getOccasionType())
+        .sorted()
+        .toList();
+  }
+
+  /** Every meal's occasion types in the household, grouped by meal, for the search results. */
+  private Map<Long, List<OccasionType>> occasionTypesByMeal(long householdId) {
+    Map<Long, List<OccasionType>> byMeal = new HashMap<>();
+    for (MealOccasionType link : occasionTypes.findOfHousehold(householdId)) {
+      byMeal
+          .computeIfAbsent(link.getId().getMealId(), id -> new ArrayList<>())
+          .add(link.getId().getOccasionType());
+    }
+    byMeal.values().forEach(Collections::sort);
+    return byMeal;
+  }
+
   /** Every meal's tag names in the household, grouped by meal, for the search results. */
   private Map<Long, List<String>> tagNamesByMeal(long householdId) {
     Map<Long, List<String>> byMeal = new HashMap<>();
@@ -313,18 +408,23 @@ public class MealService {
     events.publishEvent(new MealChanged(meal.getHouseholdId(), meal.getId()));
   }
 
-  private static MealView view(Meal meal, List<String> tagNames) {
+  private static MealView view(Meal meal, List<String> tagNames, List<OccasionType> occasionTypes) {
     return new MealView(
         meal.getId(),
         meal.getName(),
         meal.getNotes(),
         meal.getRecipeUrl(),
         tagNames,
+        occasionTypes,
         meal.isArchived(),
         meal.getVersion());
   }
 
   /** The cleaned input of one create or edit. */
   private record Normalized(
-      String name, String notes, String recipeUrl, Map<String, String> tags) {}
+      String name,
+      String notes,
+      String recipeUrl,
+      Map<String, String> tags,
+      Set<OccasionType> occasionTypes) {}
 }

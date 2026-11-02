@@ -1,6 +1,6 @@
 # Plan: Meal Magician UI redesign — a storybook look for the whole app
 
-Status: **Wave 1 under way (R1 landed); split into waves for parallel subagents (§7)** · Written: 2026-11-01 · Owner: @LasterBergamot
+Status: **Waves 1–4 landed, Wave 5 next; split into waves for parallel subagents (§7)** · Written: 2026-11-01 · Owner: @LasterBergamot
 
 This file is the working plan for giving Meal Magician a new look and a new way to move around:
 a design system (colours, type, shapes, components), an app shell (a bottom tab bar on phones, a
@@ -390,15 +390,15 @@ R7's rest moved into R1, and each Alpine component and shared template has one o
 **Wave 4: after R4. Four UI items plus the Phase 2 pages (`PLAN.md`); R5a and R5c are small, so
 one subagent takes both and the wave has four UI subagents.**
 
-- [ ] **R5a Restyle sign-in, error and hello.** `login/page`, `error/page` + `_message`, `hello/*`.
-- [ ] **R5b Restyle the household pages.** Every `household/*` template (`_content`, `_create`,
+- [x] **R5a Restyle sign-in, error and hello.** *(#85, PR #90.)* `login/page`, `error/page` + `_message`, `hello/*`.
+- [x] **R5b Restyle the household pages.** *(#86, PR #92.)* Every `household/*` template (`_content`, `_create`,
       `_rename`, `_invites`, `_members`, `join`, `members`, `page`); remove the switch buttons.
-- [ ] **R5c Restyle the admin allowlist.** `admin/allowlist` + `_allowlist` (added by #45 after this
+- [x] **R5c Restyle the admin allowlist.** *(#85, PR #90.)* `admin/allowlist` + `_allowlist` (added by #45 after this
       plan was written; same list-and-card pattern, §8).
 - *R5a–R5c:* behaviour and routes do not change, so `HouseholdPagesTest`, `AllowlistAdminPagesTest`
   and the others stay green. *Accept:* screenshots at both sizes and both themes on the PR; no
   `brand-\d`/`stone-` class left in the item's own templates.
-- [ ] **R6 Theme preference.** Cookie `mm_theme` (UI-D8) read in `ViewContextAdvice`, the
+- [x] **R6 Theme preference.** *(#87, PR #91.)* Cookie `mm_theme` (UI-D8) read in `ViewContextAdvice`, the
       `data-theme` value in `base.jte`'s `<html>` tag, a theme control in `layout/_topbar` (avatar
       menu) and `layout/_sidebar`, the Alpine `theme` component; confirm the cookie-versus-DB choice
       with the owner first. *Accept:* no flash of the wrong theme on reload; the choice survives a
@@ -933,3 +933,4 @@ The slot mark on its own soft tile (`slot-<type>` on `slot-<type>-soft`, minimum
 | 2026-11-02 | **Wave 3 landed** (#79, PR #82; B3 #80, PR #81 beside it): the app shell (phone top bar and 64 px tab bar, desktop sidebar that collapses to icons, household switcher in both, avatar menu, sign-out as a CSRF POST, stored per-user language, arrow keys for `ui/_segmented`), tabs for pages that do not exist are hidden, 25 e2e tests at 390 and 1280 px, and a screenshot check in light and dark. **Open for the owner or Wave 4:** (1) on a phone the gold avatar disc and the gold current-tab outline are two gold marks (§3.1 says one): pick a `brand-soft` avatar variant for the shell or a neutral active-tab pill; (2) no `hx-boost` yet, because pages return whole documents (revisit when they return fragments); (3) `?lang=` saves the stored language on a GET, so a cross-site link could flip it (low impact; consider a POST in R6); (4) old pages still have white cards on the dark theme until R5; (5) the on-screen keyboard and safe-area inset were not checked (headless Chromium has neither), so R9 checks them on a real phone. | #57, #79, #80, #81, #82 |
 | 2026-11-02 | **R4 follow-ups** (#83): the owner decided both open questions. The shell's top-bar avatar uses a new `soft` tone of `ui/_avatar` (`brand-soft` with `brand-ink`), so a phone screen has one gold mark, the current tab; and the language switch is now `POST /language` (CSRF-protected, public, redirects to the same-origin page it came from) instead of a `?lang=` GET, which replaces `LanguageSwitchInterceptor`. Wave 3's open items (1) and (3) are done. | #57, #83 |
 | 2026-11-02 | Owner checks done: #16 (first wiki page created, docs sync) and #18 (sign-in on a phone works) closed. Owner confirmed UI-D8 (theme cookie) and the occasion-type decision (enum in `catalog`, V8). **Wave 4 started** (D24): #85 (R5a + R5c, one agent), #86 (R5b), #87 (R6) under #57, and #88 (Phase 2 meal pages) under #3, one worktree subagent each. Backups (#62) stay after Phase 5. | #57, #85, #86, #87, #88 |
+| 2026-11-02 | **Wave 4 landed** (D24, D25): R5a + R5c (#85, PR #90), R6 (#87, PR #91) and R5b (#86, PR #92), beside the Phase 2 meal pages (#88, PR #95). The meal pages were checked at 390 and 1280 px in light and dark. **Open for the owner (R9):** on the phone Meals list the gold floating add button and the gold current-tab outline are both on screen, although §3.1 wants one gold mark per screen; the Add row and FAB row of this file's tables prescribe both, so nothing was changed. Options if it should change: a neutral active-tab pill, or a violet FAB. Also noted: a fixed bottom tab bar can cover a control that Playwright still counts as in view, so phone e2e tests that click near the bottom of a long form should scroll it up first. | #57, #85, #86, #87, #88, #90, #91, #92, #95 |

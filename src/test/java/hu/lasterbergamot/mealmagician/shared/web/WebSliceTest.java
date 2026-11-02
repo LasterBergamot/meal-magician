@@ -41,7 +41,7 @@ import org.springframework.security.web.SecurityFilterChain;
         @ComponentScan.Filter(
             type = FilterType.REGEX,
             pattern =
-                "hu\\.lasterbergamot\\.mealmagician\\.(household\\..*|identity\\.internal\\.AllowlistAdminController)"))
+                "hu\\.lasterbergamot\\.mealmagician\\.(household\\..*|catalog\\.internal\\..*|identity\\.internal\\.AllowlistAdminController)"))
 @ImportAutoConfiguration({JteAutoConfiguration.class, ServletJteAutoConfiguration.class})
 @Import({I18nConfig.class, WebSliceTest.FixedClock.class, WebSliceTest.OpenSecurity.class})
 @interface WebSliceTest {

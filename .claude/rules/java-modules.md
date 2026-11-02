@@ -17,6 +17,12 @@ paths:
   `ModularityTests` fails the build if you do.
 - Cross-module side effects go through **application events** (`@ApplicationModuleListener`),
   not direct calls, e.g. `MealChanged` → `assistant`. Name events in past tense, as records.
+- **Needing data from a module that depends on you:** `planning` depends on `catalog`, so
+  `catalog` cannot call `PlanningService` (that would be a cycle). The module that is depended on
+  declares an interface in its public package, and the other module implements it in its `internal`
+  package: `catalog.RecentMealsProvider`, implemented by `planning.internal.PlanningRecentMeals`.
+  The arrow stays `planning -> catalog`. Shared types follow the same reasoning: `OccasionType`
+  lives in `catalog`.
 - Every package, including each `internal/`, needs a `package-info.java` with Javadoc (Checkstyle
   `JavadocPackage`). A module's root `package-info.java` carries `@ApplicationModule(displayName = …)`;
   `shared` is `type = OPEN` because every module may use it.
