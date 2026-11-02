@@ -8,4 +8,4 @@
      LanguageSwitchInterceptor stores the choice in a cookie. --%>
 <a href="?lang=${code}" lang="${code}" hreflang="${code}" aria-label="${name}"
    aria-current="${ctx.language().equals(code) ? "true" : null}"
-   class="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-3 text-sm font-semibold ${ctx.language().equals(code) ? "bg-white text-brand-800" : "text-white hover:bg-brand-800"}">${label}</a>
+   class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border-2 px-3 text-sm font-extrabold ${ctx.language().equals(code) ? "border-outline bg-brand text-on-brand" : "border-transparent text-ink hover:bg-surface-sunken"}">${label}</a>

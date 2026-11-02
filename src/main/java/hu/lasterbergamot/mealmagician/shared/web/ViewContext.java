@@ -7,15 +7,25 @@ import hu.lasterbergamot.mealmagician.shared.i18n.Messages;
  * {@code @param ViewContext ctx} instead of a growing list. {@link ViewContextAdvice} adds it to
  * the model of every controller under the name {@code ctx}.
  *
- * <p>Later additions (the signed-in user) belong here, so the layout changes in one place and pages
- * stay untouched.
+ * <p>Later additions belong here, so the layout changes in one place and pages stay untouched.
  *
  * @param messages the translation helper
- * @param csrf the CSRF token for htmx, or {@code null} while there is no token source
- * @param household the household for the header, or {@code null} when there is none to show
- * @param admin whether the person is an instance admin, which adds the allowlist link to the header
+ * @param csrf the CSRF token for htmx and the sign-out and switch forms, or {@code null} while
+ *     there is no token source
+ * @param household the household for the shell, or {@code null} when there is none to show
+ * @param admin whether the person is an instance admin, which adds the allowlist link
+ * @param user the signed-in person for the app shell, or {@code null} for an anonymous request,
+ *     which gets the plain layout without the shell
+ * @param active the navigation destination the request belongs to (its tab is highlighted), or
+ *     {@code null} when no tab does
  */
-public record ViewContext(Messages messages, CsrfMeta csrf, HouseholdNav household, boolean admin) {
+public record ViewContext(
+    Messages messages,
+    CsrfMeta csrf,
+    HouseholdNav household,
+    boolean admin,
+    ShellUser user,
+    NavDestination active) {
 
   /**
    * Translates a key; shorthand for {@code messages().t(...)} so templates read {@code

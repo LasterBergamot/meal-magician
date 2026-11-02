@@ -7,6 +7,7 @@
   // Alpine's CSP build cannot evaluate expressions such as `open = !open` in templates, only
   // names. Components are therefore registered here and templates say x-data="menu".
   document.addEventListener('alpine:init', () => {
+    // A small popup opened by a button (the avatar menu in layout/_topbar.jte).
     window.Alpine.data('menu', () => ({
       open: false,
       toggle() {
@@ -15,11 +16,95 @@
       close() {
         this.open = false;
       },
-      // The layout's static classes ("hidden md:flex") hide the panel on phones and always show it
-      // from the md breakpoint up. When the button opens it, this adds max-md:flex, which beats
-      // "hidden" below md only. The class name is written out in full so Tailwind finds it here.
-      get panelClass() {
-        return this.open ? 'max-md:flex' : '';
+    }));
+
+    // The app shell (layout/_shell.jte). The sidebar on desktop collapses to icons; the choice is
+    // kept in localStorage, a convenience for this browser only, so every access sits in try/catch
+    // (private mode and some embedded browsers refuse storage). Without a stored choice the sidebar
+    // starts collapsed below the lg breakpoint (1024 px), as plan section 4 says. The phone's tab bar
+    // hides while a text field has focus, which on a phone means the on-screen keyboard is up.
+    const SIDEBAR_KEY = 'mm.sidebarCollapsed';
+    const COLLAPSE_BELOW = 1024;
+    const TEXT_FIELD =
+      'textarea, input:not([type=button]):not([type=checkbox]):not([type=color]):not([type=file]):not([type=hidden]):not([type=radio]):not([type=range]):not([type=reset]):not([type=submit])';
+    const storedCollapsed = () => {
+      try {
+        const value = window.localStorage.getItem(SIDEBAR_KEY);
+        return value === null ? null : value === '1';
+      } catch {
+        return null;
+      }
+    };
+    const rememberCollapsed = (collapsed) => {
+      try {
+        window.localStorage.setItem(SIDEBAR_KEY, collapsed ? '1' : '0');
+      } catch {
+        // Nothing to do: the sidebar still collapses for this page view.
+      }
+    };
+    window.Alpine.data('shell', () => ({
+      collapsed: storedCollapsed() ?? window.innerWidth < COLLAPSE_BELOW,
+      keyboard: false,
+      init() {
+        document.addEventListener('focusin', (event) => {
+          this.keyboard = event.target instanceof Element && event.target.matches(TEXT_FIELD);
+        });
+        document.addEventListener('focusout', () => {
+          this.keyboard = false;
+        });
+      },
+      toggleCollapsed() {
+        this.collapsed = !this.collapsed;
+        rememberCollapsed(this.collapsed);
+      },
+      get expanded() {
+        return !this.collapsed;
+      },
+      // The width classes are written out in full so that Tailwind finds them. "is-collapsed" is
+      // the hook the templates use to make labels screen-reader-only ([.is-collapsed_&]:sr-only).
+      get sidebarClass() {
+        return this.collapsed
+          ? 'is-collapsed md:w-[var(--mm-sidebar-collapsed)]'
+          : 'md:w-[var(--mm-sidebar)]';
+      },
+      get tabbarClass() {
+        return this.keyboard ? 'max-md:hidden' : '';
+      },
+    }));
+
+    // The segmented control (ui/_segmented.jte) is a tablist of links. Arrow keys move the focus
+    // between its segments, as the WAI-ARIA tabs pattern describes; Enter or Space then follows the
+    // link. Home and End go to the first and last segment. The arrow keys do not follow a link by
+    // themselves, so browsing the options never loads a page by accident.
+    window.Alpine.data('segmented', () => ({
+      tabs() {
+        return [...this.$el.querySelectorAll('[role="tab"]')];
+      },
+      move(event) {
+        const tabs = this.tabs();
+        const current = tabs.indexOf(event.target);
+        if (current < 0) {
+          return;
+        }
+        let next;
+        switch (event.key) {
+          case 'ArrowRight':
+            next = (current + 1) % tabs.length;
+            break;
+          case 'ArrowLeft':
+            next = (current - 1 + tabs.length) % tabs.length;
+            break;
+          case 'Home':
+            next = 0;
+            break;
+          case 'End':
+            next = tabs.length - 1;
+            break;
+          default:
+            return;
+        }
+        event.preventDefault();
+        tabs[next].focus();
       },
     }));
 

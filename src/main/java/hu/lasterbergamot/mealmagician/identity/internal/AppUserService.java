@@ -37,4 +37,17 @@ class AppUserService {
     user.refreshProfile(email, displayName);
     return users.save(user);
   }
+
+  /**
+   * Saves the language a signed-in person picked. Unknown ids are ignored: the caller found the
+   * person from their own session a moment ago, so a missing row only happens when it was deleted
+   * in between, and there is nothing to save then.
+   *
+   * @param userId the {@code app_user} id
+   * @param locale {@code hu} or {@code en}
+   */
+  @Transactional
+  void chooseLocale(long userId, String locale) {
+    users.findById(userId).ifPresent(user -> user.changeLocale(locale));
+  }
 }

@@ -70,4 +70,13 @@ public class AppUser {
     this.email = newEmail;
     this.displayName = newDisplayName;
   }
+
+  /**
+   * Stores the language the person chose, so it applies again at their next sign-in.
+   *
+   * @param newLocale {@code hu} or {@code en}; the caller has already checked it is supported
+   */
+  public void changeLocale(String newLocale) {
+    this.locale = newLocale;
+  }
 }

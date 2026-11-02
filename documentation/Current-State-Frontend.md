@@ -6,11 +6,10 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
 
 ## Pages and templates
 
-- `src/main/jte/layout/base.jte` is the frame of every page: header (brand, the current household as a link
-  to `/households`, an "Allowlist" link to `/admin/allowlist` for instance admins only (`ctx.admin()`,
-  from `request.isUserInRole("ADMIN")`), the HU/EN language links), `<main>` with an empty `#error-slot`, footer.
-  On a phone the header collapses behind a menu button (an Alpine component); from the `md`
-  breakpoint (768 px) it is shown in full. Touch targets are at least 44 px.
+- `src/main/jte/layout/base.jte` is the frame of every page. A signed-in person gets the app shell
+  (`layout/_shell.jte`, see "App shell and navigation" below). An anonymous visitor (sign-in, error
+  pages) gets a plain header with the HU/EN language links, `<main>` with an empty `#error-slot`, and
+  a footer. Touch targets are at least 44 px.
 - `hello/page.jte` + `hello/_greeting.jte`: the temporary home page `/`. The "Refresh" button
   asks `/` again through htmx; because the request carries `HX-Request`, the controller returns
   only the `_greeting` fragment. Every later screen follows this pattern (`Htmx.view(...)`).
@@ -23,16 +22,18 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
 - Every template declares `@param ViewContext ctx`. `ViewContextAdvice` puts it into every
   controller's model, so templates write `ctx.t("key")` for text and nothing has to be passed by
   hand. `ViewContext` also carries `household`, the header's household (#41): its `name()` is `null` for a
-  signed-in person with no household, whose header then says "Create a household"; the whole
-  field is `null` on public pages.
+  signed-in person with no household, whose shell then says "Create a household"; the whole
+  field is `null` on public pages. `ViewContext` also carries `user` (the shell's name and
+  initials, `null` when anonymous, which is what picks the layout) and `active` (the navigation
+  destination the page belongs to, see below).
 - `household/page.jte` + `_content.jte`, `_create.jte`, `_rename.jte`: the `/households` page
-  (#41). It lists my households with my role, a "Switch" button for each other one and the
-  current one marked, a rename form (owners of the current household only) and a create form.
-  The forms are htmx posts. A rejected form answers 422 (or 409 when someone else renamed the
+  (#41). It lists my households with my role and marks the current one, with a link to the members
+  page; a rename form (owners of the current household only) and a create form. Switching to
+  another household is no longer on this page: it is the household switcher in the shell (R4). The
+  forms are htmx posts. A rejected form answers 422 (or 409 when someone else renamed the
   household first) with just that form, error inside it and the typed text kept; a success sends
   the browser on with `Htmx.redirect` (`HX-Redirect`, because a plain 302 would be followed
-  inside htmx's fetch and swap a whole page into the form). A header dropdown for switching is
-  not built: switching happens on this page.
+  inside htmx's fetch and swap a whole page into the form).
 - `household/_invites.jte` (#42): the owner-only "Invite someone" section of that page, an e-mail
   field, a lifetime select, the list of invites with status and a Revoke button. Posts swap the
   whole `#invites` section (`hx-target="#invites"`); the new link appears in a read-only field in
@@ -51,6 +52,54 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   the address in a hidden field, so no JSON is built in an attribute, plus `hx-confirm`). Posts swap
   the whole `#allowlist` section; a refused change answers 422 (add) or 409 (remove) with the same
   section and a red message.
+
+## App shell and navigation (R4, #79)
+
+Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` chooses it when
+`ctx.user()` is set). The shell is one Alpine component, `shell`, in `static/js/app.js`.
+- **Phone (below 768 px):** a top bar (the brand mark, the household switcher pill and the avatar),
+  the page, and a bottom tab bar (`layout/_tabbar.jte`, 64 px plus the safe-area inset). The
+  avatar opens a small menu: the person's name, the language choice, the admin link for instance
+  admins, and sign-out. The tab bar hides while a text field has focus, which on a phone means the
+  on-screen keyboard is up.
+- **Desktop (768 px and up):** a sidebar (`layout/_sidebar.jte`, 248 px): the brand, the household
+  switcher as a full-width row, a "Planner" section with the destinations (the current one is a
+  violet row), and at the bottom the language choice, the admin link (admins), the collapse button
+  and sign-out. Collapsed, the sidebar is 72 px of icons: each link keeps its name for screen
+  readers and a tooltip. It starts collapsed below 1024 px. The choice is kept in `localStorage`
+  under `mm.sidebarCollapsed`, for this browser only; every access is in try/catch because some
+  browsers refuse storage.
+- **Destinations** (`shared.web.NavDestination`): Plan (`/`; until Phase 3 it is the hello page),
+  Meals (`/meals`) and Occasions (`/occasions`) and Household (`/households`). Meals and Occasions
+  have no page yet, so they are **not listed** (a flag on the enum; switching one on is a one-word
+  change). `NavDestination.matching` picks the current tab from the request path, so
+  `/households/members` highlights Household and `/` highlights only Plan.
+- **The household switcher** (`layout/_household_switcher.jte`) is in both shells. Its button opens
+  a `ui/_sheet` (a bottom sheet on a phone, a centred dialog on a desktop) that lists **only the
+  person's own households**, built from their memberships (`household.internal.HouseholdNavBean`).
+  The current one is marked. Each other one is a small form that posts to
+  `/households/{id}/switch`, which answers 404 for a household the person is not in. The switch
+  ends on the home page. Escape closes the sheet and focus goes back to the button.
+- **Sign-out** (`layout/_sign_out.jte`) is a POST form to `/logout` with the CSRF token as the hidden
+  field `_csrf`, Spring Security's default parameter name. It is not a link, because a link would
+  let any other page sign the person out.
+- **Language:** the `?lang=hu|en` switch still sets the cookie `mm_lang`, and for a signed-in person
+  it also saves `app_user.locale` (`identity.internal.StoredLanguage`, which implements
+  `shared.i18n.LanguageStore`). At the next sign-in, `SessionCleanupOnSignIn` hands the stored value
+  to `SignInLanguage`, which writes the cookie, so the choice follows the person to a new browser.
+  A stored value this version does not support falls back to Hungarian.
+- **Navigation is plain links**, so each destination is a full page load. Plan §4 asks for
+  `hx-boost`; it is not used yet, because some pages (the hello page) answer a normal request with
+  the whole page, and boosting would nest that inside the content area.
+- **Keyboard:** the segmented control (`ui/_segmented`) moves focus with the arrow keys, Home and
+  End, through the Alpine `segmented` component; Enter follows the link as before.
+- **Landmarks:** a skip link, `<header>` (phone only), `<nav aria-label="Fő navigáció">` (the tab bar
+  on a phone, the sidebar on a desktop), `<main id="main">`.
+- **Admin link:** the allowlist page (`/admin/allowlist`) stays reachable for instance admins from
+  the sidebar (desktop) and the avatar menu (phone).
+- **Known gap for the design review:** on a phone, the avatar is a gold disc and the current tab
+  has a gold outline, so two gold marks share a screen. Plan §3.1 asks for one. The avatar is a
+  shared component (`ui/_avatar`), so changing it is a decision for the owner, not for this shell.
 
 ## Components and the style guide (R2a)
 
@@ -113,9 +162,9 @@ are all on `/dev/ui` in `dev/_forms.jte`, in every state.
   it links to). The active segment has the violet fill, a check icon and `aria-selected`. Given a
   `target` (a CSS selector such as `#content`), each segment fetches its address into that target
   and pushes the URL, so Back and reload work; with `target` null the segments are plain links,
-  which is what the style guide uses. Known gap: the ARIA tablist pattern wants arrow keys between
-  the segments, and that needs an Alpine behaviour in `app.js`. Until it lands every segment stays
-  in the normal tab order.
+  which is what the style guide uses. The arrow keys move focus between the segments (Left and
+  Right wrap around, Home and End go to the ends) through the Alpine `segmented` component in
+  `app.js`; they do not follow a link, so Enter or Space still does that.
 - **The 422 state:** a rejected form returns the same fragment with status 422, the message in
   `error` and what was typed (`value`, or `selected` for a select) passed back, so nothing the
   person entered is lost. The style guide shows a field and a select in that state.
@@ -189,8 +238,8 @@ variables are mapped into Tailwind with `@theme inline`, so the utilities exist:
   the E2E `FontFallbackE2ETest` prove the chain. Neither font has `tnum`, so digits are
   proportional.
 - The page background is `surface` with a faint dot pattern (one `radial-gradient` in `app.css`).
-  The dots already show on every page; the colour does not yet, because the `<body>` still carries
-  the old `bg-stone-100` utility, which wins over the base rule. R4 and R5 remove it.
+  The dots and the colour show on every page: R4 removed the old `bg-stone-100` utility from
+  `<body>`, which had been overriding the base rule.
 - `<html data-theme>` and the two `theme-color` metas (light `#6d3fe0`, dark `#130c2e`) are in
   `base.jte`'s head. R6 makes the theme a user choice.
 
@@ -199,8 +248,10 @@ variables are mapped into Tailwind with `@theme inline`, so the utilities exist:
 `src/main/resources/static/js/`:
 - `htmx.min.js` 2.0.11 and `alpine-csp.min.js` 3.17.5 (Alpine's CSP build). Versions, source and
   SHA-256 are recorded in `VENDORED.md` next to them.
-- `app.js` (ours): registers the Alpine components (`menu`, and `sheet` for the R3 dialogs, which
-  keeps focus inside and restores it on close), adds the CSRF header to htmx
+- `app.js` (ours): registers the Alpine components: `menu` (the avatar menu), `shell` (the sidebar's
+  collapsed state and the tab bar's keyboard hiding, R4), `segmented` (arrow keys for the segmented
+  control, R4), and `sheet` for the R3 dialogs, which keeps focus inside and restores it on close.
+  It also adds the CSRF header to htmx
   requests from `<meta name="_csrf">` tags, and redirects to `/` on an htmx 401/403.
 - `sw-register.js` registers the service worker.
 
@@ -217,12 +268,15 @@ expressions like `open = !open`, so a template only names a component (`x-data="
   `{0}`, `{1}` (apostrophes must be doubled).
 - `shared.i18n.Messages` is the helper (public API of the `shared` module). A missing key throws
   on purpose.
-- The language links in the header go to `?lang=hu` / `?lang=en`. `LanguageSwitchInterceptor`
-  stores the choice in the cookie `mm_lang` (one year, `HttpOnly`, `SameSite=Lax`). The browser's
-  `Accept-Language` is ignored: Hungarian is the default. Anything other than hu/en is ignored.
-- **Not yet per user:** the issue asks for the choice to persist per user. `app_user.locale`
-  exists since #12 but nothing reads or writes it yet; the cookie still decides. Applying the
-  stored language after sign-in is planned with the profile screen (Phase 1).
+- The language links (in the shell, or the anonymous header) go to `?lang=hu` / `?lang=en`.
+  `LanguageSwitchInterceptor` stores the choice in the cookie `mm_lang` (one year, `HttpOnly`,
+  `SameSite=Lax`). The browser's `Accept-Language` is ignored: Hungarian is the default. Anything
+  other than hu/en is ignored.
+- **Per user (R4, #79):** for a signed-in person the choice is also saved in `app_user.locale`, and
+  it is applied again at the next sign-in, on any browser (see "App shell and navigation").
+  Anonymous switches change only the cookie. The save happens on the `?lang=` request itself, which
+  is a GET; a cross-site link can therefore change a signed-in person's stored language, a small
+  nuisance rather than a data risk. Changing it on a POST would need a form in the shell.
 - Guard tests (`UiGuardTest`): both bundles have the same keys and placeholders, every
   `ctx.t("key")` in a template exists, and no template contains hard-coded visible text.
 
@@ -246,7 +300,7 @@ rendered through Spring Security has them and `app.js` sends the header on htmx 
 anonymous visitor sees) has one link, "Sign in with Google", to `/oauth2/authorization/google`.
 `?error` shows a retry notice (cancelled consent) and `?logout` a "signed out" notice. A refused
 account does not come back here: it gets the 403 error page. A person who is already signed in is
-sent to `/`. There is no sign-out button in the header yet (`POST /logout` works).
+sent to `/`. Sign-out is the shell's button (a POST to `/logout`, see "App shell and navigation").
 
 ## PWA shell (D5)
 

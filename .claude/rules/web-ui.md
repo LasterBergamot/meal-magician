@@ -103,4 +103,17 @@ paths:
   opener and handles the phone's swipe-down. Use `_confirm` for anything destructive, never a
   sheet for it. Never open a sheet from a sheet, and keep an open confirm out of any htmx swap
   region. `dev/_overlays.jte` shows both; `SheetAndConfirmE2ETest` drives them from the keyboard.
+- **App shell and navigation (R4, #79):** `base.jte` draws `layout/_shell.jte` when `ctx.user()`
+  is set (signed-in pages) and the plain anonymous header otherwise. The shell is `_topbar` +
+  `_tabbar` on a phone and `_sidebar` on a desktop, both listing `NavDestination.visible()` (a
+  destination with no page yet is left out, not dead: flip its `available` flag when its phase
+  lands). The current tab comes from `ctx.active()`. The household switcher
+  (`layout/_household_switcher.jte`, one per shell) is a `ui/_sheet` of the person's own households;
+  each other one posts to `/households/{id}/switch`. Sign-out is a POST form (`layout/_sign_out`)
+  with the CSRF token as the hidden field `_csrf`. Links between destinations are plain links, not
+  `hx-boost` (see Current State). Labels that collapse with the sidebar use
+  `[.is-collapsed_&]:sr-only`; the sidebar state and the tab bar's keyboard hiding are the Alpine
+  `shell` component, and the arrow keys of `ui/_segmented` are the Alpine `segmented` component.
+  Rules for new pages: no own header or navigation, use the shell's `ctx`; an icon-only button
+  needs an `aria-label` or sr-only text (`UiGuardTest.iconOnlyButtonsHaveAnAccessibleName`).
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.
