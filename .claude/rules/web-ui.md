@@ -149,6 +149,11 @@ paths:
   other 4xx are a field error or a `danger` alert. Avatars in a list inside the shell use the `soft`
   tone, because the phone tab bar's current tab is the screen's gold highlight. An empty list in a
   card is a dashed `border-border-strong` box; a whole empty page is `ui/_empty`.
+- **Plan templates (#111), `plan/template*.jte`:** the rename card copies `household/_rename`: a
+  `class="contents"` form as the root, a `ui/_card` inside, a 422 under the field and a 409 as a
+  `warning` alert with a Reload link. The delete confirm (`ui/_confirm`) posts to a URL with the
+  version in the query string, so the dialog needs no hidden input. A 409 from the delete goes into
+  `#plan-conflict` (`HX-Retarget`), which `app.js` already uses to close open dialogs.
 - **Meal pages (#88), `meal/`:** built from the `ui/` components. A link that navigates is
   The quick add is a
   name-only form in two copies, one in the phone's `ui/_sheet` and one inline from `md` up, with ids

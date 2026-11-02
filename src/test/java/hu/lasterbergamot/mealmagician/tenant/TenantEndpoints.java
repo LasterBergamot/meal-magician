@@ -59,6 +59,18 @@ public final class TenantEndpoints {
               w -> Map.of("inviteId", w.homeInviteId())),
           // plan (planning): every member may plan
           TenantEndpoint.forMembers(GET, "/plan", w -> NONE),
+          // plan templates (#111): every member may rename and delete
+          TenantEndpoint.forMembers(GET, "/plan/templates", w -> NONE),
+          TenantEndpoint.forMembers(
+              GET, "/plan/templates/{templateId}", w -> Map.of("templateId", w.homeTemplateId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/plan/templates/{templateId}/rename",
+              w -> Map.of("templateId", w.homeTemplateId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/plan/templates/{templateId}/delete",
+              w -> Map.of("templateId", w.homeTemplateId())),
           TenantEndpoint.forMembers(GET, "/plan/pick", w -> NONE),
           TenantEndpoint.forMembers(POST, "/plan/slots", w -> NONE),
           TenantEndpoint.forMembers(POST, "/plan/slots/quick", w -> NONE),
