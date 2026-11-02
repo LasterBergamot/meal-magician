@@ -1,6 +1,6 @@
 # Plan: Meal Magician UI redesign — a storybook look for the whole app
 
-Status: **Waves 1–4 landed, Wave 5 under way; split into waves for parallel subagents (§7)** · Written: 2026-11-01 · Owner: @LasterBergamot
+Status: **Waves 1–5 landed, only R9 (the owner) left; split into waves for parallel subagents (§7)** · Written: 2026-11-01 · Owner: @LasterBergamot
 
 This file is the working plan for giving Meal Magician a new look and a new way to move around:
 a design system (colours, type, shapes, components), an app shell (a bottom tab bar on phones, a
@@ -413,7 +413,7 @@ one subagent takes both and the wave has four UI subagents.**
       fail every page that is not restyled yet, including Phase 2 pages still in review.
       *(#96, PR #100. By then every page was restyled, so it ran beside the week view. The guard also
       rejects raw Tailwind colours, and `RestyledPageTemplatesTest` was deleted as redundant.)*
-- [ ] **R8 Docs and rules: final pass.** Every item updates its own part of
+- [x] **R8 Docs and rules: final pass.** *(#99, PR #106.)* Every item updates its own part of
       `.claude/rules/web-ui.md` and `documentation/Current-State-Frontend.md` in its PR (the docs gate
       wants that anyway); R8 reads them as a whole, then updates `Roadmap-Frontend.md`,
       `Newcomer-Guide.md` (where it describes templates) and `README.md`, and moves the "Phase 0
@@ -940,3 +940,4 @@ The slot mark on its own soft tile (`slot-<type>` on `slot-<type>-soft`, minimum
 | 2026-11-02 | **Wave 4 landed** (D24, D25): R5a + R5c (#85, PR #90), R6 (#87, PR #91) and R5b (#86, PR #92), beside the Phase 2 meal pages (#88, PR #95). The meal pages were checked at 390 and 1280 px in light and dark. **Open for the owner (R9):** on the phone Meals list the gold floating add button and the gold current-tab outline are both on screen, although §3.1 wants one gold mark per screen; the Add row and FAB row of this file's tables prescribe both, so nothing was changed. Options if it should change: a neutral active-tab pill, or a violet FAB. Also noted: a fixed bottom tab bar can cover a control that Playwright still counts as in view, so phone e2e tests that click near the bottom of a long form should scroll it up first. | #57, #85, #86, #87, #88, #90, #91, #92, #95 |
 | 2026-11-02 | **Wave 5 started.** R5d landed (#96, PR #100) and the read-only week view (#97, PR #101), whose phone Plan screen has the gold tab outline, today's gold number disc and the Today marker together. **The owner decided** (a) the week-view deviations above stay (§4 amended), and (b) the gold is **not** changed: the design is kept as written and judged on a real phone at R9, together with the Meals add button. R8 (#99) comes after the editing half of the week view (#98). | #57, #96, #97, #98, #99, #100, #101 |
 | 2026-11-02 | **Wave 5 build done except R8.** The week view's editing half landed (#98, PR #104) and the hello page was retired (#103, PR #105): `/` redirects to `/plan`, or to `/households` for a person without a household. R8 (#99) is the last build item; R9 is the owner's walk-through, where the gold on the phone Plan and Meals screens is judged live. | #57, #98, #103, #104 |
+| 2026-11-02 | **Wave 5 landed, the redesign is built.** R8 (#99, PR #106) is merged after the week view (#97, #98), R5d (#96) and the hello-page removal (#103). Left: **R9**, the owner's close-out. Things to look at there: the gold on the phone Plan and Meals screens (the design is kept as written), the week table's mid-word wrapping of a long single word such as "Gulyásleves" in a ~115 px cell at 1280 px, Lighthouse accessibility and PWA on a phone, and installing the PWA on a real phone. | #57, #99, #106 |

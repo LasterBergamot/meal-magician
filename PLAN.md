@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phase 1 done; UI redesign (#57) in parallel waves, Waves 1–4 landed, Wave 5 under way (§9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phases 0–3 done (the week planner is live); UI redesign (#57): Waves 1–5 landed, R9 (the owner's walk-through) left; next is Phase 4 (§9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -193,10 +193,10 @@ ids in that file are replaced with the real numbers then.
 - [x] Wave 3: R4 shell and navigation (the only UI item; PR #82, with B3 in PR #81).
 - [x] Wave 4: R5a sign-in/error/hello and R5c admin allowlist (#85, PR #90), R5b household pages
       (#86, PR #92), R6 theme preference (#87, PR #91), plus the Phase 2 pages (#88, PR #95).
-- [ ] Wave 5 (issues #96–#99, planned by Opus on 2026-11-02, D25): [x] R5d remove the old styles
-      (#96, PR #100); [x] week view 1/2 (#97, PR #101, beside it); [x] week view 2/2 (#98, PR #104);
-      [ ] retire the hello page (#103, PR #105); then [ ] R8 docs final pass (#99), then R9
-      close-out with the owner.
+- [x] Wave 5 (issues #96–#99, planned by Opus on 2026-11-02, D25): R5d remove the old styles
+      (#96, PR #100); week view 1/2 (#97, PR #101, beside it); week view 2/2 (#98, PR #104);
+      retire the hello page (#103, PR #105); R8 docs final pass (#99, PR #106). Only R9, the
+      close-out with the owner, is left.
 - Order: Phase 2 and 3 **pages** are built from these components, so they start once R1–R4 have
   landed (Phase 2 pages in Wave 4, Phase 3's week view after them). Their **backend** (module,
   migrations, services, tests) does not wait: it runs beside the waves (§9). *(Amended 2026-11-01;
@@ -475,6 +475,21 @@ meal-magician/
    #27 stays parked. Backups (#62) come after Phase 5 and before Phase 7 (owner's choice): until
    then only Neon's ~6-hour restore window protects the data.
 
+8. **Next up (2026-11-02, after Wave 5; D24/D25 apply):**
+   - **Owner, no agent can do these:** R9 (a walk-through on a phone and a laptop in both themes;
+     the gold on the Plan and Meals screens is judged live; Lighthouse accessibility and PWA; the
+     PWA installed on a real phone, which is also #13). Then the owner may close the finished
+     epics #2, #3 and #4 and the redesign epic #57 (agents do not close epics).
+   - **Phase 4, reuse and occasions (epic #5)**, the next build phase. An Opus planner writes the
+     briefs first (D25), then the usual split: a backend slice (Flyway **V9** is the next free
+     number: plan templates and occasions; `OccasionType` already lives in `catalog`) and the
+     pages (copy a day or week, save and apply templates, the Occasions tab, which stays hidden
+     until its page exists). The planner decides the exact split; it should keep one writer per file.
+   - **Beside Phase 4, small and independent:** #58, the post-deploy smoke test in `release.yml`
+     (unblocked since #18 closed).
+   - **Then** Phase 5 (ratings, sharing, PWA polish) → **v1.0.0**, then backups (#62), Phase 6
+     hardening and Phase 7 (the assistant). #27 stays parked.
+
 ---
 
 ## 10. Progress log
@@ -521,3 +536,4 @@ meal-magician/
 | 2026-11-02 | **Wave 4 landed.** #85 (PR #90), #87 (PR #91) and #86 (PR #92) merged; the meal pages (#88, PR #95) finish Phase 2: the `/meals` list with search, tag filter, recently-used-first and an archived switch, the form with 422 and 409 states, quick add (phone sheet, desktop bar), archive and restore, `OccasionType` owned by `catalog` (V8), `RecentMealsProvider` implemented by `planning`. Checked at 390 and 1280 px in light and dark. Open for the owner: the phone Meals list shows the gold add button and the gold current tab together, which the spec itself prescribes (the "Add" row of its navigation table and the FAB row of its component table), so it is left for the R9 walk-through. Wave 5 (R5d, R8, then R9) and the Phase 3 week view are next. | #57, #3, #85, #86, #87, #88, #90, #91, #92, #95 |
 | 2026-11-02 | **Wave 5 planned and half-built.** An Opus planner wrote the briefs; issues #96 (R5d), #97 (week view 1/2), #98 (week view 2/2) and #99 (R8) were filed with parents and blockers. **R5d landed** (#96, PR #100): the old `brand-50…800` scale is gone and `UiGuardTest` now fails on `brand-<digit>`, `stone-` or a raw Tailwind colour in a template or `app.js`, and on the old scale in `app.css`. **Week view 1/2 landed** (#97, PR #101): `GET /plan?week=YYYY-Www` (read-only), the Plan tab on `/plan`, `htmx.config.refreshOnHistoryMiss`. **Owner decisions:** the planner's five week-view deviations from the design are accepted (table from 1024 px, no swipe, one shared sheet, slot chips as row headers, remove-confirm over the slot sheet); the gold stays exactly as designed and is judged live at R9; the hello page may be removed once `/` can redirect (to be filed after #98). | #57, #4, #96, #97, #98, #99, #100, #101 |
 | 2026-11-02 | **Week view 2/2 landed** (#98, PR #104): `PlanningService.slot` and `quickAddAndPlan`, eight routes under `/plan/slots`, the pick sheet (search, recent meals, quick add with a 422 state), the slot sheet (note, move, reorder, remove behind the confirm dialog) and the 409 conflict banner; tenant-guard registrations and `PlanEditingE2ETest` at 390 and 1280 px. **Phase 3 is done.** One find: `Htmx.redirect` to the page the browser is already on only jumps to the anchor, so the slot controller also sends `HX-Refresh` for the same page. **Hello page retired** (#103, PR #105): `/` now redirects to `/plan` (or `/households` for a person with no household), a household switch lands on `/plan`, and the hello controller, templates, message keys and test are gone; the slice tests that used `/` as a sample page use `/error`, `/meals` or `/households`, and the e2e sign-in helpers accept either landing page. R8 (#99) is next. | #4, #98, #103, #104 |
+| 2026-11-02 | **Wave 5 landed.** R8 (#99, PR #106): `web-ui.md` and `Current-State-Frontend.md` reordered into one story, `Roadmap-Frontend.md`, `Newcomer-Guide.md` (new glossary entries and a request walk-through for `GET /plan`), `README.md`, `Home.md`, `References.md` (six rows) and the `CLAUDE.md` status brought up to date; `Setup.md`'s status line fixed afterwards. With the week view (#97, #98), R5d (#96) and the retired hello page (#103) the UI redesign is built; only R9, the owner's walk-through on a phone and a laptop, is left. Next: Phase 4. | #57, #99, #106 |

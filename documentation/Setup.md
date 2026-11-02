@@ -4,7 +4,8 @@ The step-by-step way from a fresh clone to a working dev environment, for a pers
 **and** for an AI agent: every step has a command, the result to expect, and what to do when the
 result differs. The `setup-project` skill follows only this page, so keep it current.
 
-> **Status:** the Gradle skeleton, `Taskfile.yml`, the databases and Google sign-in exist. Once
+> **Status:** the app runs end to end (Google sign-in, households, the meal library and the week
+> plan), with `Taskfile.yml`, both databases and the e2e stack. Once
 > steps 1–3 pass, `task lint && task test:fast` (or `./gradlew build`) proves the setup: it
 > downloads Gradle, Temurin 25 and the dependencies, then runs the formatter check, Checkstyle,
 > tests and the coverage gate. Expect `BUILD SUCCESSFUL`.
