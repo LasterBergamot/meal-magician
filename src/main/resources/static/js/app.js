@@ -202,6 +202,15 @@
             }
             opener = null;
           });
+          // A control outside the sheet may open it (plan/week.jte's page-level sheets): "sheetOpener"
+          // sends this event with the sheet's id and itself, so focus returns to it on close.
+          window.addEventListener('mm:open-sheet', (event) => {
+            if (event.detail?.id !== dialog.id || dialog.open) {
+              return;
+            }
+            opener = event.detail.opener ?? null;
+            dialog.showModal();
+          });
           const grabber = this.$refs.grabber;
           if (grabber) {
             grabber.addEventListener('pointerdown', (event) => {
@@ -236,6 +245,11 @@
         // and back the other way. Focus that is somehow outside the dialog is pulled in.
         trap(event) {
           if (event.key !== 'Tab') {
+            return;
+          }
+          // A confirm opened from a sheet sits inside the sheet's <dialog>, so its Tab events bubble
+          // up to this trap; the inner dialog has already handled them.
+          if (event.defaultPrevented) {
             return;
           }
           const dialog = this.$refs.dialog;
@@ -273,6 +287,24 @@
         },
       };
     });
+
+    // The control that opens a page-level sheet (plan/_slot_items.jte, plan/_meal_item.jte). The
+    // sheet is elsewhere on the page, so the control names it in data-sheet. The sheet's body is
+    // emptied first, so the last content never flashes while htmx loads the new one (the same
+    // element's hx-get fills the element named by hx-target).
+    window.Alpine.data('sheetOpener', () => ({
+      open() {
+        const target = this.$el.getAttribute('hx-target');
+        if (target) {
+          document.querySelector(target)?.replaceChildren();
+        }
+        window.dispatchEvent(
+          new CustomEvent('mm:open-sheet', {
+            detail: { id: this.$el.dataset.sheet, opener: this.$el },
+          }),
+        );
+      },
+    }));
   });
 
   const meta = (name) => document.querySelector(`meta[name="${name}"]`)?.content;
@@ -296,5 +328,16 @@
       event.detail.shouldSwap = false;
       window.location.assign('/');
     }
+  });
+
+  // A 409 or an error lands outside the open sheets; close them so the person sees it, then put
+  // focus on its action (after the dialogs' own close handlers have run).
+  document.addEventListener('htmx:afterSwap', (event) => {
+    const target = event.detail.target;
+    if (target?.id !== 'plan-conflict' && target?.id !== 'error-slot') {
+      return;
+    }
+    document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close());
+    window.setTimeout(() => target.querySelector('a[href], button')?.focus(), 0);
   });
 })();

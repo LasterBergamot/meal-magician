@@ -133,7 +133,8 @@ behaviour is in [[Current State: Backend]].
 
 ## Week view (Phase 3, #97)
 
-The week planner page `GET /plan`, read-only for now. The controller is `PlanController` in
+The week planner page `GET /plan`, which shows the plan and (since #98, see "Editing the week"
+below) lets every member change it. The controller is `PlanController` in
 `planning/internal`, the page models are `IsoWeek`, `WeekPage`, `DayPlan`, `SlotRow`, `SlotGroup`
 and `PlannedMeal`, `WeekPageFactory` builds them and `PlanDates` formats the dates, and the
 templates are in `plan/`. The route is registered in `TenantEndpoints`: a person in no household
@@ -165,8 +166,7 @@ is in [[Current State: Backend]].
   the page with `HX-Request` and swapped only a fragment into `<body>`. Now a history miss reloads
   the whole page. This also fixes Back on `/meals`, which had the same fault.
 - **Content:** a slot with meals shows each meal's name, an "Archived" badge for an archived meal
-  (the plan keeps it) and the slot's note; an empty slot is a dashed box with "Nothing planned".
-  The names come from one `MealService.search` of the whole library (archived included), not one
+  (the plan keeps it) and the slot's note; every slot, empty or not, ends with an add control. The names come from one `MealService.search` of the whole library (archived included), not one
   lookup per slot.
 - **Templates:** `week.jte` (the page) and `_week.jte` (the swap region), `_week_stepper.jte`,
   `_strip.jte`, `_day.jte` and `_slot_row.jte` (the phone), `_grid.jte` and `_cell.jte` (the
@@ -176,8 +176,57 @@ is in [[Current State: Backend]].
 - **Tests:** `IsoWeekTest` (year boundaries, invalid codes), `PlanPageModelsTest`, `PlanPagesTest`
   (MockMvc: the page, an htmx fragment, planned meals, another household, a stranger, English) and
   the browser test `PlanWeekE2ETest` at phone and desktop size.
-- **Not yet:** editing (adding, moving and removing meals, issue #98), swipe to change week, and
-  `/` is still the hello page (it highlights no tab).
+- **Not yet:** swipe to change week, and `/` is still the hello page (it highlights no tab).
+
+### Editing the week (#98)
+
+`PlanSlotController` (`planning/internal`) holds the edit routes. All are registered in
+`TenantEndpoints` and open to every member.
+
+| Route | What it does |
+|---|---|
+| `GET /plan/pick?date=&slot=&q=` | the pick sheet's content (also a page of its own) |
+| `POST /plan/slots` | plans a library meal (`date`, `slot`, `mealId`) |
+| `POST /plan/slots/quick` | creates a meal from a name and plans it, in one transaction |
+| `GET /plan/slots/{id}` | the slot editor (also a page of its own) |
+| `POST /plan/slots/{id}/note`, `/move`, `/reorder`, `/remove` | change one slot |
+
+- **Two page-level sheets.** A week has up to 56 slot controls (28 on the phone list, 28 in the
+  table), and `ui/_sheet` expects its trigger inside itself. So `plan/week.jte` holds one
+  `pick-sheet` and one `slot-sheet` (with an empty trigger), outside `#plan-week` so a week swap never
+  removes an open dialog. A control opens one through the Alpine `sheetOpener` component
+  (`x-data="sheetOpener"`, `data-sheet="pick-sheet"`): it empties the sheet body and sends the event
+  `mm:open-sheet`, which the `sheet` component listens for, and the same element's `hx-get` loads the
+  content into `hx-target`. The control is a real link (`/plan/pick?...`, `/plan/slots/{id}`), so
+  without JavaScript it opens the same content as a page (`plan/pick.jte`, `plan/slot.jte`).
+- **The pick sheet** lists library meals, the recently planned first and then by name, at most 20
+  (it says so when there are more; the search narrows). The search refetches the fragment and swaps
+  only `#pick-results`, so the box keeps focus. Each meal is a one-button form. "Create and add"
+  (`PlanningService.quickAddAndPlan`) makes a new meal from a name; a rejected name comes back as the
+  same form with 422 and the typed text.
+- **The editor** has the note form, the move form (a day of this week and a slot type), up and down
+  buttons (only the directions that exist) and "Remove from the plan". Remove is a `ui/_confirm`
+  opened from inside the slot sheet. That is allowed: the confirm is a centred `alertdialog` in the
+  browser's top layer, and the `sheet` component's Tab trap ignores a Tab event the inner dialog
+  already handled. Escape closes only the confirm, and focus goes back to the Remove button. Every
+  form carries the slot's version.
+- **Success** ends with `Htmx.redirect` to `/plan?week=...#day-...`. The browser only jumps to the
+  `#day` part when it is already on that exact address, which would leave the old plan on screen, so
+  when htmx reports (`HX-Current-URL`) that the person is on that page, the answer adds `HX-Refresh`
+  and htmx reloads it.
+- **A stale version** (another tab changed the slot first; a missing version counts as stale) is 409
+  with nothing written. For htmx the answer is the warning alert "Someone else changed the plan"
+  with a Reload link, sent with `HX-Retarget: #plan-conflict`; `app.js` closes every open dialog
+  after a swap into `#plan-conflict` (or `#error-slot`) and focuses the alert's action. Without htmx
+  the answer is the whole week page with the banner. A too-long note is 422 with the form again.
+- **Status codes:** the slot is read first (household-scoped), so another household's slot is 404
+  before anything else; then a malformed `date`, `slot` or `mealId` is 400 (`PlanParams`). The tenant
+  guard sends no parameters, which is why the order matters.
+- **Tests:** `PlanEditingPagesTest` (MockMvc, every route and status), `PlanEditingModelsTest`,
+  `PlanParamsTest`, `PlanningServiceTest` (`slot`, `quickAddAndPlan`), the rows in
+  `TenantIsolationTests`, and the browser test `PlanEditingE2ETest` at phone and desktop size
+  (quick add with its 422, library pick, note, reorder, move, remove behind the confirm, the
+  two-tab conflict, keyboard focus), which also saves screenshots in both themes.
 
 ## App shell and navigation (R4, #79)
 
@@ -407,7 +456,7 @@ per user in the database comes later, together with the per-user language.
   SHA-256 are recorded in `VENDORED.md` next to them.
 - `app.js` (ours): registers the Alpine components: `menu` (the avatar menu), `shell` (the sidebar's
   collapsed state and the tab bar's keyboard hiding, R4), `segmented` (arrow keys for the segmented
-  control, R4), `weekKeys` (the week stepper's arrow keys, #97), `theme` (the cookie and `data-theme`, R6) and `sheet` for the R3 dialogs, which
+  control, R4), `weekKeys` (the week stepper's arrow keys, #97), `sheetOpener` (a control that opens a page-level sheet, #98), `theme` (the cookie and `data-theme`, R6) and `sheet` for the R3 dialogs, which
   keeps focus inside and restores it on close.
   It also adds the CSRF header to htmx
   requests from `<meta name="_csrf">` tags, and redirects to `/` on an htmx 401/403.

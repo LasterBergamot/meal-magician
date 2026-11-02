@@ -59,6 +59,19 @@ public final class TenantEndpoints {
               w -> Map.of("inviteId", w.homeInviteId())),
           // plan (planning): every member may plan
           TenantEndpoint.forMembers(GET, "/plan", w -> NONE),
+          TenantEndpoint.forMembers(GET, "/plan/pick", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/plan/slots", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/plan/slots/quick", w -> NONE),
+          TenantEndpoint.forMembers(
+              GET, "/plan/slots/{slotId}", w -> Map.of("slotId", w.homeSlotId())),
+          TenantEndpoint.forMembers(
+              POST, "/plan/slots/{slotId}/note", w -> Map.of("slotId", w.homeSlotId())),
+          TenantEndpoint.forMembers(
+              POST, "/plan/slots/{slotId}/move", w -> Map.of("slotId", w.homeSlotId())),
+          TenantEndpoint.forMembers(
+              POST, "/plan/slots/{slotId}/reorder", w -> Map.of("slotId", w.homeSlotId())),
+          TenantEndpoint.forMembers(
+              POST, "/plan/slots/{slotId}/remove", w -> Map.of("slotId", w.homeSlotId())),
           // meals (catalog): every member may use the library, so none is owner-only
           TenantEndpoint.forMembers(GET, "/meals", w -> NONE),
           TenantEndpoint.forMembers(GET, "/meals/new", w -> NONE),

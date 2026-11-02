@@ -3,7 +3,10 @@ package hu.lasterbergamot.mealmagician.planning;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import hu.lasterbergamot.mealmagician.catalog.InvalidMealException;
+import hu.lasterbergamot.mealmagician.catalog.MealChanged;
 import hu.lasterbergamot.mealmagician.catalog.MealNotFoundException;
+import hu.lasterbergamot.mealmagician.catalog.MealSearch;
 import hu.lasterbergamot.mealmagician.catalog.MealService;
 import hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException;
 import hu.lasterbergamot.mealmagician.household.HouseholdService;
@@ -417,6 +420,45 @@ class PlanningServiceTest {
     assertThat(planning.week(bela, belasHome, MONDAY).slots())
         .extracting(SlotView::mealId)
         .containsExactly(belasMeal);
+  }
+
+  @Test
+  void slotReadsOwnSlotButNotAnotherHouseholdsNorAStrangers() {
+    SlotView slot = add(MONDAY, SlotType.LUNCH, stew);
+    long stranger = HouseholdTestSupport.insertUser(jdbc, "stranger");
+
+    assertThat(planning.slot(anna, annasHome, slot.id())).isEqualTo(slot);
+    assertThatThrownBy(() -> planning.slot(bela, belasHome, slot.id()))
+        .isInstanceOf(SlotNotFoundException.class);
+    assertThatThrownBy(() -> planning.slot(stranger, annasHome, slot.id()))
+        .isInstanceOf(HouseholdNotFoundException.class);
+  }
+
+  @Test
+  void quickAddAndPlanCreatesTheMealAndTheSlotAndPublishesBothEvents() {
+    SlotView slot = planning.quickAddAndPlan(anna, annasHome, MONDAY, SlotType.LUNCH, "Lecsó");
+
+    assertThat(meals.search(anna, annasHome, new MealSearch("Lecsó", null, false)))
+        .singleElement()
+        .satisfies(meal -> assertThat(meal.id()).isEqualTo(slot.mealId()));
+    assertThat(slot.note()).isNull();
+    assertThat(slotIdsOfWeek()).containsExactly(slot.id());
+    assertThat(events.stream(MealChanged.class)).isNotEmpty();
+    assertThat(events.stream(SlotPlanned.class))
+        .extracting(SlotPlanned::slotId)
+        .contains(slot.id());
+  }
+
+  @Test
+  void quickAddAndPlanWithABlankNameWritesNothing() {
+    int mealsBefore = meals.search(anna, annasHome, new MealSearch(null, null, true)).size();
+
+    assertThatThrownBy(() -> planning.quickAddAndPlan(anna, annasHome, MONDAY, SlotType.LUNCH, " "))
+        .isInstanceOf(InvalidMealException.class);
+
+    assertThat(slotIdsOfWeek()).isEmpty();
+    assertThat(meals.search(anna, annasHome, new MealSearch(null, null, true)))
+        .hasSize(mealsBefore);
   }
 
   private SlotView positionOf(long slotId) {

@@ -44,6 +44,25 @@ public record SlotGroup(LocalDate date, SlotType type, List<PlannedMeal> meals) 
   }
 
   /**
+   * The message key of this group's "add" control.
+   *
+   * @return for example {@code plan.slot.add.lunch}
+   */
+  public String addKey() {
+    return "plan.slot.add." + type.name().toLowerCase(Locale.ROOT);
+  }
+
+  /**
+   * The address that loads the pick sheet for this day and slot type. Without JavaScript it is a
+   * link to a page of its own.
+   *
+   * @return for example {@code /plan/pick?date=2026-11-02&slot=LUNCH}
+   */
+  public String pickHref() {
+    return "/plan/pick?date=" + date + "&slot=" + type.name();
+  }
+
+  /**
    * Tells whether nothing is planned here.
    *
    * @return {@code true} when there are no meals

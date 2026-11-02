@@ -12,7 +12,10 @@ import hu.lasterbergamot.mealmagician.household.HouseholdService;
 import hu.lasterbergamot.mealmagician.household.HouseholdTestSupport;
 import hu.lasterbergamot.mealmagician.household.InviteExpiry;
 import hu.lasterbergamot.mealmagician.household.InviteService;
+import hu.lasterbergamot.mealmagician.planning.PlanningService;
+import hu.lasterbergamot.mealmagician.planning.SlotType;
 import hu.lasterbergamot.mealmagician.tenant.TenantWorld.Actor;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +62,7 @@ class TenantIsolationTests {
   @Autowired private HouseholdService households;
   @Autowired private InviteService invites;
   @Autowired private MealService meals;
+  @Autowired private PlanningService planning;
   @Autowired private JdbcTemplate jdbc;
 
   static Stream<TenantEndpoint> registered() {
@@ -284,7 +288,7 @@ class TenantIsolationTests {
   }
 
   private static TenantWorld world() {
-    return new TenantWorld(1, 2, 10, 11, 20, 30, 40, 50);
+    return new TenantWorld(1, 2, 10, 11, 20, 30, 40, 50, 60);
   }
 
   /** "METHOD /pattern" of every mapped handler that works on a household. */
@@ -352,9 +356,13 @@ class TenantIsolationTests {
     long inviteId =
         invites.create(homeId, homeOwner, "guest@example.com", InviteExpiry.HOURS_24).invite().id();
     long mealId = meals.quickAdd(homeOwner, homeId, "Home stew").id();
+    long slotId =
+        planning
+            .add(homeOwner, homeId, LocalDate.of(2026, 11, 2), SlotType.LUNCH, mealId, null)
+            .id();
     currentWorld =
         new TenantWorld(
-            homeId, otherId, homeOwner, homeMember, otherOwner, outsider, inviteId, mealId);
+            homeId, otherId, homeOwner, homeMember, otherOwner, outsider, inviteId, mealId, slotId);
     return currentWorld;
   }
 }

@@ -166,4 +166,14 @@ paths:
   reloads the page). Dates are formatted in the page model (`PlanDates`), never in a template, and
   the `slot-*` colour class is written as an `@if` chain so Tailwind finds it. `data-group` and
   `data-slot-id` are for tests.
+- **Week editing (#98):** the week's many slot controls share two page-level sheets: a `ui/_sheet`
+  with an empty `trigger`, opened by a link with `x-data="sheetOpener"`, `data-sheet="<id>"` and
+  `hx-get`/`hx-target` (the link also works without JavaScript). A confirm may open from a sheet,
+  because it is a centred alertdialog in the top layer and the `sheet` trap ignores a handled Tab; a
+  sheet never opens from a sheet. A 409 is sent with `HX-Retarget: #plan-conflict`, and `app.js`
+  closes every open dialog after a swap into `#plan-conflict` or `#error-slot`. A success redirect
+  to the address the browser is already on (only the `#day` differs) would not reload, so the
+  controller adds `HX-Refresh` when `HX-Current-URL` is that page. Read the scoped resource before
+  parsing the other parameters, so a foreign id is 404 before any 400. A freshly swapped form takes a
+  few milliseconds to get its htmx listeners: browser tests wait for `.htmx-added` to go before typing.
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.
