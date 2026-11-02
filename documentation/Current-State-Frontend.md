@@ -1,17 +1,17 @@
 # Current State: Frontend
 
-What exists in `main` today (issue #13 started it). The layout, translations, styling, htmx, Alpine,
-the PWA files and the security headers work together, and the real screens (households, meals, the
-week plan) are built on top. Planned UI work: [[Roadmap: Frontend]].
+What exists in `main` today: the signed-in app shell with the meal library and the week planner,
+built from the design system (tokens, `ui/` components, light and dark themes), plus the sign-in,
+error and household pages. Planned UI work: [[Roadmap: Frontend]].
 
 ## Pages and templates
 
 - `src/main/jte/layout/base.jte` is the frame of every page. A signed-in person gets the app shell
   (`layout/_shell.jte`, see "App shell and navigation" below). An anonymous visitor (sign-in, error
-  pages) gets a plain header with the HU/EN language links, `<main>` with an empty `#error-slot`, and
+  pages) gets a plain header with the HU/EN language buttons (small POST forms), `<main>` with an empty `#error-slot`, and
   a footer. Touch targets are at least 44 px.
 - `/` has no template: `household.internal.HomeController` redirects a signed-in person to `/plan`
-  (or to `/households` when they have no household yet). The Phase 0 hello page was removed in #103.
+  (or to `/households` when they have no household yet).
 - `error/page.jte` + `error/_message.jte`: our 404, 403 and 500 pages (`AppErrorController`;
   other statuses show the 500 text). A normal request gets a full page. An htmx request gets the
   fragment, and `HX-Retarget` puts it into `#error-slot` so the page around it stays intact.
@@ -219,6 +219,9 @@ is in [[Current State: Backend]].
 - **Status codes:** the slot is read first (household-scoped), so another household's slot is 404
   before anything else; then a malformed `date`, `slot` or `mealId` is 400 (`PlanParams`). The tenant
   guard sends no parameters, which is why the order matters.
+- **Templates:** `plan/_pick.jte` and `_pick_quick.jte` (the pick sheet), `_slot_editor.jte` and
+  `_note_form.jte` (the slot sheet), `_conflict.jte` (the 409 banner), `pick.jte` and `slot.jte` (the
+  same content as pages).
 - **Tests:** `PlanEditingPagesTest` (MockMvc, every route and status), `PlanEditingModelsTest`,
   `PlanParamsTest`, `PlanningServiceTest` (`slot`, `quickAddAndPlan`), the rows in
   `TenantIsolationTests`, and the browser test `PlanEditingE2ETest` at phone and desktop size
@@ -271,13 +274,73 @@ Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` 
   the sidebar (desktop) and the avatar menu (phone).
 - **One gold mark on a phone (#83):** the current tab has the gold outline, so the top bar's avatar
   uses the `soft` tone (`brand-soft` with `brand-ink`) instead of the gold disc. Plan §3.1 allows one
-  gold highlight per screen.
+  gold highlight per screen. The gold is judged at R9, on a real phone.
 
-## Components and the style guide (R2a)
+## Design system
+
+The design system is in `src/main/jte/ui/` and in `src/main/css/app.css` (plan-ui-redesign.md §5). Tokens and themes come first, then the components, all shown on the style guide `/dev/ui`.
+
+### Design tokens, themes and fonts (R1, #64)
+
+`src/main/css/app.css` holds the redesign's colour tokens as CSS variables `--mm-*` (plan
+§3.2, Appendix A). `:root` is **Moonlight** (light); `:root[data-theme="dark"]` is **Midnight**;
+with `data-theme="system"` the OS preference picks one (the person's choice, R6, is below). The
+variables are mapped into Tailwind with `@theme inline`, so the utilities exist: `bg-surface`,
+`text-ink`, `border-outline`, `bg-brand`, `text-slot-ink`, `shadow-sticker-2`. The old green
+`brand-50…800` scale is gone (R5d, #96): nothing used it once every page was restyled, and
+`UiGuardTest` now fails on a `brand-<digit>` or `stone-` class, or a raw palette colour, in any
+template or `app.js`, and on the old scale in `app.css`.
+
+- Each theme's contrast is checked by `ContrastTokensTest`: every pair of Appendix C must meet
+  its WCAG minimum in both themes, and the tests fail on a bad token. Change a colour and the
+  test tells you which pair broke.
+- Fonts: Fredoka (headings) and Nunito (text) are self-hosted `woff2` in `static/fonts/` (SIL
+  OFL, see `FONTS.md` there). `app.css` declares them with `font-display: swap`, and
+  `base.jte` preloads the two above the fold. Fredoka has no Latin Extended-A glyphs, so a
+  Hungarian ő or ű in a heading is drawn by the next family in `--font-display`, **Nunito** (its
+  latin-ext file), then the system faces; Fredoka draws the rest (#71). `FontFallbackTest` and
+  the E2E `FontFallbackE2ETest` prove the chain. Neither font has `tnum`, so digits are
+  proportional.
+- The page background is `surface` with a faint dot pattern (one `radial-gradient` in `app.css`).
+  The dots and the colour show on every page: R4 removed the old `bg-stone-100` utility from
+  `<body>`, which had been overriding the base rule.
+- `<html data-theme>` and the two `theme-color` metas (light `#6d3fe0`, dark `#130c2e`) are in
+  `base.jte`. The theme is the person's choice (R6, below).
+
+### Theme preference (R6, #87)
+
+The theme is **light** (Moonlight), **dark** (Midnight) or **system** (follow the device's
+`prefers-color-scheme`, the default). It is kept in the cookie `mm_theme`, like `mm_lang` (UI-D8). Unlike the language, which is stored per user since #79, the theme is kept per
+browser only; saving it per user in the database is not done yet.
+
+- **The server only reads it.** `ViewContextAdvice` turns the cookie into `ViewContext.theme()`
+  (`shared.web.Theme`; a missing or unknown value is `system`), and `base.jte` writes
+  `<html data-theme="…">` from it, so the first paint already has the right colours and nothing
+  flashes. The sign-in and error pages share `base.jte`, so they follow the cookie too. The two
+  `theme-color` metas get a `media` value from `Theme.themeColorMedia`: for `system` each applies
+  to its own colour scheme; for an explicit choice only the chosen one applies, so the browser's own
+  bars match the page even when the device prefers the other scheme.
+- **The browser writes it.** The theme control (`layout/_theme_switch.jte`, three buttons made by
+  `layout/_theme_button.jte`: Light, Dark, System) sits in the phone's avatar menu and in the
+  desktop sidebar (labels become screen-reader-only and the buttons stack when the sidebar is
+  collapsed). The Alpine component `theme` in `app.js` sets the cookie (`Path=/`, one year,
+  `SameSite=Lax`, `Secure` on https, not `HttpOnly` because the script writes it), flips
+  `data-theme`, moves the metas' `media` and sets `aria-pressed` on every theme button, so the
+  phone's and the desktop's copies agree. No request is sent, so there is no state-changing GET and
+  no CSRF question. The server renders `aria-pressed` from the cookie.
+- **CSS:** no change was needed. `:root` is Moonlight, `[data-theme="dark"]` is Midnight, and the
+  `prefers-color-scheme: dark` block applies only when `data-theme` is neither `light` nor `dark`,
+  so an explicit choice beats the device.
+- **Tests:** `ThemeTest`, `ViewContextAdviceTest` and `AppShellPagesTest` cover the
+  cookie, the fallback and the markup. `ThemePreferenceE2ETest` loads the sign-in page with
+  JavaScript off and each cookie value (so `data-theme` must come from the server's HTML), then
+  chooses each theme in the real shell at 390 and 1280 px with the device set to dark, reloads, and
+  checks the cookie's attributes.
+
+### Icons, buttons and the style guide (R2a)
 
 The first pieces of the design system in `src/main/jte/ui/` (plan-ui-redesign.md §5). They use the
-colour and shape utilities of the design tokens (R1); until those land in `app.css` the classes
-do nothing, so the look is still the old one.
+colour and shape utilities of the design tokens (R1).
 - `ui/_icon.jte`: the 30 icons of Appendix B as inline SVG, one `size` and a `filled` flag (only
   the sparkle is filled). The names are the enum `shared.web.IconName`. Icons are decorative
   (`aria-hidden`); the text next to them, or an `sr-only` label, says what they mean.
@@ -286,65 +349,14 @@ do nothing, so the look is still the old one.
   htmx request in flight (`htmx-request` class) shows the same spinner, so a second click does
   nothing. Extra attributes such as `hx-post` come as a map.
 - `ui/_fab.jte`: the gold add button. With `floating` it sits above the phone's bottom tab bar
-  (the tab bar itself comes in R4) and is hidden from `md` up.
+  and is hidden from `md` up.
 - `dev/ui.jte` (`DevUiController`, `/dev/ui`): the living style guide. It shows every icon, every
   button variant in every size and state, and the add button in both forms. It exists only in the
   `dev` profile (`task serve`), it needs a sign-in like every page, and production answers 404.
   The sections `dev/_content.jte`, `_forms.jte` and `_overlays.jte` are filled (R2b, R2c, R3). To
   see both themes, use the theme buttons in the shell (R6).
 
-## Sheet and confirm dialog (R3, #75)
-
-Two overlays built on the native `<dialog>` element (plan-ui-redesign.md §5, UI-D6), so the browser
-does the heavy part: `showModal()` makes the page behind inert, puts the dialog in the top layer
-and closes it on Escape.
-- `ui/_sheet.jte`: a bottom sheet on a phone, with a grabber to drag down, and a centred dialog
-  from `md` up. It takes an `id`, the `title` (which names the dialog for screen readers), a
-  `trigger` (the control that opens it, which must have `x-on:click="show"`) and the `body`, which
-  htmx may load into. `closable` adds an X button. `role` is `dialog` or `alertdialog`.
-- `ui/_confirm.jte`: a destructive question. It is always a centred alert dialog, even on a phone,
-  with a `Cancel` button and a `danger` action. The action's `attrs` hold the request it sends
-  (`hx-post`), or `x-on:click="hide"` when nothing should be sent.
-- The Alpine component `sheet` in `static/js/app.js` adds what the browser does not do reliably:
-  Tab and Shift+Tab stay inside the dialog, focus goes back to the control that opened it when it
-  closes, and a drag down on the grabber closes a phone sheet (released past a third of its
-  height, at most 120 px; a short drag springs back). A click on the backdrop closes it too.
-- Rules for callers: a sheet is never opened from a sheet, and a confirm dialog must sit outside
-  any region that htmx swaps, or the swap removes the open dialog.
-- `/dev/ui` shows both in `dev/_overlays.jte`. `SheetAndConfirmE2ETest` drives them from the
-  keyboard at phone and desktop size, and swipes the phone sheet closed.
-
-## Form components (R2c)
-
-The form controls of the design system are in `src/main/jte/ui/` (plan-ui-redesign.md §5). Each
-takes typed parameters and translated text from the caller, and carries no text of its own. They
-are all on `/dev/ui` in `dev/_forms.jte`, in every state.
-- `ui/_field.jte`: a labelled text input, 48 px high with 16 px text. The label is always visible.
-  `hint` is a help sentence under the input. `error` is a message already translated: it sets
-  `aria-invalid`, a red border and an alert icon with the sentence. The hint and the error are
-  linked from the input with `aria-describedby` (the ids are `<id>-hint` and `<id>-error`), so a
-  screen reader reads them after the label.
-- `ui/_select.jte`: the same frame around a native `<select>`, so the phone shows its own list.
-  `options` is a list of `FormOption` (value and label), `selected` is the value shown.
-- `ui/_search.jte`: a pill with a search icon in front. Its label is visually hidden, because the
-  placeholder and the icon say what the field is for. It has no error state, since a search is
-  not a rejected form. `attrs` carry the htmx wiring (`hx-get`, `hx-trigger`).
-- `ui/_segmented.jte`: two to four segments, each a `SegmentOption` (value, label and the address
-  it links to). The active segment has the violet fill, a check icon and `aria-selected`. Given a
-  `target` (a CSS selector such as `#content`), each segment fetches its address into that target
-  and pushes the URL, so Back and reload work; with `target` null the segments are plain links,
-  which is what the style guide uses. The arrow keys move focus between the segments (Left and
-  Right wrap around, Home and End go to the ends) through the Alpine `segmented` component in
-  `app.js`; they do not follow a link, so Enter or Space still does that.
-- **The 422 state:** a rejected form returns the same fragment with status 422, the message in
-  `error` and what was typed (`value`, or `selected` for a select) passed back, so nothing the
-  person entered is lost. The style guide shows a field and a select in that state.
-- The helpers `HtmlAttributes.describedBy` and `HtmlAttributes.htmxFetch` build the attributes,
-  so the fragments never write them by hand. Tests: `FormComponentsPageTest` reads every state
-  from the `/dev/ui` HTML, `DescribedByTest` and `HtmxFetchTest` cover the helpers, and
-  `UiGuardTest` checks the text and the CSP rules of the templates.
-
-## Content and status components (R2b)
+### Content and status components (R2b)
 
 The content and status fragments of `src/main/jte/ui/` (plan-ui-redesign.md §5), all on the
 design tokens (R1) and shown in every state on `/dev/ui`:
@@ -378,6 +390,57 @@ The texts come from `messages_*.properties`: the slot words (`slot.*`), the skel
 `ContentComponentsPageTest` read each state from the page, and no new fragment may use a raw
 palette class (`brand-700`, `stone-*` and the like).
 
+### Form components (R2c)
+
+The form controls of the design system are in `src/main/jte/ui/` (plan-ui-redesign.md §5). Each
+takes typed parameters and translated text from the caller, and carries no text of its own. They
+are all on `/dev/ui` in `dev/_forms.jte`, in every state.
+- `ui/_field.jte`: a labelled text input, 48 px high with 16 px text. The label is always visible.
+  `hint` is a help sentence under the input. `error` is a message already translated: it sets
+  `aria-invalid`, a red border and an alert icon with the sentence. The hint and the error are
+  linked from the input with `aria-describedby` (the ids are `<id>-hint` and `<id>-error`), so a
+  screen reader reads them after the label.
+- `ui/_select.jte`: the same frame around a native `<select>`, so the phone shows its own list.
+  `options` is a list of `FormOption` (value and label), `selected` is the value shown.
+- `ui/_search.jte`: a pill with a search icon in front. Its label is visually hidden, because the
+  placeholder and the icon say what the field is for. It has no error state, since a search is
+  not a rejected form. `attrs` carry the htmx wiring (`hx-get`, `hx-trigger`).
+- `ui/_segmented.jte`: two to four segments, each a `SegmentOption` (value, label and the address
+  it links to). The active segment has the violet fill, a check icon and `aria-selected`. Given a
+  `target` (a CSS selector such as `#content`), each segment fetches its address into that target
+  and pushes the URL, so Back and reload work; with `target` null the segments are plain links,
+  which is what the style guide uses. The arrow keys move focus between the segments (Left and
+  Right wrap around, Home and End go to the ends) through the Alpine `segmented` component in
+  `app.js`; they do not follow a link, so Enter or Space still does that.
+- **The 422 state:** a rejected form returns the same fragment with status 422, the message in
+  `error` and what was typed (`value`, or `selected` for a select) passed back, so nothing the
+  person entered is lost. The style guide shows a field and a select in that state.
+- The helpers `HtmlAttributes.describedBy` and `HtmlAttributes.htmxFetch` build the attributes,
+  so the fragments never write them by hand. Tests: `FormComponentsPageTest` reads every state
+  from the `/dev/ui` HTML, `DescribedByTest` and `HtmxFetchTest` cover the helpers, and
+  `UiGuardTest` checks the text and the CSP rules of the templates.
+
+### Sheet and confirm dialog (R3, #75)
+
+Two overlays built on the native `<dialog>` element (plan-ui-redesign.md §5, UI-D6), so the browser
+does the heavy part: `showModal()` makes the page behind inert, puts the dialog in the top layer
+and closes it on Escape.
+- `ui/_sheet.jte`: a bottom sheet on a phone, with a grabber to drag down, and a centred dialog
+  from `md` up. It takes an `id`, the `title` (which names the dialog for screen readers), a
+  `trigger` (the control that opens it, which must have `x-on:click="show"`) and the `body`, which
+  htmx may load into. `closable` adds an X button. `role` is `dialog` or `alertdialog`.
+- `ui/_confirm.jte`: a destructive question. It is always a centred alert dialog, even on a phone,
+  with a `Cancel` button and a `danger` action. The action's `attrs` hold the request it sends
+  (`hx-post`), or `x-on:click="hide"` when nothing should be sent.
+- The Alpine component `sheet` in `static/js/app.js` adds what the browser does not do reliably:
+  Tab and Shift+Tab stay inside the dialog, focus goes back to the control that opened it when it
+  closes, and a drag down on the grabber closes a phone sheet (released past a third of its
+  height, at most 120 px; a short drag springs back). A click on the backdrop closes it too.
+- Rules for callers: a sheet is never opened from a sheet, and a confirm dialog must sit outside
+  any region that htmx swaps, or the swap removes the open dialog.
+- `/dev/ui` shows both in `dev/_overlays.jte`. `SheetAndConfirmE2ETest` drives them from the
+  keyboard at phone and desktop size, and swipes the phone sheet closed.
+
 ## Styling: Tailwind
 
 The standalone CLI (no Node) compiles `src/main/css/app.css` into
@@ -389,62 +452,6 @@ The standalone CLI (no Node) compiles `src/main/css/app.css` into
   `processResources`). Without `task install` it stops with "run `task install`".
 - Tailwind v4 is configured in CSS (`@theme`, `@source`), there is no `tailwind.config.js`. It
   only looks for class names in the templates and in `app.js`.
-
-### Design tokens, themes and fonts (R1, #64)
-
-`src/main/css/app.css` holds the redesign's colour tokens as CSS variables `--mm-*` (plan
-§3.2, Appendix A). `:root` is **Moonlight** (light); `:root[data-theme="dark"]` is **Midnight**;
-with `data-theme="system"` the OS preference picks one (the person's choice, R6, is below). The
-variables are mapped into Tailwind with `@theme inline`, so the utilities exist: `bg-surface`,
-`text-ink`, `border-outline`, `bg-brand`, `text-slot-ink`, `shadow-sticker-2`. The old green
-`brand-50…800` scale is gone (R5d, #96): nothing used it once every page was restyled, and
-`UiGuardTest` now fails on a `brand-<digit>` or `stone-` class, or a raw palette colour, in any
-template or `app.js`, and on the old scale in `app.css`.
-
-- Each theme's contrast is checked by `ContrastTokensTest`: every pair of Appendix C must meet
-  its WCAG minimum in both themes, and the tests fail on a bad token. Change a colour and the
-  test tells you which pair broke.
-- Fonts: Fredoka (headings) and Nunito (text) are self-hosted `woff2` in `static/fonts/` (SIL
-  OFL, see `FONTS.md` there). `app.css` declares them with `font-display: swap`, and
-  `base.jte` preloads the two above the fold. Fredoka has no Latin Extended-A glyphs, so a
-  Hungarian ő or ű in a heading is drawn by the next family in `--font-display`, **Nunito** (its
-  latin-ext file), then the system faces; Fredoka draws the rest (#71). `FontFallbackTest` and
-  the E2E `FontFallbackE2ETest` prove the chain. Neither font has `tnum`, so digits are
-  proportional.
-- The page background is `surface` with a faint dot pattern (one `radial-gradient` in `app.css`).
-  The dots and the colour show on every page: R4 removed the old `bg-stone-100` utility from
-  `<body>`, which had been overriding the base rule.
-- `<html data-theme>` and the two `theme-color` metas (light `#6d3fe0`, dark `#130c2e`) are in
-  `base.jte`. The theme is the person's choice (R6, below).
-
-### Theme preference (R6, #87)
-
-The theme is **light** (Moonlight), **dark** (Midnight) or **system** (follow the device's
-`prefers-color-scheme`, the default). It is kept in the cookie `mm_theme`, like `mm_lang` (UI-D8);
-per user in the database comes later, together with the per-user language.
-- **The server only reads it.** `ViewContextAdvice` turns the cookie into `ViewContext.theme()`
-  (`shared.web.Theme`; a missing or unknown value is `system`), and `base.jte` writes
-  `<html data-theme="…">` from it, so the first paint already has the right colours and nothing
-  flashes. The sign-in and error pages share `base.jte`, so they follow the cookie too. The two
-  `theme-color` metas get a `media` value from `Theme.themeColorMedia`: for `system` each applies
-  to its own colour scheme; for an explicit choice only the chosen one applies, so the browser's own
-  bars match the page even when the device prefers the other scheme.
-- **The browser writes it.** The theme control (`layout/_theme_switch.jte`, three buttons made by
-  `layout/_theme_button.jte`: Light, Dark, System) sits in the phone's avatar menu and in the
-  desktop sidebar (labels become screen-reader-only and the buttons stack when the sidebar is
-  collapsed). The Alpine component `theme` in `app.js` sets the cookie (`Path=/`, one year,
-  `SameSite=Lax`, `Secure` on https, not `HttpOnly` because the script writes it), flips
-  `data-theme`, moves the metas' `media` and sets `aria-pressed` on every theme button, so the
-  phone's and the desktop's copies agree. No request is sent, so there is no state-changing GET and
-  no CSRF question. The server renders `aria-pressed` from the cookie.
-- **CSS:** no change was needed. `:root` is Moonlight, `[data-theme="dark"]` is Midnight, and the
-  `prefers-color-scheme: dark` block applies only when `data-theme` is neither `light` nor `dark`,
-  so an explicit choice beats the device.
-- **Tests:** `ThemeTest`, `ViewContextAdviceTest` and `AppShellPagesTest` cover the
-  cookie, the fallback and the markup. `ThemePreferenceE2ETest` loads the sign-in page with
-  JavaScript off and each cookie value (so `data-theme` must come from the server's HTML), then
-  chooses each theme in the real shell at 390 and 1280 px with the device set to dark, reloads, and
-  checks the cookie's attributes.
 
 ## Client-side JavaScript (all local, no CDN, no build step)
 

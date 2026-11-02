@@ -8,9 +8,8 @@ paths:
 
 # Web UI: JTE, htmx, Alpine, Tailwind, i18n, PWA
 
-> A redesign (tokens, `ui/` components, app shell, themes, fonts) is planned in
-> `plan-ui-redesign.md`. Until its phases land, the rules below apply as written; the plan's R8
-> rewrites this file to match what was built.
+> The design system (tokens, components, shell) is specified in `plan-ui-redesign.md`; this file
+> is the rules for what was built.
 
 - **Mobile-first.** Design for a ~375 px phone first, then enhance for tablet/desktop
   (`md:`/`lg:`). The week view is a list of days on phone and a table from `lg` (1024 px). Touch targets ≥ 44 px.
@@ -37,15 +36,16 @@ paths:
   has `tnum`, so do not rely on `tabular-nums`. The old green `brand-50…800` scale is gone (R5d):
   `UiGuardTest` fails on a `brand-<digit>` or `stone-` class, or a raw palette colour (`bg-white`,
   `text-red-600`), in any template or `app.js`, and on the old scale in `app.css`.
-- **Templates and `ViewContext`:** every template declares `@param ViewContext ctx` (translations,
-  CSRF token; `ViewContextAdvice` adds it to every model) and wraps pages in
-  `@template.layout.base(ctx = ctx, title = ..., content = @`...`)`. A URL that serves a page and
-  a fragment returns `Htmx.view(request, response, "x/_fragment", "x/page")` (adds `Vary`).
 - **CSP (`SecurityHeadersFilter`):** no inline `<script>`, no `onclick=`-style handlers, no
   `style=` attributes, no CDN. Alpine's CSP build only understands names, so write
   `x-data="menu"` / `x-on:click="toggle"` and register `Alpine.data("menu", ...)` in
   `static/js/app.js`. `UiGuardTest` checks the templates. Vendored scripts and their SHA-256 are
   listed in `static/js/VENDORED.md`.
+- Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.
+- **Templates and `ViewContext`:** every template declares `@param ViewContext ctx` (translations,
+  CSRF token; `ViewContextAdvice` adds it to every model) and wraps pages in
+  `@template.layout.base(ctx = ctx, title = ..., content = @`...`)`. A URL that serves a page and
+  a fragment returns `Htmx.view(request, response, "x/_fragment", "x/page")` (adds `Vary`).
 - **Form posts:** success ends with `Htmx.redirect(request, response, url)` (`HX-Redirect` for htmx,
   `303` otherwise; never a plain 302, which htmx would swap into the form). A rejected form returns
   its own fragment with 422 (409 for an `@Version` conflict).
@@ -67,7 +67,9 @@ paths:
   extra attributes such as `hx-post`; pass `Map.of()` for none. JTE allows no `@for` or `@if` in
   attribute names, so the map goes through `HtmlAttributes.render` (escapes values, refuses odd
   names). Do not pass raw attribute text in a content block: `UiGuardTest` reads it as visible
-  text. An icon-only button keeps an `sr-only` label from `ctx.t`. `ui/_fab.jte` is the add
+  text. An icon-only button keeps an `sr-only` label from `ctx.t`. A link that looks like a button
+  (sign in, back home, and `meal/_link_button` in the meal pages) is an `<a>` with the button's
+  classes written out, because `ui/_button` always renders a `<button>`. `ui/_fab.jte` is the add
   button (`floating` pins it above the phone's tab bar). Classes are written out in full in
   these fragments. The style guide `/dev/ui` (`shared.web.DevUiController`, dev profile only, not
   in `PUBLIC_PATHS`, so it needs a sign-in) shows every icon and button state; a new component
@@ -130,9 +132,7 @@ paths:
   from `Theme.themeColorMedia`. `ThemePreferenceE2ETest` checks the first paint with JS off.
 - **Sign-in, error and allowlist pages (R5a, R5c, #85):** built only from the `ui/`
   components and tokens, no `brand-\d`/`stone-` class (`UiGuardTest` checks every template). `login/page` and the standalone `error/_message` are one centred `ui/_card`
-  outside the shell; the htmx error fragment is a `danger` `ui/_alert`. `ui/_button` renders a
-  `<button>`, so a link that looks like a button (sign in, back home) is an `<a>` with the button's
-  classes written out. The allowlist remove is a `ui/_confirm` (not `hx-confirm`) whose confirm
+  outside the shell; the htmx error fragment is a `danger` `ui/_alert`. The allowlist remove is a `ui/_confirm` (not `hx-confirm`) whose confirm
   button sends `hx-include="#<id>-email"`, a hidden input beside it, because an address may
   contain a quote and must not be pasted into JSON. The id and the badge tone come from
   `AllowlistRow.domId()` and `badgeTone()`: JTE's `loop` variable does not exist here, and
@@ -150,7 +150,7 @@ paths:
   tone, because the phone tab bar's current tab is the screen's gold highlight. An empty list in a
   card is a dashed `border-border-strong` box; a whole empty page is `ui/_empty`.
 - **Meal pages (#88), `meal/`:** built from the `ui/` components. A link that navigates is
-  `meal/_link_button`, because `ui/_button` always draws a `<button>`. The quick add is a
+  The quick add is a
   name-only form in two copies, one in the phone's `ui/_sheet` and one inline from `md` up, with ids
   that differ by variant. A hidden `form` field says which copy posted, and `QuickAdd.variantOf`
   maps anything unknown to the inline copy, so a hand-edited value cannot reach an element id. A
@@ -176,4 +176,3 @@ paths:
   controller adds `HX-Refresh` when `HX-Current-URL` is that page. Read the scoped resource before
   parsing the other parameters, so a foreign id is 404 before any 400. A freshly swapped form takes a
   few milliseconds to get its htmx listeners: browser tests wait for `.htmx-added` to go before typing.
-- Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.

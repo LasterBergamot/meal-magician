@@ -5,10 +5,10 @@ invite the family, and plan meals day by day: breakfasts, lunches, dinners, and 
 occasions like birthdays or Christmas. Reuse meals, single days and whole weeks; rate what you
 ate. A later AI assistant will learn the household's preferences and draft plans.
 
-> **Status:** Phase 0 (foundation) is deployed (v0.1.0) and Phase 1 (households) has started: you
-> can sign in, create, rename and switch households, invite people by e-mail link, and manage
-> the members (remove, leave, hand over ownership). The planner itself is still to come. The plan, decisions and phases are in
-> [`PLAN.md`](PLAN.md); the planned redesign of the look and navigation is in
+> **Status:** Phases 0–2 and the week planner (Phase 3) are live: sign in, households, invites,
+> members, the meal library and planning the week, in a storybook design with light and dark themes.
+> Next: reuse and occasions (Phase 4). The plan, decisions and phases are in
+> [`PLAN.md`](PLAN.md); the redesign of the look and navigation is in
 > [`plan-ui-redesign.md`](plan-ui-redesign.md).
 
 ## Stack
@@ -72,12 +72,13 @@ meal-magician/
 ├── Taskfile.yml, scripts/    # task entry point; doctor.sh (tool check), install-tailwind.sh (pinned CLI download), serve.sh (app + Tailwind watch), generate-icons.py (wizard icons from one drawing), check_docs_touched.sh (CI docs check), e2e_needed.sh (CI: skip E2E for docs-only PRs), sync-wiki.sh (CI wiki mirror)
 ├── lombok.config, config/checkstyle/   # Lombok settings; Checkstyle Javadoc rules
 ├── src/main/java/hu/lasterbergamot/mealmagician/   # app class + one package per module (identity, household, catalog, planning, feedback, sharing, shared); shared/i18n (translations), shared/web (layout plumbing, CSP filter, error pages)
-├── src/main/jte/             # JTE templates: layout/, ui/ (components), household/, meal/, plan/, error/ (fragments are _*.jte)
+├── src/main/jte/             # JTE templates: layout/, ui/ (components), dev/ (style guide), login/, error/, household/, admin/, meal/, plan/ (fragments are _*.jte)
 ├── src/main/css/app.css      # Tailwind input; the output static/css/app.css is generated and not committed
 ├── compose.yml               # local Postgres 17 + pgvector (`task up`)
 ├── .env.example              # variables for local runs (copy to .env, git-ignored)
-├── src/main/resources/       # application.yml (+ -dev, -postgres profiles), messages_{hu,en}.properties, static/ (js/ vendored htmx + Alpine CSP, icons/, manifest, sw.js), db/migration/{common,postgresql} (Flyway)
-├── src/test/java/…           # guard tests (ModularityTests, UiGuardTest, EveryEndpointNeedsSignInTests, DocsToolingTests), shared/web slice tests, persistence/ (H2 + Testcontainers Postgres), unit tests
+├── src/main/resources/       # application.yml (+ -dev, -postgres profiles), messages_{hu,en}.properties, static/ (js/ vendored htmx + Alpine CSP, fonts/ self-hosted, icons/, manifest, sw.js), db/migration/{common,postgresql} (Flyway)
+├── src/test/java/…           # guard tests (ModularityTests, UiGuardTest, EveryEndpointNeedsSignInTests, DocsToolingTests), tenant/ (isolation), shared/web slice tests, persistence/ (H2 + Testcontainers Postgres), unit tests
+├── src/e2eTest/java/…            # Playwright browser suites (sign-in, shell, meal pages, week view and editing, themes), run by `task test-e2e`
 ├── .claude/
 │   ├── agents/               # convention-reviewer (from ai-common)
 │   ├── context/              # workflow, PR checklist, issues, docs map, audit, claude-code
