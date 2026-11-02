@@ -35,6 +35,9 @@ class PlanReuseE2ETest {
   private static final String BASE_URL =
       System.getProperty("e2e.baseUrl", "http://localhost:18080");
 
+  /** Tailwind's {@code lg} breakpoint: the week is a table from this width, a list below it. */
+  private static final int DESKTOP_FROM = 1024;
+
   private static Playwright playwright;
   private static Browser browser;
 
@@ -128,9 +131,32 @@ class PlanReuseE2ETest {
         .setState(com.microsoft.playwright.options.WaitForSelectorState.DETACHED);
   }
 
-  /** The visible box of one day and slot type (the phone's row or the desktop's cell). */
+  /**
+   * The box of one day and slot type in the layout this window shows: the phone's row (an {@code
+   * li}) below {@code lg}, the desktop's cell (a {@code div}) from {@code lg} up. The window's
+   * width picks it, not {@code :visible}. Right after a save reloads the page, the stylesheet may
+   * not apply yet, and then both layouts count as visible (a strict-mode violation).
+   */
   private static Locator group(Page page, String key) {
-    return page.locator("[data-group='" + key + "']:visible");
+    String tag = page.viewportSize().width < DESKTOP_FROM ? "li" : "div";
+    return page.locator(tag + "[data-group='" + key + "']");
+  }
+
+  /** The add control of one day and slot type, in the layout this window shows. */
+  private static Locator add(Page page, String key) {
+    return group(page, key).locator("a[data-add='" + key + "']");
+  }
+
+  /**
+   * The reuse link of one day, in the layout this window shows: the phone's day section (by its
+   * {@code day-<date>} id) below {@code lg}, the desktop table's day header from {@code lg} up. The
+   * link sits in the day's header, not in a slot group, so it is reached through the day's
+   * container. Both layouts are in the page at once, and the week page's own section wraps the
+   * table, so a bare {@code section} would match both. The width picks it, as for {@link #group}.
+   */
+  private static Locator reuse(Page page, LocalDate day) {
+    String scope = page.viewportSize().width < DESKTOP_FROM ? "#day-" + day + " " : "table ";
+    return page.locator(scope + "a[data-reuse='" + day + "']");
   }
 
   private static Locator item(Page page, String key, String text) {
@@ -145,7 +171,7 @@ class PlanReuseE2ETest {
 
   /** Opens the reuse sheet of one day and waits until htmx has settled its content. */
   private static void openReuse(Page page, LocalDate day) {
-    click(page.locator("a[data-reuse='" + day + "']:visible"));
+    click(reuse(page, day));
     page.locator("dialog#reuse-sheet[open]").waitFor();
     sheetLoaded(page, "#save-template-form, #reuse-sheet-body li, #reuse-sheet-body p");
   }
@@ -162,7 +188,7 @@ class PlanReuseE2ETest {
   }
 
   private static void quickAdd(Page page, String key, String name) {
-    click(page.locator("a[data-add='" + key + "']:visible"));
+    click(add(page, key));
     sheetLoaded(page, "#pick-quick-form");
     page.locator("#pick-quick-name").fill(name);
     page.locator("#pick-quick-form button[type=submit]").click();
