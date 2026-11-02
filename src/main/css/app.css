@@ -292,16 +292,6 @@
   .slot-snack { --slot: var(--mm-slot-snack); --slot-soft: var(--mm-slot-snack-soft); --slot-ink: var(--mm-slot-snack-ink); }
 }
 
-/* The brand green of the old shell. Kept only until R5 has restyled every page (plan §6.1);
-   R5d deletes this scale and the stone-* classes together. */
-@theme {
-  --color-brand-50: #f0fdf4;
-  --color-brand-100: #dcfce7;
-  --color-brand-600: #16a34a;
-  --color-brand-700: #15803d;
-  --color-brand-800: #166534;
-}
-
 @layer base {
   /* Alpine hides x-cloak elements until it has started. */
   [x-cloak] {

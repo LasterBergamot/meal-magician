@@ -303,7 +303,9 @@ The standalone CLI (no Node) compiles `src/main/css/app.css` into
 with `data-theme="system"` the OS preference picks one (the person's choice, R6, is below). The
 variables are mapped into Tailwind with `@theme inline`, so the utilities exist: `bg-surface`,
 `text-ink`, `border-outline`, `bg-brand`, `text-slot-ink`, `shadow-sticker-2`. The old green
-`brand-50…800` scale is still there until R5 has restyled every page; R5d removes it.
+`brand-50…800` scale is gone (R5d, #96): nothing used it once every page was restyled, and
+`UiGuardTest` now fails on a `brand-<digit>` or `stone-` class, or a raw palette colour, in any
+template or `app.js`, and on the old scale in `app.css`.
 
 - Each theme's contrast is checked by `ContrastTokensTest`: every pair of Appendix C must meet
   its WCAG minimum in both themes, and the tests fail on a bad token. Change a colour and the
@@ -388,7 +390,8 @@ expressions like `open = !open`, so a template only names a component (`x-data="
   Anonymous switches change only the cookie. Because the switch is a CSRF-protected POST, another
   site cannot change a person's stored language.
 - Guard tests (`UiGuardTest`): both bundles have the same keys and placeholders, every
-  `ctx.t("key")` in a template exists, and no template contains hard-coded visible text.
+  `ctx.t("key")` in a template exists, no template contains hard-coded visible text, and no
+  template or `app.js` uses an old or raw palette colour.
 
 ## Security headers
 

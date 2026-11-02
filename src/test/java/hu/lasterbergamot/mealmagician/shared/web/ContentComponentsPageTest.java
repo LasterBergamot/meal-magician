@@ -25,7 +25,8 @@ import org.springframework.test.web.servlet.MockMvc;
  * (the default language).
  *
  * <p>The last tests guard the palette: the new fragments may use only the design tokens, never a
- * raw colour such as {@code brand-700} or {@code stone-100} (the old classes are removed in R5d).
+ * raw colour such as {@code brand-700} or {@code stone-100} ({@code UiGuardTest} bans them
+ * everywhere since R5d).
  */
 @WebSliceTest
 @ActiveProfiles("dev")

@@ -23,7 +23,9 @@ import org.junit.jupiter.api.Test;
  *   <li>no hard-coded visible text: every word must come from {@code ctx.t("key")};
  *   <li>every {@code t("key")} used in a template exists in both message bundles;
  *   <li>nothing the Content-Security-Policy would block: no inline {@code <script>}, no inline
- *       event handlers ({@code onclick=}), no {@code style=} attributes.
+ *       event handlers ({@code onclick=}), no {@code style=} attributes;
+ *   <li>no old or raw palette colours (R5d): templates and {@code app.js} use only the design
+ *       tokens, and {@code app.css} no longer defines the old {@code brand-*} or stone scale.
  * </ul>
  *
  * The checks read the template sources, so a violation fails here, not in a browser console. The
@@ -39,6 +41,16 @@ class UiGuardTest {
   private static final Pattern TAG = Pattern.compile("<[^>]*>", Pattern.DOTALL);
   private static final Pattern LETTER = Pattern.compile("\\p{L}");
   private static final Pattern TRANSLATION_KEY = Pattern.compile("\\.t\\(\"([^\"]+)\"");
+  private static final Path APP_SCRIPT = Path.of("src/main/resources/static/js/app.js");
+  private static final Path APP_STYLESHEET = Path.of("src/main/css/app.css");
+  // The old green scale and stone greys (plan-ui-redesign.md R5d), and any raw Tailwind palette
+  // colour on a colour utility: pages use the design tokens only (web-ui.md).
+  private static final Pattern OLD_PALETTE =
+      Pattern.compile(
+          "(?<!\\w)(?:brand-\\d|stone-)"
+              + "|(?<![\\w-])(?:bg|text|border|ring|outline|fill|stroke|divide|from|via|to|decoration|placeholder|caret)-"
+              + "(?:white|black|(?:slate|gray|zinc|neutral|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\\d+)(?![\\w-])");
+  private static final Pattern OLD_SCALE_IN_CSS = Pattern.compile("--color-(?:brand-\\d|stone-)");
 
   // ---- the guards over the real templates ----
 
@@ -121,6 +133,26 @@ class UiGuardTest {
         .isEmpty();
   }
 
+  @Test
+  void templatesAndAppScriptUseOnlyDesignTokenColours() {
+    List<String> violations = new ArrayList<>();
+    for (Path template : templates()) {
+      violations.addAll(prefixed(template, oldPaletteClassesIn(withoutComments(read(template)))));
+    }
+    violations.addAll(prefixed(APP_SCRIPT, oldPaletteClassesIn(read(APP_SCRIPT))));
+
+    assertThat(violations)
+        .as("use the design tokens (web-ui.md), not the old or raw palette")
+        .isEmpty();
+  }
+
+  @Test
+  void stylesheetHasNoOldBrandScale() {
+    assertThat(oldScaleInStylesheet(read(APP_STYLESHEET)))
+        .as("app.css must not define the old brand-* or stone scale (R5d)")
+        .isEmpty();
+  }
+
   // ---- the guards guard: tests of the scanner ----
 
   @Test
@@ -178,6 +210,38 @@ class UiGuardTest {
     assertThat(cspViolationsIn("<a href=\"javascript:go()\">${x}</a>")).isNotEmpty();
     assertThat(cspViolationsIn("<script src=\"/js/app.js\" defer></script>")).isEmpty();
     assertThat(cspViolationsIn("<button x-on:click=\"toggle\">${x}</button>")).isEmpty();
+  }
+
+  @Test
+  void paletteScannerFlagsOldAndRawColours() {
+    assertThat(oldPaletteClassesIn("<p class=\"text-brand-700\">")).hasSize(1);
+    assertThat(oldPaletteClassesIn("<p class=\"bg-stone-100 md:hover:bg-white\">")).hasSize(2);
+    assertThat(oldPaletteClassesIn("<p class=\"border-red-500 ring-blue-300 text-black\">"))
+        .hasSize(3);
+  }
+
+  @Test
+  void paletteScannerAllowsDesignTokensAndNonColourWords() {
+    assertThat(
+            oldPaletteClassesIn(
+                "<p class=\"bg-brand bg-brand-soft text-brand-ink bg-accent bg-accent-soft"
+                    + " text-on-accent\">"))
+        .isEmpty();
+    assertThat(
+            oldPaletteClassesIn(
+                "<p class=\"shadow-sticker-2 outline-offset-2 border-border-strong size-11"
+                    + " bg-transparent text-slot-ink bg-slot-soft\">"))
+        .isEmpty();
+    assertThat(
+            oldPaletteClassesIn("<path stroke-width=\"2\" stroke-linecap=\"round\" fill=\"none\">"))
+        .isEmpty();
+    assertThat(oldPaletteClassesIn("milestone-1 cornerstone")).isEmpty();
+  }
+
+  @Test
+  void stylesheetScannerFlagsTheOldScaleOnly() {
+    assertThat(oldScaleInStylesheet("  --color-brand-700: #15803d;")).hasSize(1);
+    assertThat(oldScaleInStylesheet("  --color-brand-soft: var(--mm-brand-soft);")).isEmpty();
   }
 
   // ---- implementation of the scanner ----
@@ -242,6 +306,25 @@ class UiGuardTest {
       if (tag.contains("javascript:")) {
         found.add("javascript: URL in " + tag);
       }
+    }
+    return found;
+  }
+
+  /** Old-scale and raw palette colours on colour utilities, in the order they appear. */
+  static List<String> oldPaletteClassesIn(String source) {
+    return allMatches(OLD_PALETTE, source);
+  }
+
+  /** The {@code --color-brand-<digit>} and {@code --color-stone} definitions of the stylesheet. */
+  static List<String> oldScaleInStylesheet(String stylesheet) {
+    return allMatches(OLD_SCALE_IN_CSS, stylesheet);
+  }
+
+  private static List<String> allMatches(Pattern pattern, String source) {
+    List<String> found = new ArrayList<>();
+    Matcher matcher = pattern.matcher(source);
+    while (matcher.find()) {
+      found.add(matcher.group());
     }
     return found;
   }
