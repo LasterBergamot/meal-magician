@@ -2,9 +2,12 @@ package hu.lasterbergamot.mealmagician.catalog;
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * The input rules for meals, recipe links and tags, in one place so the service, its tests and
@@ -106,6 +109,23 @@ final class MealRules {
       byKey.putIfAbsent(tagKey(display), display);
     }
     return byKey;
+  }
+
+  /**
+   * Cleans the occasion types a meal suits into a set in enum order. Repeats and {@code null}
+   * entries are dropped rather than refused: the types come from checkboxes, so there is nothing
+   * the person could have typed wrong.
+   *
+   * @param raw the wanted types, may be {@code null}
+   * @return the distinct types in the order of the {@link OccasionType} constants; empty for {@code
+   *     null}
+   */
+  static Set<OccasionType> occasionTypes(Collection<OccasionType> raw) {
+    EnumSet<OccasionType> types = EnumSet.noneOf(OccasionType.class);
+    if (raw != null) {
+      raw.stream().filter(Objects::nonNull).forEach(types::add);
+    }
+    return types;
   }
 
   /**

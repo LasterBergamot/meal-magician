@@ -84,6 +84,50 @@ class PostgresMealTests extends AbstractPostgresIntegrationTest {
         .isInstanceOf(DataIntegrityViolationException.class);
   }
 
+  @Test
+  void occasionTypesAreStoredOnPostgres() {
+    long anna = HouseholdTestSupport.insertUser(jdbc, "pg-occ-anna");
+    long annasHome = households.create(anna, "Occ anna").id();
+    MealView cake =
+        meals.create(
+            anna,
+            annasHome,
+            new MealDetails("Cake", null, null, null, List.of(OccasionType.BIRTHDAY)));
+
+    assertThat(meals.find(anna, annasHome, cake.id()).occasionTypes())
+        .containsExactly(OccasionType.BIRTHDAY);
+  }
+
+  @Test
+  void theForeignKeyRefusesACrossHouseholdOccasionTypeOnPostgres() {
+    long anna = HouseholdTestSupport.insertUser(jdbc, "pg-occ-fk-anna");
+    long bela = HouseholdTestSupport.insertUser(jdbc, "pg-occ-fk-bela");
+    long annasHome = households.create(anna, "Occ fk anna").id();
+    long belasHome = households.create(bela, "Occ fk bela").id();
+    long cake = meals.quickAdd(anna, annasHome, "Cake").id();
+
+    assertThatThrownBy(() ->
+            jdbc.update(
+                "insert into meal_occasion_type (meal_id, occasion_type, household_id) values (?, 'PARTY', ?)",
+                cake,
+                belasHome))
+        .isInstanceOf(DataIntegrityViolationException.class);
+  }
+
+  @Test
+  void theCheckConstraintRefusesAnUnknownOccasionTypeOnPostgres() {
+    long anna = HouseholdTestSupport.insertUser(jdbc, "pg-occ-ck-anna");
+    long annasHome = households.create(anna, "Occ ck anna").id();
+    long cake = meals.quickAdd(anna, annasHome, "Cake").id();
+
+    assertThatThrownBy(() ->
+            jdbc.update(
+                "insert into meal_occasion_type (meal_id, occasion_type, household_id) values (?, 'FEAST', ?)",
+                cake,
+                annasHome))
+        .isInstanceOf(DataIntegrityViolationException.class);
+  }
+
   private static List<String> names(List<MealView> found) {
     return found.stream().map(MealView::name).toList();
   }

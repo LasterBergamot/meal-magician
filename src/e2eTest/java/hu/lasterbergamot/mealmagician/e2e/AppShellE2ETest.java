@@ -99,10 +99,10 @@ class AppShellE2ETest {
       Locator current = page.locator(NAV + ":visible a[aria-current='page']");
       assertThat(current.count()).as("one tab is current on %s", device).isEqualTo(1);
       assertThat(current.getAttribute("href")).isEqualTo("/households");
-      // Meals and Occasions have no page yet, so they are not in the navigation at all.
+      // Occasions has no page yet, so it is not in the navigation at all.
       assertThat(page.locator(NAV + ":visible a").count())
-          .as("only Plan and Household are listed")
-          .isEqualTo(2);
+          .as("only Plan, Meals and Household are listed")
+          .isEqualTo(3);
     }
   }
 

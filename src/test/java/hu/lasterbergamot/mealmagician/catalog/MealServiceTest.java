@@ -389,6 +389,125 @@ class MealServiceTest {
         .isInstanceOf(DataIntegrityViolationException.class);
   }
 
+  @Test
+  void occasionTypesAreStoredReadBackAndReplacedLikeTags() {
+    MealView cake =
+        meals.create(
+            anna,
+            annasHome,
+            new MealDetails(
+                "Cake",
+                null,
+                null,
+                List.of(),
+                List.of(OccasionType.PARTY, OccasionType.BIRTHDAY, OccasionType.PARTY)));
+
+    assertThat(cake.occasionTypes()).containsExactly(OccasionType.BIRTHDAY, OccasionType.PARTY);
+    assertThat(meals.find(anna, annasHome, cake.id()).occasionTypes())
+        .containsExactly(OccasionType.BIRTHDAY, OccasionType.PARTY);
+
+    MealView edited =
+        meals.edit(
+            anna,
+            annasHome,
+            cake.id(),
+            new MealDetails(
+                "Cake", null, null, List.of(), List.of(OccasionType.PARTY, OccasionType.HOLIDAY)));
+
+    assertThat(edited.occasionTypes()).containsExactly(OccasionType.HOLIDAY, OccasionType.PARTY);
+    assertThat(
+            jdbc.queryForList(
+                "select occasion_type from meal_occasion_type where meal_id = ? order by 1",
+                String.class,
+                cake.id()))
+        .containsExactly("HOLIDAY", "PARTY");
+  }
+
+  @Test
+  void searchResultsCarryTheOccasionTypesOfEachMeal() {
+    meals.create(
+        anna,
+        annasHome,
+        new MealDetails("Roast", null, null, List.of(), List.of(OccasionType.HOLIDAY)));
+    meals.quickAdd(anna, annasHome, "Toast");
+
+    List<MealView> found = meals.search(anna, annasHome, new MealSearch(null, null, false));
+
+    assertThat(found)
+        .extracting(MealView::name, MealView::occasionTypes)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple("Roast", List.of(OccasionType.HOLIDAY)),
+            org.assertj.core.groups.Tuple.tuple("Toast", List.of()));
+  }
+
+  @Test
+  void archivingKeepsTheOccasionTypes() {
+    MealView cake =
+        meals.create(
+            anna,
+            annasHome,
+            new MealDetails("Cake", null, null, List.of(), List.of(OccasionType.BIRTHDAY)));
+
+    assertThat(meals.archive(anna, annasHome, cake.id()).occasionTypes())
+        .containsExactly(OccasionType.BIRTHDAY);
+  }
+
+  @Test
+  void theDatabaseRefusesAnOccasionTypeLinkAcrossHouseholds() {
+    MealView annasStew = addWithTags("Stew");
+
+    assertThatThrownBy(() ->
+            jdbc.update(
+                "insert into meal_occasion_type (meal_id, occasion_type, household_id) values (?, 'PARTY', ?)",
+                annasStew.id(),
+                belasHome))
+        .isInstanceOf(DataIntegrityViolationException.class);
+  }
+
+  @Test
+  void theDatabaseRefusesAnUnknownOccasionType() {
+    MealView annasStew = addWithTags("Stew");
+
+    assertThatThrownBy(() ->
+            jdbc.update(
+                "insert into meal_occasion_type (meal_id, occasion_type, household_id) values (?, 'FEAST', ?)",
+                annasStew.id(),
+                annasHome))
+        .isInstanceOf(DataIntegrityViolationException.class);
+  }
+
+  @Test
+  void anEditFromAnOutdatedFormIsRefusedAndChangesNothing() {
+    MealView stew = addWithTags("Stew");
+    MealView first =
+        meals.edit(anna, annasHome, stew.id(), details("Stew 2", null, null), stew.version());
+
+    assertThatThrownBy(() ->
+            meals.edit(anna, annasHome, stew.id(), details("Stew 3", null, null), stew.version()))
+        .isInstanceOf(org.springframework.dao.OptimisticLockingFailureException.class);
+    assertThat(meals.find(anna, annasHome, stew.id()).name()).isEqualTo("Stew 2");
+    assertThat(first.version()).isGreaterThan(stew.version());
+  }
+
+  @Test
+  void anEditFromTheCurrentFormIsAccepted() {
+    MealView stew = addWithTags("Stew");
+
+    MealView edited =
+        meals.edit(anna, annasHome, stew.id(), details("Stew 2", null, null), stew.version());
+
+    assertThat(edited.name()).isEqualTo("Stew 2");
+  }
+
+  @Test
+  void anotherHouseholdsMealIsNotFoundEvenWhenTheEditIsAlsoInvalid() {
+    MealView annasStew = addWithTags("Stew");
+
+    assertThatThrownBy(
+            () -> meals.edit(bela, belasHome, annasStew.id(), details("  ", null, null), 0))
+        .isInstanceOf(MealNotFoundException.class);
+  }
+
   private static List<String> names(List<MealView> found) {
     return found.stream().map(MealView::name).toList();
   }

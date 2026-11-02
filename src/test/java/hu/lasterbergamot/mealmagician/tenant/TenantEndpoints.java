@@ -56,5 +56,18 @@ public final class TenantEndpoints {
           TenantEndpoint.ownerOnly(
               POST,
               "/households/invites/{inviteId}/revoke",
-              w -> Map.of("inviteId", w.homeInviteId())));
+              w -> Map.of("inviteId", w.homeInviteId())),
+          // meals (catalog): every member may use the library, so none is owner-only
+          TenantEndpoint.forMembers(GET, "/meals", w -> NONE),
+          TenantEndpoint.forMembers(GET, "/meals/new", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/meals", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/meals/quick", w -> NONE),
+          TenantEndpoint.forMembers(GET, "/meals/{mealId}", w -> Map.of("mealId", w.homeMealId())),
+          TenantEndpoint.forMembers(
+              GET, "/meals/{mealId}/edit", w -> Map.of("mealId", w.homeMealId())),
+          TenantEndpoint.forMembers(POST, "/meals/{mealId}", w -> Map.of("mealId", w.homeMealId())),
+          TenantEndpoint.forMembers(
+              POST, "/meals/{mealId}/archive", w -> Map.of("mealId", w.homeMealId())),
+          TenantEndpoint.forMembers(
+              POST, "/meals/{mealId}/restore", w -> Map.of("mealId", w.homeMealId())));
 }

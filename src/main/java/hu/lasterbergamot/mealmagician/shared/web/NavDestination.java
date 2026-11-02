@@ -16,8 +16,8 @@ public enum NavDestination {
   /** The planner. Until Phase 3 it points at the hello page, which is also {@code /}. */
   PLAN("/", "nav.plan", IconName.CALENDAR, true),
 
-  /** The meal catalogue (Phase 2): not built yet, so hidden. */
-  MEALS("/meals", "nav.meals", IconName.MEALS, false),
+  /** The meal library (Phase 2, issue #88). */
+  MEALS("/meals", "nav.meals", IconName.MEALS, true),
 
   /** Dated occasions (Phase 4): not built yet, so hidden. */
   OCCASIONS("/occasions", "nav.occasions", IconName.GIFT, false),
@@ -67,7 +67,7 @@ public enum NavDestination {
   /**
    * The destinations to show in the navigation, in tab order.
    *
-   * @return the available destinations in declaration order (Plan, then Household today)
+   * @return the available destinations in declaration order (Plan, Meals, then Household today)
    */
   public static List<NavDestination> visible() {
     return Arrays.stream(values()).filter(destination -> destination.available).toList();

@@ -11,6 +11,8 @@ import java.util.List;
  * @param notes the notes, or {@code null} when there are none
  * @param recipeUrl the recipe link, or {@code null} when there is none
  * @param tags the tag names, ordered case-insensitively; empty when the meal has none
+ * @param occasionTypes the occasion types the meal suits, in the order of the {@link OccasionType}
+ *     constants; empty when it suits none in particular
  * @param archived whether the meal is out of the default library
  * @param version the optimistic-lock version; a page that edits the meal sends it back so a stale
  *     form is noticed
@@ -21,5 +23,6 @@ public record MealView(
     String notes,
     String recipeUrl,
     List<String> tags,
+    List<OccasionType> occasionTypes,
     boolean archived,
     long version) {}

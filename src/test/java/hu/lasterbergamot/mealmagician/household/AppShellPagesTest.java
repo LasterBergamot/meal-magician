@@ -99,7 +99,7 @@ class AppShellPagesTest {
         .andExpect(content().string(containsString("href=\"/households\"")))
         .andExpect(content().string(containsString("aria-current=\"page\"")))
         .andExpect(content().string(containsString("href=\"/\"")))
-        .andExpect(content().string(not(containsString("href=\"/meals\""))))
+        .andExpect(content().string(containsString("href=\"/meals\"")))
         .andExpect(content().string(not(containsString("href=\"/occasions\""))));
   }
 

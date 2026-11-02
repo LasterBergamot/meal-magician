@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 
+import hu.lasterbergamot.mealmagician.catalog.MealService;
 import hu.lasterbergamot.mealmagician.household.CurrentHousehold;
 import hu.lasterbergamot.mealmagician.household.HouseholdService;
 import hu.lasterbergamot.mealmagician.household.HouseholdTestSupport;
@@ -57,6 +58,7 @@ class TenantIsolationTests {
   @Autowired private List<RequestMappingHandlerMapping> handlerMappings;
   @Autowired private HouseholdService households;
   @Autowired private InviteService invites;
+  @Autowired private MealService meals;
   @Autowired private JdbcTemplate jdbc;
 
   static Stream<TenantEndpoint> registered() {
@@ -282,7 +284,7 @@ class TenantIsolationTests {
   }
 
   private static TenantWorld world() {
-    return new TenantWorld(1, 2, 10, 11, 20, 30, 40);
+    return new TenantWorld(1, 2, 10, 11, 20, 30, 40, 50);
   }
 
   /** "METHOD /pattern" of every mapped handler that works on a household. */
@@ -349,8 +351,10 @@ class TenantIsolationTests {
         OffsetDateTime.now());
     long inviteId =
         invites.create(homeId, homeOwner, "guest@example.com", InviteExpiry.HOURS_24).invite().id();
+    long mealId = meals.quickAdd(homeOwner, homeId, "Home stew").id();
     currentWorld =
-        new TenantWorld(homeId, otherId, homeOwner, homeMember, otherOwner, outsider, inviteId);
+        new TenantWorld(
+            homeId, otherId, homeOwner, homeMember, otherOwner, outsider, inviteId, mealId);
     return currentWorld;
   }
 }

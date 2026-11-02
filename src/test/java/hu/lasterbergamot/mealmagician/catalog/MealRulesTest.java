@@ -174,4 +174,18 @@ class MealRulesTest {
   void wildcardsAndTheEscapeCharacterInTheSearchTextAreEscaped() {
     assertThat(MealRules.namePattern("50% _ wow!")).isEqualTo("%50!% !_ wow!!%");
   }
+
+  @Test
+  void occasionTypesAreDistinctAndInEnumOrder() {
+    assertThat(
+            MealRules.occasionTypes(
+                java.util.Arrays.asList(
+                    OccasionType.OTHER, null, OccasionType.BIRTHDAY, OccasionType.OTHER)))
+        .containsExactly(OccasionType.BIRTHDAY, OccasionType.OTHER);
+  }
+
+  @Test
+  void noOccasionTypesMeansAnEmptySet() {
+    assertThat(MealRules.occasionTypes(null)).isEmpty();
+  }
 }
