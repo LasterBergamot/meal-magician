@@ -57,6 +57,8 @@ public final class TenantEndpoints {
               POST,
               "/households/invites/{inviteId}/revoke",
               w -> Map.of("inviteId", w.homeInviteId())),
+          // plan (planning): every member may plan
+          TenantEndpoint.forMembers(GET, "/plan", w -> NONE),
           // meals (catalog): every member may use the library, so none is owner-only
           TenantEndpoint.forMembers(GET, "/meals", w -> NONE),
           TenantEndpoint.forMembers(GET, "/meals/new", w -> NONE),

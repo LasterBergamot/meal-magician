@@ -2,14 +2,15 @@
 
 What exists in `main` today: the build skeleton, the database, the `identity` module (sign-in), the
 first part of the `household` module (create, rename, switch), the `catalog` module (the meal
-library, services and pages, #88) and the weekly plan's services of the `planning` module, which
-have no pages yet; no other business modules yet.
+library, services and pages, #88) and the `planning` module (the weekly plan's services and the
+week page, `planning/internal/PlanController`); no other business modules yet.
 
 - **Application class** `MealMagicianApplication` starts Spring Boot; everything lives below its
   package `hu.lasterbergamot.mealmagician`.
 - **Modules** (Spring Modulith): `identity`, `household`, `catalog`, `planning`, `feedback`,
   `sharing` and the open shared kernel `shared`. Each has a `package-info.java` that says what the
-  module owns; `catalog` and `planning` have their services, and `catalog` also has the meal pages;
+  module owns; `catalog` and `planning` have their services, `catalog` also has the meal pages and `planning` the week
+  page;
   `feedback` and `sharing` are still empty. The rule: a module's root package is its public API,
   everything else goes in `internal/` and other modules may not import it.
   `ModularityTests` fails the build on a violation and writes module docs to

@@ -131,6 +131,54 @@ behaviour is in [[Current State: Backend]].
   browser test `MealPagesE2ETest` adds, finds, edits, archives and restores a meal at phone and
   desktop size.
 
+## Week view (Phase 3, #97)
+
+The week planner page `GET /plan`, read-only for now. The controller is `PlanController` in
+`planning/internal`, the page models are `IsoWeek`, `WeekPage`, `DayPlan`, `SlotRow`, `SlotGroup`
+and `PlannedMeal`, `WeekPageFactory` builds them and `PlanDates` formats the dates, and the
+templates are in `plan/`. The route is registered in `TenantEndpoints`: a person in no household
+gets 404, and another household's slots never show. Every member may look. The behaviour behind it
+is in [[Current State: Backend]].
+
+- **Route and parameter:** `GET /plan?week=2026-W45`. The `week` value is an ISO week
+  (`YYYY-Www`, Monday to Sunday, so `2026-W53` and `2026-W01` cross the year). It is read with a
+  strict regex and checked against the weeks the year really has; a missing or invalid value means
+  this week, by the application `Clock`. The URL answers an htmx request with the `plan/_week`
+  fragment and any other request with the whole page (`Htmx.view`).
+- **Phone and desktop:** below 1024 px the page shows a week strip (seven day buttons that jump to
+  the day) and seven day sections, each with four slot rows. From 1024 px (`lg`) it shows a table,
+  one column per day and one row per slot type. The table starts at `lg` and not at `md` because
+  at 768 px eight columns are about 80 px each, too narrow for a meal name. Both versions are in
+  the markup and CSS shows one.
+- **Today** is marked in both: the strip's day circle and the table's column header carry
+  `aria-current="date"`, and the day section header and the column header have a gold fill with a
+  "Today" badge.
+- **The stepper** (`plan/_week_stepper.jte`): previous and next are links, so they work without
+  JavaScript. With htmx each fetches its week into the one swap region `#plan-week` and pushes the
+  URL (`HtmlAttributes.htmxFetch`). The arrows and "Back to this week" (shown only when today is
+  outside the shown week) have stable ids (`plan-prev`, `plan-next`, `plan-today`), because htmx
+  gives focus back to the element with the same id after a swap, so a keyboard user stays on the
+  arrow. On a desktop ArrowLeft and ArrowRight click the arrows (the Alpine `weekKeys` component);
+  keys in a field, with a modifier, in a tab list or while a dialog is open are left alone.
+- **Back after a swap:** `htmx-config` has `refreshOnHistoryMiss: true`. History snapshots are off
+  (`historyCacheSize: 0`), so without it a Back after an htmx swap that pushed the URL refetched
+  the page with `HX-Request` and swapped only a fragment into `<body>`. Now a history miss reloads
+  the whole page. This also fixes Back on `/meals`, which had the same fault.
+- **Content:** a slot with meals shows each meal's name, an "Archived" badge for an archived meal
+  (the plan keeps it) and the slot's note; an empty slot is a dashed box with "Nothing planned".
+  The names come from one `MealService.search` of the whole library (archived included), not one
+  lookup per slot.
+- **Templates:** `week.jte` (the page) and `_week.jte` (the swap region), `_week_stepper.jte`,
+  `_strip.jte`, `_day.jte` and `_slot_row.jte` (the phone), `_grid.jte` and `_cell.jte` (the
+  desktop), and `_slot_items.jte` and `_meal_item.jte` (shared). Dates are formatted in the page
+  model and never in a template; the `slot-*` colour class is an `@if` chain so Tailwind finds it.
+  `data-group` and `data-slot-id` are for the tests.
+- **Tests:** `IsoWeekTest` (year boundaries, invalid codes), `PlanPageModelsTest`, `PlanPagesTest`
+  (MockMvc: the page, an htmx fragment, planned meals, another household, a stranger, English) and
+  the browser test `PlanWeekE2ETest` at phone and desktop size.
+- **Not yet:** editing (adding, moving and removing meals, issue #98), swipe to change week, and
+  `/` is still the hello page (it highlights no tab).
+
 ## App shell and navigation (R4, #79)
 
 Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` chooses it when
@@ -147,11 +195,11 @@ Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` 
   readers and a tooltip. It starts collapsed below 1024 px. The choice is kept in `localStorage`
   under `mm.sidebarCollapsed`, for this browser only; every access is in try/catch because some
   browsers refuse storage.
-- **Destinations** (`shared.web.NavDestination`): Plan (`/`; until Phase 3 it is the hello page),
+- **Destinations** (`shared.web.NavDestination`): Plan (`/plan`, the week view; `/` is still the hello page and highlights no tab),
   Meals (`/meals`, the meal library, #88) and Household (`/households`). Occasions (`/occasions`)
   has no page yet, so it is **not listed** (a flag on the enum; switching one on is a one-word
   change). `NavDestination.matching` picks the current tab from the request path, so
-  `/households/members` highlights Household and `/` highlights only Plan.
+  `/households/members` highlights Household and `/` highlights no tab.
 - **The household switcher** (`layout/_household_switcher.jte`) is in both shells. Its button opens
   a `ui/_sheet` (a bottom sheet on a phone, a centred dialog on a desktop) that lists **only the
   person's own households**, built from their memberships (`household.internal.HouseholdNavBean`).
@@ -359,14 +407,15 @@ per user in the database comes later, together with the per-user language.
   SHA-256 are recorded in `VENDORED.md` next to them.
 - `app.js` (ours): registers the Alpine components: `menu` (the avatar menu), `shell` (the sidebar's
   collapsed state and the tab bar's keyboard hiding, R4), `segmented` (arrow keys for the segmented
-  control, R4), `theme` (the cookie and `data-theme`, R6) and `sheet` for the R3 dialogs, which
+  control, R4), `weekKeys` (the week stepper's arrow keys, #97), `theme` (the cookie and `data-theme`, R6) and `sheet` for the R3 dialogs, which
   keeps focus inside and restores it on close.
   It also adds the CSRF header to htmx
   requests from `<meta name="_csrf">` tags, and redirects to `/` on an htmx 401/403.
 - `sw-register.js` registers the service worker.
 
 The layout configures htmx for the strict CSP through a `htmx-config` meta tag: no `eval`, no
-script tags in swapped content, no injected `<style>`, no history snapshots in localStorage.
+script tags in swapped content, no injected `<style>`, no history snapshots in localStorage, and
+a history miss reloads the page (`refreshOnHistoryMiss`).
 Why no inline script anywhere: see "Security headers" below. Alpine's CSP build cannot evaluate
 expressions like `open = !open`, so a template only names a component (`x-data="menu"`,
 `x-on:click="toggle"`) and the logic lives in `app.js`.

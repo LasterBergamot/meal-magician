@@ -108,6 +108,37 @@
       },
     }));
 
+    // The week stepper (plan/_week_stepper.jte): ArrowLeft/ArrowRight go to the previous/next week
+    // (plan section 5). Keys in a field, a tab list's own arrows, modified keys and keys while a
+    // dialog is open are left alone.
+    window.Alpine.data('weekKeys', () => ({
+      step(event) {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+          return;
+        }
+        const target = event.target;
+        if (
+          target instanceof Element &&
+          target.closest('input, textarea, select, [contenteditable], [role="tablist"]')
+        ) {
+          return;
+        }
+        if (document.querySelector('dialog[open]')) {
+          return;
+        }
+        let link = null;
+        if (event.key === 'ArrowLeft') {
+          link = this.$refs.prev;
+        } else if (event.key === 'ArrowRight') {
+          link = this.$refs.next;
+        }
+        if (link) {
+          event.preventDefault();
+          link.click();
+        }
+      },
+    }));
+
     // The theme choice (layout/_theme_switch.jte, UI-D8). The server only reads the cookie
     // "mm_theme" (light, dark or system) to put the right <html data-theme> on first paint; this
     // component is the only writer, so there is no request to protect from CSRF. A choice is

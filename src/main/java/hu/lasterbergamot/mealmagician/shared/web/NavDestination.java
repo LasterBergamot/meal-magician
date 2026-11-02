@@ -13,8 +13,8 @@ import java.util.List;
  */
 public enum NavDestination {
 
-  /** The planner. Until Phase 3 it points at the hello page, which is also {@code /}. */
-  PLAN("/", "nav.plan", IconName.CALENDAR, true),
+  /** The week planner (Phase 3). */
+  PLAN("/plan", "nav.plan", IconName.CALENDAR, true),
 
   /** The meal library (Phase 2, issue #88). */
   MEALS("/meals", "nav.meals", IconName.MEALS, true),
@@ -76,10 +76,10 @@ public enum NavDestination {
   /**
    * Finds the destination a request belongs to, so its tab can be highlighted.
    *
-   * <p>{@code /} matches only itself, because every other path starts with a slash. Any other
-   * destination also matches the pages below it, so {@code /households/members} highlights
-   * Household. Destinations that are not available match too, so a page reached by URL still gets
-   * its highlight once its tab appears.
+   * <p>A destination matches its own path and the pages below it, so {@code /households/members}
+   * highlights Household. The hello page at {@code /} belongs to no destination and highlights
+   * nothing. Destinations that are not available match too, so a page reached by URL still gets its
+   * highlight once its tab appears.
    *
    * @param requestPath the request's path, for example {@code /households/members}
    * @return the matching destination, or {@code null} when the page is in no navigation (the
@@ -95,9 +95,6 @@ public enum NavDestination {
   }
 
   private boolean matches(String requestPath) {
-    if (path.equals("/")) {
-      return requestPath.equals("/");
-    }
     return requestPath.equals(path) || requestPath.startsWith(path + "/");
   }
 }

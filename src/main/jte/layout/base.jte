@@ -35,8 +35,9 @@
   <%-- htmx under a strict CSP: no eval, no inline <script> in swapped content, no injected <style>
        for the indicator (our CSS covers it). Error responses are swapped too, so that the error
        fragment (see AppErrorController) can show up; app.js handles 401/403 itself. History
-       snapshots are off so household data is never kept in the browser's localStorage. --%>
-  <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false,"historyCacheSize":0,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true}]}'>
+       snapshots are off so household data is never kept in the browser's localStorage, and a history
+       miss reloads the page, because our URLs answer htmx with fragments. --%>
+  <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false,"historyCacheSize":0,"refreshOnHistoryMiss":true,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true}]}'>
   @if(ctx.csrf() != null)
   <meta name="_csrf" content="${ctx.csrf().token()}">
   <meta name="_csrf_header" content="${ctx.csrf().headerName()}">
