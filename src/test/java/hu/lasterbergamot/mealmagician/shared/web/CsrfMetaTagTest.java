@@ -31,7 +31,7 @@ class CsrfMetaTagTest {
 
   @Test
   void rendersTheTokenAndHeaderNameAsMetaTags() throws Exception {
-    mvc.perform(get("/"))
+    mvc.perform(get("/error"))
         .andExpect(content().string(containsString("<meta name=\"_csrf\" content=\"abc123\">")))
         .andExpect(
             content()
@@ -40,7 +40,7 @@ class CsrfMetaTagTest {
 
   @Test
   void rendersNoMetaTagsForARequestWithoutToken() throws Exception {
-    mvc.perform(get("/").header("no-token", "1"))
+    mvc.perform(get("/error").header("no-token", "1"))
         .andExpect(content().string(not(containsString("name=\"_csrf\""))));
   }
 }

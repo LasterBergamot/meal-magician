@@ -256,11 +256,14 @@ class PlanEditingE2ETest {
     page.evaluate("() => { document.documentElement.dataset.theme = 'light'; }");
   }
 
-  /** Signs in through the stub provider and lands on the home page. */
+  /**
+   * Signs in through the stub provider and lands on the plan or, for a new person, the households
+   * page.
+   */
   private static void signIn(Page page) {
     page.navigate(BASE_URL + "/");
     page.locator("a[href='/oauth2/authorization/google']").click();
-    page.waitForURL(url -> URI.create(url).getPath().equals("/"));
+    page.waitForURL(url -> URI.create(url).getPath().matches("/(plan|households)"));
   }
 
   private static void createHousehold(Page page, String name) {

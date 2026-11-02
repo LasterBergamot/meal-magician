@@ -16,7 +16,7 @@ class SecurityHeadersTest {
 
   @Test
   void sendsAContentSecurityPolicyWithoutUnsafeKeywords() throws Exception {
-    MvcResult result = mvc.perform(get("/")).andReturn();
+    MvcResult result = mvc.perform(get("/error")).andReturn();
 
     String csp = result.getResponse().getHeader("Content-Security-Policy");
     assertThat(csp)
@@ -27,7 +27,7 @@ class SecurityHeadersTest {
 
   @Test
   void sendsTheOtherSecurityHeaders() throws Exception {
-    mvc.perform(get("/"))
+    mvc.perform(get("/error"))
         .andExpect(header().string("X-Content-Type-Options", "nosniff"))
         .andExpect(header().string("Referrer-Policy", "same-origin"));
   }

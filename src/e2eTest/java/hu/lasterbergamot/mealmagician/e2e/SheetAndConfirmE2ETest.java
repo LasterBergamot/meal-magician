@@ -155,7 +155,7 @@ class SheetAndConfirmE2ETest {
     Page page = context.newPage();
     page.navigate(BASE_URL + "/");
     page.locator("a[href='/oauth2/authorization/google']").click();
-    page.waitForURL(url -> URI.create(url).getPath().equals("/"));
+    page.waitForURL(url -> URI.create(url).getPath().matches("/(plan|households)"));
     page.navigate(BASE_URL + "/dev/ui");
     // Alpine starts with the page's load, so the components are ready once this returns.
     page.waitForLoadState();

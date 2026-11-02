@@ -173,12 +173,15 @@ class ThemePreferenceE2ETest {
     }
   }
 
-  /** Signs in through the stub provider and lands on the home page. */
+  /**
+   * Signs in through the stub provider and lands on the plan or, for a new person, the households
+   * page.
+   */
   private static Page signIn(BrowserContext context) {
     Page page = context.newPage();
     page.navigate(BASE_URL + "/");
     page.locator("a[href='/oauth2/authorization/google']").click();
-    page.waitForURL(url -> URI.create(url).getPath().equals("/"));
+    page.waitForURL(url -> URI.create(url).getPath().matches("/(plan|households)"));
     return page;
   }
 }

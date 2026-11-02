@@ -40,7 +40,7 @@ class MessagesTest {
   void fillsPlaceholders() {
     LocaleContextHolder.setLocale(Locale.ENGLISH);
 
-    assertThat(messages.t("hello.today", "Monday")).isEqualTo("Today is Monday.");
+    assertThat(messages.t("plan.week.title", "45")).isEqualTo("Week 45");
   }
 
   @Test

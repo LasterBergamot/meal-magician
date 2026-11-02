@@ -7,7 +7,6 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
-import com.microsoft.playwright.options.AriaRole;
 import java.net.URI;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
@@ -16,10 +15,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * Signs in through the stub identity provider and lands on the hello page, in a phone-sized and a
- * desktop-sized browser window. It runs against the real container image from {@code
- * compose.e2e.yml}, so it also proves that the image starts, migrates the database and serves the
- * compiled templates and stylesheet.
+ * Signs in through the stub identity provider and lands on the plan (or, for a person without a
+ * household, the households page), in a phone-sized and a desktop-sized browser window. It runs
+ * against the real container image from {@code compose.e2e.yml}, so it also proves that the image
+ * starts, migrates the database and serves the compiled templates and stylesheet.
  */
 class SignInE2ETest {
 
@@ -50,7 +49,7 @@ class SignInE2ETest {
 
   @ParameterizedTest(name = "{0} ({1}x{2})")
   @CsvSource({"phone, 390, 844", "desktop, 1280, 800"})
-  void signingInShowsTheHelloPage(String device, int width, int height) {
+  void signingInLandsInsideTheShell(String device, int width, int height) {
     try (BrowserContext context =
         browser.newContext(new Browser.NewContextOptions().setViewportSize(width, height))) {
       Page page = context.newPage();
@@ -59,12 +58,15 @@ class SignInE2ETest {
       assertThat(page.url()).endsWith("/login");
 
       page.locator("a[href='/oauth2/authorization/google']").click();
-      // Spring Security sends the browser back to "/?continue", so compare the path only.
-      page.waitForURL(url -> URI.create(url).getPath().equals("/"));
+      // Spring Security sends the browser back to "/?continue", and "/" then redirects: to the plan
+      // for a person who already has a household in the shared test database, otherwise to the
+      // households page.
+      page.waitForURL(url -> URI.create(url).getPath().matches("/(plan|households)"));
 
-      // The app greets in Hungarian, its default language, whatever the browser asks for.
-      assertThat(page.getByRole(AriaRole.HEADING).first().textContent())
-          .isEqualTo("Szia, Meal Magician!");
+      // The app speaks Hungarian, its default language, whatever the browser asks for, and the
+      // signed-in page is drawn inside the app shell.
+      assertThat(page.locator("html").getAttribute("lang")).isEqualTo("hu");
+      assertThat(page.locator("#shell").count()).isEqualTo(1);
       // A page wider than the window would force sideways scrolling on a phone.
       assertThat(
               (Boolean)
@@ -88,7 +90,7 @@ class SignInE2ETest {
       Page page = context.newPage();
       page.navigate(BASE_URL + "/");
       page.locator("a[href='/oauth2/authorization/google']").click();
-      page.waitForURL(url -> URI.create(url).getPath().equals("/"));
+      page.waitForURL(url -> URI.create(url).getPath().matches("/(plan|households)"));
 
       page.navigate(BASE_URL + "/households");
       page.locator("#create-name").fill("E2E " + device + " alap");

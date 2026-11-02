@@ -181,7 +181,7 @@ gcloud secrets add-iam-policy-binding db-password \
 1. In the repo root: `cp .env.example .env`, fill in `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
    and `MM_ADMIN_EMAILS` (you, in your editor; agents never read `.env`).
 2. `task serve`, open <http://localhost:8080/>, **Sign in with Google** with your admin account →
-   the hello page. In a private window, another Google account → a 403 page.
+   the plan (or the households page on a first sign-in). In a private window, another Google account → a 403 page.
 3. Optional, the full check (needs Docker): `task up && task serve:pg`, sign in, restart the app,
    reload → still signed in; then
    `docker compose exec postgres psql -U mealmagician -c "select email from app_user"` lists only you.

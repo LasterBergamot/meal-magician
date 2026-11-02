@@ -71,8 +71,8 @@ meal-magician/
 ├── build.gradle.kts, settings.gradle.kts, gradle/libs.versions.toml, gradlew   # build (Gradle wrapper pins Gradle 9.8.2)
 ├── Taskfile.yml, scripts/    # task entry point; doctor.sh (tool check), install-tailwind.sh (pinned CLI download), serve.sh (app + Tailwind watch), generate-icons.py (wizard icons from one drawing), check_docs_touched.sh (CI docs check), e2e_needed.sh (CI: skip E2E for docs-only PRs), sync-wiki.sh (CI wiki mirror)
 ├── lombok.config, config/checkstyle/   # Lombok settings; Checkstyle Javadoc rules
-├── src/main/java/hu/lasterbergamot/mealmagician/   # app class + one package per module (identity, household, catalog, planning, feedback, sharing, shared); shared/i18n (translations), shared/web (layout plumbing, CSP filter, error + hello pages)
-├── src/main/jte/             # JTE templates: layout/, hello/, error/ (fragments are _*.jte)
+├── src/main/java/hu/lasterbergamot/mealmagician/   # app class + one package per module (identity, household, catalog, planning, feedback, sharing, shared); shared/i18n (translations), shared/web (layout plumbing, CSP filter, error pages)
+├── src/main/jte/             # JTE templates: layout/, ui/ (components), household/, meal/, plan/, error/ (fragments are _*.jte)
 ├── src/main/css/app.css      # Tailwind input; the output static/css/app.css is generated and not committed
 ├── compose.yml               # local Postgres 17 + pgvector (`task up`)
 ├── .env.example              # variables for local runs (copy to .env, git-ignored)

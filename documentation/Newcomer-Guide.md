@@ -39,22 +39,25 @@ allowlisted emails get in; households are shared through email-bound invite link
 
 ## One request through the layers
 
-The plan is in `PLAN.md` §4.3. What exists today, for the hello page (`GET /`):
+The plan is in `PLAN.md` §4.3. What exists today, for the week plan (`GET /plan`), which is where
+signing in lands: the address `/` shows nothing itself and `household.internal.HomeController`
+redirects there (or to `/households` for a person who has no household yet).
 
-1. The browser asks for `/`. `SecurityHeadersFilter` adds the security headers to the response,
+1. The browser asks for `/plan`. `SecurityHeadersFilter` adds the security headers to the response,
    then the Spring Security chain checks the session; an anonymous visitor is redirected to `/login`.
 2. The `mm_lang` cookie (default Hungarian) decides the language. The cookie is set by
    `LanguageController`, which answers `POST /language` from the language buttons.
-3. `HelloController` (in `shared.web`) builds a small view record and picks a view with
-   `Htmx.view(...)`: the full page `hello/page`, or the fragment `hello/_greeting` when htmx
-   sent the request (header `HX-Request`).
+3. `PlanController` (in `planning.internal`) declares a `CurrentHousehold` parameter.
+   `CurrentHouseholdArgumentResolver` fills it from the session and re-checks the membership; a person
+   with no household gets a 404. The controller asks `WeekPageFactory` for the page model and picks a
+   view with `Htmx.view(...)`: the full page `plan/week`, or the fragment `plan/_week` when htmx sent
+   the request (header `HX-Request`, which is how the week stepper swaps only the week).
 4. `ViewContextAdvice` has already put the `ctx` object (translations, CSRF token, the shell's
-   household and person, the current tab) into the model; the JTE template calls `ctx.t("hello.title")`
+   household and person, the current tab) into the model; the JTE template calls `ctx.t("plan.week.title", …)`
    and wraps itself in `layout/base.jte`, which draws the app shell (top bar and tab bar on a phone,
    sidebar on a desktop) for a signed-in person.
-5. The page loads `/css/app.css`, htmx and Alpine from our own server. Clicking "Refresh" makes
-   htmx ask `/` again and swap just the fragment in. Add the module code, security and database
-   steps from the plan as they land in #12 and Phase 1.
+5. The page loads `/css/app.css`, htmx and Alpine from our own server. Clicking the previous or next
+   week makes htmx ask `/plan?week=…` again and swap just the fragment in.
 
 Errors take a similar path: an unknown URL ends up in `AppErrorController`, which renders the
 404 page (or a fragment for htmx).
