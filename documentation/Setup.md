@@ -28,12 +28,15 @@ bash scripts/doctor.sh      # the same check as `task doctor`, for when Task its
 - Task 3.x.
 - Docker with a running daemon, and Docker Compose 2.24+.
 - `gh` 2.x, the GitHub CLI (issues, PRs, the board and CI checks all go through it).
-- Optional, only reported: the Google Cloud CLI (`gcloud`), the Neon CLI (`neon`), `apm`, and the
-  Tailwind CLI (`skip` until step 3).
+- Optional, only reported: Docker Buildx (`docker buildx`; only `task build` and `task test-e2e`
+  need it), the Google Cloud CLI (`gcloud`), the Neon CLI (`neon`), `apm`, and the Tailwind CLI
+  (`skip` until step 3).
 
 **If not:** a `FAIL` line names the tool and the problem. Install the missing tool (README →
 Prerequisites) and run it again. On Arch the Task binary is `go-task`; if `task` is only a shell
-alias, agents and scripts must call `go-task`.
+alias, agents and scripts must call `go-task`. Buildx is a separate package on Arch
+(`docker-buildx`); without it `docker build` falls back to the legacy builder and stops at the
+Dockerfile's `RUN --mount` with `the --mount option requires BuildKit`.
 
 ## 2. Claude Code skills are present
 
@@ -76,7 +79,8 @@ task serve
 
 **Expected:** the app starts on <http://localhost:8080> on in-memory H2 (no Docker needed) and
 `curl localhost:8080/actuator/health` answers `{"status":"UP",…}`. The log shows
-`The following 1 profile is active: "dev"` and Flyway applying versions 1 and 3. The Tailwind
+`The following 1 profile is active: "dev"` and Flyway applying every migration except `2 - pgvector`,
+which H2 skips (`Successfully applied 6 migrations … now at version v7` at the time of writing). The Tailwind
 watcher runs next to the app until you stop it with Ctrl-C. Opening <http://localhost:8080/> shows
 the sign-in page (the `EN` link switches the language); signing in with Google as an admin e-mail
 gets you in, and any other e-mail gets a 403 (needs step 4).
@@ -90,7 +94,7 @@ task up && task serve:pg
 ```
 
 **Expected:** `task up` ends with the container `Healthy`; the app log shows
-`PostgreSQL 17` and Flyway applying versions 1 and 2. Stop the database with `task down`.
+`PostgreSQL 17` and Flyway applying every migration, including `2 - pgvector`. Stop the database with `task down`.
 
 ## 6. Run the tests
 
@@ -107,7 +111,7 @@ exist; `task test:fast` skips them and the coverage gate for a quick check witho
 task test-e2e
 ```
 
-This builds the container image, starts `compose.e2e.yml` (the app, Postgres and a stub sign-in
+This needs Docker Buildx (step 1) to build the container image. It builds the image, starts `compose.e2e.yml` (the app, Postgres and a stub sign-in
 provider), signs in with a Chromium browser at phone and desktop size and tears everything down.
 
 **Expected:** the build succeeds. The first run takes a few minutes: it downloads the Gradle and

@@ -31,8 +31,8 @@ What exists in `main` today:
   `docs:check` (#14) runs `DocsToolingTests` alone; the full `task test` runs it too. Why the tasks exist: everyone, including CI, runs the same commands,
   so "works on my machine" and "passes in CI" mean the same thing.
   - `scripts/doctor.sh` (`task doctor`) prints `ok`/`FAIL` per tool: Java 17+ (only to start
-    Gradle), Task, Docker with a running daemon, Compose 2.24+, `gh` 2.x; `gcloud`, `neon`, `apm` and the
-    Tailwind CLI are optional.
+    Gradle), Task, Docker with a running daemon, Compose 2.24+, `gh` 2.x; Docker Buildx (needed by `task build` and `task test-e2e`),
+    `gcloud`, `neon`, `apm` and the Tailwind CLI are optional.
   - `scripts/install-tailwind.sh` (`task install`) downloads the Tailwind standalone CLI into
     `.tools/` (git-ignored). The version and each platform's SHA-256 are pinned in the script, and
     a binary that doesn't match is never installed. This keeps the project free of Node.
