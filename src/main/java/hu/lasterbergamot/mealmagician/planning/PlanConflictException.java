@@ -1,5 +1,6 @@
 package hu.lasterbergamot.mealmagician.planning;
 
+import java.time.LocalDate;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
@@ -21,5 +22,16 @@ public class PlanConflictException extends RuntimeException {
    */
   public PlanConflictException(long slotId) {
     super("Planned slot " + slotId + " was changed by someone else");
+  }
+
+  /**
+   * Creates the exception for a replace that lost a race: the slots of the target range changed
+   * while they were being deleted, so nothing was written.
+   *
+   * @param first the first day of the replaced range
+   * @param last the last day of the replaced range
+   */
+  public PlanConflictException(LocalDate first, LocalDate last) {
+    super("The plan from " + first + " to " + last + " was changed by someone else");
   }
 }

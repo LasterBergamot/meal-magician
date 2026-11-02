@@ -7,13 +7,19 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 
 import hu.lasterbergamot.mealmagician.catalog.MealService;
+import hu.lasterbergamot.mealmagician.catalog.OccasionType;
 import hu.lasterbergamot.mealmagician.household.CurrentHousehold;
 import hu.lasterbergamot.mealmagician.household.HouseholdService;
 import hu.lasterbergamot.mealmagician.household.HouseholdTestSupport;
 import hu.lasterbergamot.mealmagician.household.InviteExpiry;
 import hu.lasterbergamot.mealmagician.household.InviteService;
+import hu.lasterbergamot.mealmagician.planning.OccasionDetails;
+import hu.lasterbergamot.mealmagician.planning.OccasionService;
+import hu.lasterbergamot.mealmagician.planning.OccasionTemplateService;
+import hu.lasterbergamot.mealmagician.planning.PlanTemplateService;
 import hu.lasterbergamot.mealmagician.planning.PlanningService;
 import hu.lasterbergamot.mealmagician.planning.SlotType;
+import hu.lasterbergamot.mealmagician.planning.TemplateScope;
 import hu.lasterbergamot.mealmagician.tenant.TenantWorld.Actor;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -63,6 +69,9 @@ class TenantIsolationTests {
   @Autowired private InviteService invites;
   @Autowired private MealService meals;
   @Autowired private PlanningService planning;
+  @Autowired private PlanTemplateService planTemplates;
+  @Autowired private OccasionService occasions;
+  @Autowired private OccasionTemplateService occasionTemplates;
   @Autowired private JdbcTemplate jdbc;
 
   static Stream<TenantEndpoint> registered() {
@@ -288,7 +297,7 @@ class TenantIsolationTests {
   }
 
   private static TenantWorld world() {
-    return new TenantWorld(1, 2, 10, 11, 20, 30, 40, 50, 60);
+    return new TenantWorld(1, 2, 10, 11, 20, 30, 40, 50, 60, 70, 80, 90, 100);
   }
 
   /** "METHOD /pattern" of every mapped handler that works on a household. */
@@ -360,9 +369,37 @@ class TenantIsolationTests {
         planning
             .add(homeOwner, homeId, LocalDate.of(2026, 11, 2), SlotType.LUNCH, mealId, null)
             .id();
+    long templateId =
+        planTemplates
+            .save(homeOwner, homeId, TemplateScope.DAY, LocalDate.of(2026, 11, 2), "Home day")
+            .id();
+    long occasionId =
+        occasions
+            .create(
+                homeOwner,
+                homeId,
+                new OccasionDetails(
+                    "Home party", LocalDate.of(2026, 12, 24), OccasionType.PARTY, null))
+            .id();
+    long occasionItemId =
+        occasions.addItem(homeOwner, homeId, occasionId, mealId).menu().get(0).id();
+    long occasionTemplateId =
+        occasionTemplates.saveFromOccasion(homeOwner, homeId, occasionId, "Home party menu").id();
     currentWorld =
         new TenantWorld(
-            homeId, otherId, homeOwner, homeMember, otherOwner, outsider, inviteId, mealId, slotId);
+            homeId,
+            otherId,
+            homeOwner,
+            homeMember,
+            otherOwner,
+            outsider,
+            inviteId,
+            mealId,
+            slotId,
+            templateId,
+            occasionId,
+            occasionItemId,
+            occasionTemplateId);
     return currentWorld;
   }
 }
