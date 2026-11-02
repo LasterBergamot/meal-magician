@@ -59,13 +59,13 @@ Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` 
 `ctx.user()` is set). The shell is one Alpine component, `shell`, in `static/js/app.js`.
 - **Phone (below 768 px):** a top bar (the brand mark, the household switcher pill and the avatar),
   the page, and a bottom tab bar (`layout/_tabbar.jte`, 64 px plus the safe-area inset). The
-  avatar opens a small menu: the person's name, the language choice, the admin link for instance
-  admins, and sign-out. The tab bar hides while a text field has focus, which on a phone means the
+  avatar opens a small menu: the person's name, the language choice, the theme choice, the admin
+  link for instance admins, and sign-out. The tab bar hides while a text field has focus, which on a phone means the
   on-screen keyboard is up.
 - **Desktop (768 px and up):** a sidebar (`layout/_sidebar.jte`, 248 px): the brand, the household
   switcher as a full-width row, a "Planner" section with the destinations (the current one is a
-  violet row), and at the bottom the language choice, the admin link (admins), the collapse button
-  and sign-out. Collapsed, the sidebar is 72 px of icons: each link keeps its name for screen
+  violet row), and at the bottom the admin link (admins), the language choice, the theme choice, the collapse
+  button and sign-out. Collapsed, the sidebar is 72 px of icons: each link keeps its name for screen
   readers and a tooltip. It starts collapsed below 1024 px. The choice is kept in `localStorage`
   under `mm.sidebarCollapsed`, for this browser only; every access is in try/catch because some
   browsers refuse storage.
@@ -119,8 +119,7 @@ do nothing, so the look is still the old one.
   button variant in every size and state, and the add button in both forms. It exists only in the
   `dev` profile (`task serve`), it needs a sign-in like every page, and production answers 404.
   The sections `dev/_content.jte`, `_forms.jte` and `_overlays.jte` are filled (R2b, R2c, R3). To
-  see both themes, switch the browser between light and dark (the theme preference comes with
-  R6).
+  see both themes, use the theme buttons in the shell (R6).
 
 ## Sheet and confirm dialog (R3, #75)
 
@@ -223,7 +222,7 @@ The standalone CLI (no Node) compiles `src/main/css/app.css` into
 
 `src/main/css/app.css` holds the redesign's colour tokens as CSS variables `--mm-*` (plan
 §3.2, Appendix A). `:root` is **Moonlight** (light); `:root[data-theme="dark"]` is **Midnight**;
-with `data-theme="system"` (what `layout/base.jte` sends for now) the OS preference picks one. The
+with `data-theme="system"` the OS preference picks one (the person's choice, R6, is below). The
 variables are mapped into Tailwind with `@theme inline`, so the utilities exist: `bg-surface`,
 `text-ink`, `border-outline`, `bg-brand`, `text-slot-ink`, `shadow-sticker-2`. The old green
 `brand-50…800` scale is still there until R5 has restyled every page; R5d removes it.
@@ -242,7 +241,36 @@ variables are mapped into Tailwind with `@theme inline`, so the utilities exist:
   The dots and the colour show on every page: R4 removed the old `bg-stone-100` utility from
   `<body>`, which had been overriding the base rule.
 - `<html data-theme>` and the two `theme-color` metas (light `#6d3fe0`, dark `#130c2e`) are in
-  `base.jte`'s head. R6 makes the theme a user choice.
+  `base.jte`. The theme is the person's choice (R6, below).
+
+### Theme preference (R6, #87)
+
+The theme is **light** (Moonlight), **dark** (Midnight) or **system** (follow the device's
+`prefers-color-scheme`, the default). It is kept in the cookie `mm_theme`, like `mm_lang` (UI-D8);
+per user in the database comes later, together with the per-user language.
+- **The server only reads it.** `ViewContextAdvice` turns the cookie into `ViewContext.theme()`
+  (`shared.web.Theme`; a missing or unknown value is `system`), and `base.jte` writes
+  `<html data-theme="…">` from it, so the first paint already has the right colours and nothing
+  flashes. The sign-in and error pages share `base.jte`, so they follow the cookie too. The two
+  `theme-color` metas get a `media` value from `Theme.themeColorMedia`: for `system` each applies
+  to its own colour scheme; for an explicit choice only the chosen one applies, so the browser's own
+  bars match the page even when the device prefers the other scheme.
+- **The browser writes it.** The theme control (`layout/_theme_switch.jte`, three buttons made by
+  `layout/_theme_button.jte`: Light, Dark, System) sits in the phone's avatar menu and in the
+  desktop sidebar (labels become screen-reader-only and the buttons stack when the sidebar is
+  collapsed). The Alpine component `theme` in `app.js` sets the cookie (`Path=/`, one year,
+  `SameSite=Lax`, `Secure` on https, not `HttpOnly` because the script writes it), flips
+  `data-theme`, moves the metas' `media` and sets `aria-pressed` on every theme button, so the
+  phone's and the desktop's copies agree. No request is sent, so there is no state-changing GET and
+  no CSRF question. The server renders `aria-pressed` from the cookie.
+- **CSS:** no change was needed. `:root` is Moonlight, `[data-theme="dark"]` is Midnight, and the
+  `prefers-color-scheme: dark` block applies only when `data-theme` is neither `light` nor `dark`,
+  so an explicit choice beats the device.
+- **Tests:** `ThemeTest`, `ViewContextAdviceTest`, `HelloPageTest` and `AppShellPagesTest` cover the
+  cookie, the fallback and the markup. `ThemePreferenceE2ETest` loads the sign-in page with
+  JavaScript off and each cookie value (so `data-theme` must come from the server's HTML), then
+  chooses each theme in the real shell at 390 and 1280 px with the device set to dark, reloads, and
+  checks the cookie's attributes.
 
 ## Client-side JavaScript (all local, no CDN, no build step)
 
@@ -251,7 +279,8 @@ variables are mapped into Tailwind with `@theme inline`, so the utilities exist:
   SHA-256 are recorded in `VENDORED.md` next to them.
 - `app.js` (ours): registers the Alpine components: `menu` (the avatar menu), `shell` (the sidebar's
   collapsed state and the tab bar's keyboard hiding, R4), `segmented` (arrow keys for the segmented
-  control, R4), and `sheet` for the R3 dialogs, which keeps focus inside and restores it on close.
+  control, R4), `theme` (the cookie and `data-theme`, R6) and `sheet` for the R3 dialogs, which
+  keeps focus inside and restores it on close.
   It also adds the CSRF header to htmx
   requests from `<meta name="_csrf">` tags, and redirects to `/` on an htmx 401/403.
 - `sw-register.js` registers the service worker.

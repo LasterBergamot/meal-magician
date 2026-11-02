@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import hu.lasterbergamot.mealmagician.shared.i18n.Messages;
+import jakarta.servlet.http.Cookie;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
@@ -39,6 +40,7 @@ class ViewContextAdviceTest {
     assertThat(ctx.csrf()).isNull();
     assertThat(ctx.admin()).isFalse();
     assertThat(ctx.active()).isNull();
+    assertThat(ctx.theme()).isEqualTo(Theme.SYSTEM);
     assertThat(ctx.messages()).isSameAs(messages);
   }
 
@@ -60,5 +62,32 @@ class ViewContextAdviceTest {
     assertThat(ctx.household()).isSameAs(household);
     assertThat(ctx.csrf()).isSameAs(csrf);
     assertThat(ctx.active()).isEqualTo(NavDestination.HOUSEHOLD);
+  }
+
+  @Test
+  void theThemeComesFromTheThemeCookie() {
+    var advice = new ViewContextAdvice(messages, absent(), absent(), absent());
+    var request = new MockHttpServletRequest("GET", "/");
+    request.setCookies(new Cookie("other", "x"), new Cookie(Theme.COOKIE_NAME, "dark"));
+
+    assertThat(advice.viewContext(request).theme()).isEqualTo(Theme.DARK);
+  }
+
+  @Test
+  void anUnknownThemeCookieMeansSystem() {
+    var advice = new ViewContextAdvice(messages, absent(), absent(), absent());
+    var request = new MockHttpServletRequest("GET", "/");
+    request.setCookies(new Cookie(Theme.COOKIE_NAME, "purple"));
+
+    assertThat(advice.viewContext(request).theme()).isEqualTo(Theme.SYSTEM);
+  }
+
+  @Test
+  void requestsWithOtherCookiesOnlyGetTheDefaultTheme() {
+    var advice = new ViewContextAdvice(messages, absent(), absent(), absent());
+    var request = new MockHttpServletRequest("GET", "/");
+    request.setCookies(new Cookie("mm_lang", "en"));
+
+    assertThat(advice.viewContext(request).theme()).isEqualTo(Theme.SYSTEM);
   }
 }

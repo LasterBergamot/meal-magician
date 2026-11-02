@@ -117,4 +117,14 @@ paths:
   `shell` component, and the arrow keys of `ui/_segmented` are the Alpine `segmented` component.
   Rules for new pages: no own header or navigation, use the shell's `ctx`; an icon-only button
   needs an `aria-label` or sr-only text (`UiGuardTest.iconOnlyButtonsHaveAnAccessibleName`).
+- **Theme preference (R6, #87):** the theme is the cookie `mm_theme` (`light` | `dark` | `system`,
+  UI-D8), written only by the browser (the Alpine `theme` component in `app.js`: `Path=/`, a year,
+  `SameSite=Lax`, not `HttpOnly`) and only read by the server (`ViewContextAdvice` into
+  `ViewContext.theme()`, `shared.web.Theme`, unknown means `system`), so `base.jte` can write
+  `<html data-theme>` on first paint with no flash. No server write, so no CSRF question. The
+  control is `layout/_theme_switch.jte` (buttons with `data-theme-choice` and `aria-pressed`,
+  styled with the `aria-pressed:` variant); it is in the phone avatar menu and the desktop
+  sidebar, so the component updates `aria-pressed` on all copies. A new page needs nothing: it uses
+  the tokens, which already switch with `data-theme`. The `theme-color` metas get their `media`
+  from `Theme.themeColorMedia`. `ThemePreferenceE2ETest` checks the first paint with JS off.
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.

@@ -5,7 +5,7 @@
 @param ViewContext ctx
 <%-- The desktop sidebar (plan-ui-redesign.md section 4): 248 px, or 72 px icons-only when collapsed.
      It is hidden below md. Top to bottom: the brand, the household switcher, the destinations (the
-     current one is a violet row), then at the bottom the language choice, the collapse button and
+     current one is a violet row), then at the bottom the language choice, the theme choice, the collapse button and
      sign-out. Collapsed, the labels become screen-reader-only (the "is-collapsed" class is set by the
      Alpine component "shell"), and each link keeps its name and a tooltip. --%>
 <aside id="sidebar" x-bind:class="sidebarClass"
@@ -48,6 +48,7 @@
       @template.layout._lang_link(ctx = ctx, code = "hu", label = ctx.t("lang.hu.short"), name = ctx.t("lang.hu.name"))
       @template.layout._lang_link(ctx = ctx, code = "en", label = ctx.t("lang.en.short"), name = ctx.t("lang.en.name"))
     </nav>
+    @template.layout._theme_switch(ctx = ctx, id = "theme-switch-desktop")
     <button type="button" x-on:click="toggleCollapsed" x-bind:aria-expanded="expanded"
             class="flex min-h-11 items-center gap-3 rounded-md border-2 border-transparent px-3 text-left text-sm font-extrabold text-ink hover:bg-surface-sunken">
       @template.ui._icon(name = IconName.SIDEBAR, size = 24, filled = false)

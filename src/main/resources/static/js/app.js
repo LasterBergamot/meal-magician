@@ -108,6 +108,39 @@
       },
     }));
 
+    // The theme choice (layout/_theme_switch.jte, UI-D8). The server only reads the cookie
+    // "mm_theme" (light, dark or system) to put the right <html data-theme> on first paint; this
+    // component is the only writer, so there is no request to protect from CSRF. A choice is
+    // applied at once: the cookie (for the next page and visit; path "/", a year, SameSite=Lax,
+    // Secure on https, not HttpOnly because this script writes it), <html data-theme>, the
+    // "theme-color" metas, and aria-pressed on every theme button of the page (the phone and the
+    // desktop each have a copy). The "media" values mirror Theme.themeColorMedia on the server.
+    const THEME_COOKIE = 'mm_theme';
+    const YEAR_SECONDS = 365 * 24 * 60 * 60;
+    const themeColorMedia = (theme, scheme) => {
+      if (theme === 'system') {
+        return `(prefers-color-scheme: ${scheme})`;
+      }
+      return theme === scheme ? 'all' : 'not all';
+    };
+    window.Alpine.data('theme', () => ({
+      choose(event) {
+        const choice = event.target.closest('[data-theme-choice]')?.dataset.themeChoice;
+        if (!['light', 'dark', 'system'].includes(choice)) {
+          return;
+        }
+        const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie = `${THEME_COOKIE}=${choice}; Path=/; Max-Age=${YEAR_SECONDS}; SameSite=Lax${secure}`;
+        document.documentElement.dataset.theme = choice;
+        document.querySelectorAll('meta[data-theme-color]').forEach((tag) => {
+          tag.media = themeColorMedia(choice, tag.dataset.themeColor);
+        });
+        document.querySelectorAll('[data-theme-choice]').forEach((button) => {
+          button.setAttribute('aria-pressed', String(button.dataset.themeChoice === choice));
+        });
+      },
+    }));
+
     // The sheet and the confirm dialog (ui/_sheet.jte, plan section 5). The markup is a native
     // <dialog> opened with showModal(), which makes the rest of the page inert, puts the dialog in
     // the top layer and closes it on Escape. This component adds what is left: a Tab trap (native

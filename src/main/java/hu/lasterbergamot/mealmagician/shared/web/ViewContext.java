@@ -18,6 +18,8 @@ import hu.lasterbergamot.mealmagician.shared.i18n.Messages;
  *     which gets the plain layout without the shell
  * @param active the navigation destination the request belongs to (its tab is highlighted), or
  *     {@code null} when no tab does
+ * @param theme the colour theme from the {@code mm_theme} cookie, {@link Theme#SYSTEM} when there
+ *     is none or it is not recognised
  */
 public record ViewContext(
     Messages messages,
@@ -25,7 +27,8 @@ public record ViewContext(
     HouseholdNav household,
     boolean admin,
     ShellUser user,
-    NavDestination active) {
+    NavDestination active,
+    Theme theme) {
 
   /**
    * Translates a key; shorthand for {@code messages().t(...)} so templates read {@code

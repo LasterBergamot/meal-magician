@@ -4,7 +4,7 @@
 @param ViewContext ctx
 <%-- The phone's top bar (plan-ui-redesign.md section 4), hidden from md up where the sidebar carries
      the same things. Left: the brand mark and the household switcher pill. Right: the avatar, which
-     opens a small menu with the person's name, the language choice and sign-out. The menu closes on
+     opens a small menu with the person's name, the language choice, the theme choice and sign-out. The menu closes on
      Escape and on a click outside it (the "menu" component in app.js). --%>
 <header class="sticky top-0 z-20 flex items-center gap-2 border-b-2 border-outline bg-surface-raised px-4 py-2 md:hidden">
   <img src="/icons/favicon.svg" alt="" class="size-9 shrink-0">
@@ -31,6 +31,9 @@
         @template.layout._lang_link(ctx = ctx, code = "hu", label = ctx.t("lang.hu.short"), name = ctx.t("lang.hu.name"))
         @template.layout._lang_link(ctx = ctx, code = "en", label = ctx.t("lang.en.short"), name = ctx.t("lang.en.name"))
       </nav>
+      <div class="px-1">
+        @template.layout._theme_switch(ctx = ctx, id = "theme-switch-phone")
+      </div>
       @template.layout._sign_out(ctx = ctx)
     </div>
   </div>
