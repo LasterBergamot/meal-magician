@@ -38,6 +38,7 @@ class SecurityConfig {
   static final String[] PUBLIC_PATHS = {
     LOGIN_URL,
     "/error",
+    "/language",
     "/actuator/health/**",
     "/css/**",
     "/js/**",

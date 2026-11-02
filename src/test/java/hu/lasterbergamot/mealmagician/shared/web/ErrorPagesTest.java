@@ -8,7 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import hu.lasterbergamot.mealmagician.shared.i18n.I18nConfig;
 import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
@@ -70,7 +72,7 @@ class ErrorPagesTest {
 
   @Test
   void rendersTheErrorPageInEnglishWhenAsked() throws Exception {
-    mvc.perform(errorWithStatus(404).param("lang", "en"))
+    mvc.perform(errorWithStatus(404).cookie(new Cookie(I18nConfig.COOKIE_NAME, "en")))
         .andExpect(content().string(containsString("Page not found")));
   }
 

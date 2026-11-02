@@ -204,7 +204,7 @@ pages yet; no other business modules yet.
     (`SessionCleanupOnSignIn`) instead of by Spring's timer, because a timer would poll the
     database and keep the app and the database from scaling to zero.
   - **Rules** (`identity/internal/SecurityConfig`): everything needs a session except the explicit
-    `PUBLIC_PATHS` (login page, error page, health check, static files, PWA files). CSRF stays on.
+    `PUBLIC_PATHS` (login page, error page, the language switch `POST /language`, health check, static files, PWA files). CSRF stays on.
     An anonymous browser request is redirected to `/login`; an anonymous **htmx** request gets
     `401` + `HX-Redirect: /login`, so a click after the session expired navigates the whole page
     instead of swapping a login form into a fragment. Responses carry `X-Frame-Options: DENY`,

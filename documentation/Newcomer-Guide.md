@@ -43,8 +43,8 @@ The plan is in `PLAN.md` §4.3. What exists today, for the hello page (`GET /`):
 
 1. The browser asks for `/`. `SecurityHeadersFilter` adds the security headers to the response,
    then the Spring Security chain checks the session; an anonymous visitor is redirected to `/login`.
-2. `LanguageSwitchInterceptor` looks for `?lang=`; otherwise the `mm_lang` cookie (default
-   Hungarian) decides the language.
+2. The `mm_lang` cookie (default Hungarian) decides the language. The cookie is set by
+   `LanguageController`, which answers `POST /language` from the language buttons.
 3. `HelloController` (in `shared.web`) builds a small view record and picks a view with
    `Htmx.view(...)`: the full page `hello/page`, or the fragment `hello/_greeting` when htmx
    sent the request (header `HX-Request`).

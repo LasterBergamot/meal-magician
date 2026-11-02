@@ -12,9 +12,9 @@ import org.springframework.web.servlet.LocaleResolver;
  * Applies the language a person stored in the database when they sign in (PLAN.md D14): the
  * language they chose last time follows them to a new browser.
  *
- * <p>It writes the same language cookie that the {@code ?lang=} switch writes, so from then on the
- * page is in that language until the person switches again. A stored value this version does not
- * support falls back to Hungarian, the household's default.
+ * <p>It writes the same language cookie that the language switch ({@code POST /language}) writes,
+ * so from then on the page is in that language until the person switches again. A stored value this
+ * version does not support falls back to Hungarian, the household's default.
  */
 @Component
 class SignInLanguage {

@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import hu.lasterbergamot.mealmagician.shared.i18n.I18nConfig;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,7 +27,7 @@ class LoginPageTest {
 
   @Test
   void anonymousVisitorSeesTheGoogleButtonAndNoNotice() throws Exception {
-    mvc.perform(get("/login").param("lang", "en"))
+    mvc.perform(get("/login").cookie(new Cookie(I18nConfig.COOKIE_NAME, "en")))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString("href=\"/oauth2/authorization/google\"")))
         .andExpect(content().string(containsString("Sign in with Google")))
@@ -42,13 +44,13 @@ class LoginPageTest {
 
   @Test
   void failedSignInShowsAnErrorNotice() throws Exception {
-    mvc.perform(get("/login").param("error", "").param("lang", "en"))
+    mvc.perform(get("/login").param("error", "").cookie(new Cookie(I18nConfig.COOKIE_NAME, "en")))
         .andExpect(content().string(containsString("Signing in did not work.")));
   }
 
   @Test
   void signingOutShowsAConfirmation() throws Exception {
-    mvc.perform(get("/login").param("logout", "").param("lang", "en"))
+    mvc.perform(get("/login").param("logout", "").cookie(new Cookie(I18nConfig.COOKIE_NAME, "en")))
         .andExpect(content().string(containsString("You have been signed out.")));
   }
 

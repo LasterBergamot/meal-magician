@@ -15,7 +15,7 @@
     <button type="button" aria-haspopup="menu" x-bind:aria-expanded="open" x-on:click="toggle"
             class="inline-flex size-11 items-center justify-center rounded-full">
       <span class="sr-only">${ctx.t("nav.account")}</span>
-      @template.ui._avatar(initials = ctx.user().initials(), size = "md")
+      @template.ui._avatar(initials = ctx.user().initials(), size = "md", tone = "soft")
     </button>
     <div x-show="open" x-cloak
          class="absolute right-0 top-full z-30 mt-2 flex w-64 max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-lg border-2 border-outline bg-surface-raised p-2 shadow-sticker-2">

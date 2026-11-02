@@ -197,6 +197,31 @@ class AppShellE2ETest {
   }
 
   @Test
+  void theTopBarAvatarOnAPhoneIsNotGoldBecauseTheCurrentTabAlreadyIs() {
+    try (BrowserContext context = newContext(390, 844)) {
+      Page page = signIn(context);
+
+      Locator avatar = page.locator("header:visible [data-tone]");
+      assertThat(avatar.getAttribute("data-tone")).isEqualTo("soft");
+      Object sameAsGold =
+          page.evaluate(
+              """
+              () => {
+                const probe = document.createElement('div');
+                probe.style.background = 'var(--mm-accent)';
+                document.body.append(probe);
+                const gold = getComputedStyle(probe).backgroundColor;
+                probe.remove();
+                return getComputedStyle(document.querySelector('header [data-tone]')).backgroundColor === gold;
+              }
+              """);
+      assertThat(sameAsGold)
+          .as("the avatar disc is not filled with the gold accent")
+          .isEqualTo(false);
+    }
+  }
+
+  @Test
   void theCollapsedSidebarIsKeptForThisBrowser() {
     try (BrowserContext context = newContext(1280, 800)) {
       Page page = signIn(context);
@@ -255,7 +280,7 @@ class AppShellE2ETest {
     if (device.equals("phone")) {
       page.locator(AVATAR_BUTTON).click();
     }
-    page.locator("a[hreflang='" + code + "']:visible").click();
+    page.locator("button[lang='" + code + "']:visible").click();
     page.waitForFunction("code => document.documentElement.lang === code", code);
   }
 
