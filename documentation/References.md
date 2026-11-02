@@ -42,6 +42,12 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | Web app manifest (installability, maskable icons) | https://web.dev/articles/add-manifest |
 | Spring MVC `LocaleResolver` | https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-servlet/localeresolver.html |
 | PWA / Web App Manifest | https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps |
+| HTML `<dialog>` and `showModal()` (sheets and confirm dialogs) | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog |
+| `prefers-color-scheme` (the system theme) | https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-color-scheme |
+| `prefers-reduced-motion` (skeleton and sheet animations) | https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion |
+| WAI-ARIA tabs pattern (the segmented control) | https://www.w3.org/WAI/ARIA/apg/patterns/tabs/ |
+| WAI-ARIA modal dialog pattern (sheets and their focus trap) | https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/ |
+| htmx `hx-select` and `hx-push-url` | https://htmx.org/attributes/hx-select/ · https://htmx.org/attributes/hx-push-url/ |
 
 ## Data, testing, tooling
 
