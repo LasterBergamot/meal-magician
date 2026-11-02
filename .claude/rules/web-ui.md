@@ -163,6 +163,12 @@ paths:
   `meal/_quick` do) must answer with the same root element and attributes, because the response
   replaces it. The textarea and the occasion checkboxes in `meal/_form` have no `ui/` component yet;
   they use the same tokens as `ui/_field` and should move to `ui/` when a second page needs them.
+- **Occasion pages (#112), `occasion/`:** the form copies `meal/_form`, including the textarea,
+  and swaps itself with the same root `occasion-form`. The date and the kind are parsed leniently
+  (`OccasionForm.parseDate` / `parseType`) and a bad value is refused by the service as a field
+  error (422), never as an exception. A 409 on delete goes to `#occasion-conflict`, and `app.js`
+  closes dialogs after a swap into it. Planning pages reuse the catalog's `meal.occasion.*` labels
+  through `OccasionTypes.key`, so the words are translated once.
 - **Week view (#97), `plan/`:** one swap region, `#plan-week`, holds the stepper, the phone's
   strip and day list and the desktop table; `plan/_week` is the fragment and `plan/week` the page.
   The stepper links go through `HtmlAttributes.htmxFetch` and keep stable ids (`plan-prev`,

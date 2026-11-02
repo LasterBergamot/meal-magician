@@ -19,8 +19,8 @@ public enum NavDestination {
   /** The meal library (Phase 2, issue #88). */
   MEALS("/meals", "nav.meals", IconName.MEALS, true),
 
-  /** Dated occasions (Phase 4): not built yet, so hidden. */
-  OCCASIONS("/occasions", "nav.occasions", IconName.GIFT, false),
+  /** Dated occasions with their menus (Phase 4, #112). */
+  OCCASIONS("/occasions", "nav.occasions", IconName.GIFT, true),
 
   /** The households page, where the person manages their households and members. */
   HOUSEHOLD("/households", "nav.household", IconName.HOME, true);
@@ -67,7 +67,8 @@ public enum NavDestination {
   /**
    * The destinations to show in the navigation, in tab order.
    *
-   * @return the available destinations in declaration order (Plan, Meals, then Household today)
+   * @return the available destinations in declaration order (Plan, Meals, Occasions, then
+   *     Household)
    */
   public static List<NavDestination> visible() {
     return Arrays.stream(values()).filter(destination -> destination.available).toList();

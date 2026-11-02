@@ -331,10 +331,15 @@
   });
 
   // A 409 or an error lands outside the open sheets; close them so the person sees it, then put
-  // focus on its action (after the dialogs' own close handlers have run).
+  // focus on its action (after the dialogs' own close handlers have run). #occasion-conflict is
+  // the stale-delete banner of the occasion detail page (#112).
   document.addEventListener('htmx:afterSwap', (event) => {
     const target = event.detail.target;
-    if (target?.id !== 'plan-conflict' && target?.id !== 'error-slot') {
+    if (
+      target?.id !== 'plan-conflict' &&
+      target?.id !== 'occasion-conflict' &&
+      target?.id !== 'error-slot'
+    ) {
       return;
     }
     document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close());
