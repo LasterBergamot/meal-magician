@@ -72,6 +72,32 @@ error and household pages. Planned UI work: [[Roadmap: Frontend]].
   section, which also closes the open dialog; a refused change answers 422 (add) or 409 (remove) with
   the same section and the message.
 
+## Plan templates (#111)
+
+The template list and one template's page, under `/plan/templates`. The controller is
+`PlanTemplateController` in `planning/internal`; its page models are `TemplatesPage`,
+`TemplateRow`, `TemplatePage`, `TemplateDayLines` and `TemplateLine`, built by
+`TemplatePageFactory`; the templates are `plan/templates.jte`, `plan/template.jte`,
+`plan/_template_rename.jte` and `plan/_template_conflict.jte`. Templates are made on the plan
+(#110); this page only lists, shows, renames and deletes them.
+
+- `GET /plan/templates` shows the household's day templates and week templates in two cards, sorted
+  by name, each row with the meal count. With no template at all it shows one empty state that links
+  back to the plan.
+- `GET /plan/templates/{id}` shows the meals per day in plan order with the slot chip, the note and
+  an Archived badge. A week template names the weekdays: the label comes from a reference Monday,
+  so only the weekday name is formatted. A hint says that the template is applied from the plan.
+- `POST /plan/templates/{id}/rename` (`version`, `name`): a blank or too-long name is 422 with the
+  message under the field and the typed name kept; a stale version is 409 with a warning above the
+  field and a Reload link. A success sends the browser back to the page.
+- `POST /plan/templates/{id}/delete?version=`: behind a `ui/_confirm`. A success goes to the list; a
+  stale version is 409 and, for htmx, the banner goes into `#plan-conflict` and the dialog closes.
+- Every member may rename and delete (PLAN.md D26). A template of another household is 404 on all
+  four routes, and the four are registered in `TenantEndpoints`.
+- Tests: `PlanTemplatePagesTest` drives the pages through MockMvc (Anna and Bela, the 404s, both
+  answers with and without htmx); `PlanTemplateModelsTest` covers the page records and the message
+  keys.
+
 ## Meal pages (#88)
 
 The meal library: a searchable list with filters, one meal's page, the create and edit form, the
