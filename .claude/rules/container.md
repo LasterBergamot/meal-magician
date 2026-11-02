@@ -38,7 +38,7 @@ paths:
   then the `release` job: check version + green CI → bump version on a detached commit → build + push to Artifact
   Registry → `gcloud run deploy` (auth by Workload Identity Federation, no keys; config from
   GitHub variables, secrets via `--set-secrets`, env vars joined with `^|^` because
-  `MM_ADMIN_EMAILS` holds emails, so `@` would clash, and may contain commas) → poll `/actuator/health` → push the `vX.Y.Z` tag last.
+  `MM_ADMIN_EMAILS` holds emails, so `@` would clash, and may contain commas) → poll `/actuator/health` → `task smoke -- <url>` (#58: `scripts/smoke.sh`, curl only, public pages, no credentials; once per release, never in `ci.yml` or on a timer) → push the `vX.Y.Z` tag last.
   Then it creates a GitHub Release with generated notes. Runs queue, never cancel. It is the one
   workflow with `contents: write` and `id-token: write`, and as a `workflow_run` workflow it must
   only check out the commit CI passed on `main`, never pull-request code.

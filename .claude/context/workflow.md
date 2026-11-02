@@ -18,6 +18,7 @@ task test:fast    # skips @Tag("integration") tests (-Pfast): no Docker, no cove
 task test-e2e     # build the image, start compose.e2e.yml (app + stub OIDC + Postgres), run the Playwright tests, tear down (needs Docker; the first run downloads Chromium)
 task test-e2e:run # the same without the image build (CI builds the image with a layer cache first)
 task build        # build the container image (meal-magician) from the Dockerfile
+task smoke -- URL # post-deploy smoke test of a running service, no sign-in (scripts/smoke.sh; release.yml runs it after each deploy; locally: `task smoke -- http://localhost:8080`)
 task up           # start compose.yml (Postgres + pgvector) and wait until it is healthy
 task down         # stop it
 task migrate-check  # runs PostgresMigrationTests: every migration applied to a throw-away pgvector Postgres (needs Docker; CI runs it)
@@ -78,9 +79,11 @@ Postgres URL is missing.
   redeploy. It runs only on `main`, refuses a version whose tag exists or a commit
   where CI is not green, bumps `version` in `build.gradle.kts` on a detached commit (`main` is
   protected and keeps the SNAPSHOT), pushes the image to Artifact Registry, deploys it to Cloud
-  Run and polls `/actuator/health` for about four minutes. Only then does it push the tag
-  `vX.Y.Z`, so a tag always means "deployed and healthy" and a failed run can be retried with
-  the same version. Needs the GitHub variables listed in `documentation/Hosting-Setup.md`.
+  Run and polls `/actuator/health` for about four minutes. Then it runs `task smoke -- <service
+  url>` (#58) once: public pages only, no sign-in (see `scripts/smoke.sh`). Only after that does
+  it push the tag `vX.Y.Z`, so a tag always means "deployed, healthy and smoke-tested" and a
+  failed run can be retried with the same version. The smoke test is not in `ci.yml` (the `E2E`
+  job covers the image) and never on a schedule (D11). Needs the GitHub variables listed in `documentation/Hosting-Setup.md`.
   Flyway migrates at startup, so migrations must stay compatible with the previous release
   (expand/contract).
 

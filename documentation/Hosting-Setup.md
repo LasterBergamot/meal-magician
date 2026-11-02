@@ -219,17 +219,43 @@ sign-in), env vars `SPRING_PROFILES_ACTIVE=prod`, `SPRING_DATASOURCE_URL`, `_USE
 `GOOGLE_CLIENT_ID`, `MM_ADMIN_EMAILS`, `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75`, and
 `--set-secrets GOOGLE_CLIENT_SECRET=google-client-secret:latest,SPRING_DATASOURCE_PASSWORD=db-password:latest`.
 It then polls `/actuator/health` (16 tries, 15 s apart: the first request wakes the app and Neon
-and Flyway creates the tables). Before building, the workflow checks that the version is
+and Flyway creates the tables) and runs the smoke test (below). Before building, the workflow checks that the version is
 `X.Y.Z`, that the tag does not exist yet and that `Lint & test`, `Migrations (Postgres)` and
 `E2E` are green on the commit. The tag `vX.Y.Z` (on a commit that only changes the version in
-`build.gradle.kts`) is pushed last, after a healthy deploy, and a GitHub Release with generated
-notes follows. Because every code merge is now a production deploy, keep migrations
+`build.gradle.kts`) is pushed last, after a healthy deploy that passed the smoke test, and a
+GitHub Release with generated notes follows. Because every code merge is now a production deploy, keep migrations
 expand/contract (the previous release must still run on the new schema).
 
 The workflow has run: **v0.1.0** was released on 2026-11-01 (the first attempt failed because the
 `@` in the admin emails clashed with the env-var delimiter, which is now `|`). If a run fails, `gcloud run services logs read meal-magician --region
 europe-west3` shows why; the usual causes are a missing GitHub variable (the step prints an
 empty value), a missing IAM right or a wrong `DB_URL`.
+
+## Smoke test after a deploy (#58)
+
+A healthy `/actuator/health` does not prove the page people see works, so `release.yml` runs
+`task smoke -- <service url>` (`scripts/smoke.sh`) between the health poll and the tag push. It
+needs no credentials and no sign-in; it only fetches public pages, once per release (never on a
+timer, so Cloud Run and Neon still scale to zero). Each check prints `PASS` or `FAIL`; one failure
+fails the run, so **no tag and no GitHub Release** are created for that version (the new revision
+already serves traffic, as with a failed health poll: roll back as described under "Deploys" or fix
+forward and re-run). The checks:
+
+| Check | Passes when |
+|---|---|
+| health | `/actuator/health` answers 200 with `"status":"UP"` (retried for about a minute for a cold start) |
+| login | `/` ends on `/login` with 200 and the page has the "Sign in with Google" link |
+| protected | `/households` redirects an anonymous visitor to `/login` instead of answering 200 |
+| headers | the login page and that redirect carry a CSP without `unsafe-inline` / `unsafe-eval` and with `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `X-Frame-Options: DENY`, and (https only) `Strict-Transport-Security` |
+| static | `/css/app.css`, `/manifest.webmanifest` and `/sw.js` answer 200 with a body |
+| no 5xx | none of those requests got a server error |
+
+Run it yourself against any running instance, for example the local image
+(`docker run --rm -p 8080:8080 -e SPRING_PROFILES_ACTIVE=dev meal-magician`, then
+`task smoke -- http://localhost:8080`) or the live service
+(`task smoke -- https://meal-magician-<PROJECT_NUMBER>.europe-west3.run.app`). Exit status 0 means
+every check passed, 1 a check failed, 2 a missing or invalid URL. It cannot check signing in
+with Google (that cannot be automated); the sign-in on a phone stays a manual check.
 
 ## Scale to zero
 

@@ -1,6 +1,6 @@
 # The release (PLAN.md D13, amended for #51): after CI passes on a push to `main`, work out the next
-# version, build the image, push it to Artifact Registry, deploy it to Cloud Run and check that it
-# is healthy. A merge that changes only documentation or CI configuration is not deployed. It can
+# version, build the image, push it to Artifact Registry, deploy it to Cloud Run, check that it is
+# healthy and smoke-test the live service (#58). A merge that changes only documentation or CI configuration is not deployed. It can
 # also be started by hand ("Run workflow") with a version or a bump, for example to redeploy.
 #
 # Setup it needs (done once by the owner, runbook: documentation/Hosting-Setup.md): the GitHub
@@ -221,6 +221,7 @@ jobs:
       # The first request wakes the app (cold start) and Neon, and Flyway migrates on the first
       # start, so allow about four minutes before calling the release failed.
       - name: Wait for /actuator/health
+        id: health
         env:
           REGION: ${{ vars.GCP_REGION }}
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
@@ -229,6 +230,7 @@ jobs:
           url=$(gcloud run services describe "$SERVICE" \
             --project "$PROJECT_ID" --region "$REGION" --format 'value(status.url)')
           echo "Service URL: $url"
+          echo "url=$url" >>"$GITHUB_OUTPUT"
           for attempt in $(seq 1 16); do
             body=$(curl --silent --show-error --max-time 30 "$url/actuator/health" || true)
             echo "attempt $attempt: ${body:-no answer}"
@@ -241,8 +243,16 @@ jobs:
           echo "::error::$url/actuator/health did not report UP; read the logs with: gcloud run services logs read $SERVICE --region $REGION"
           exit 1
 
-      # Last on purpose: a tag means "this version was deployed and healthy". A failed run leaves
-      # no tag, so the same version can be tried again.
+      # Once per release, never on a timer (PLAN.md D11) and not on pull requests (the E2E job
+      # covers the image). Fetches public pages only and signs in as nobody (scripts/smoke.sh, #58).
+      # A failure fails the run before the tag step, so no tag is pushed for a broken deploy.
+      - name: Smoke-test the live service
+        env:
+          SERVICE_URL: ${{ steps.health.outputs.url }}
+        run: task smoke -- "$SERVICE_URL"
+
+      # Last on purpose: a tag means "this version was deployed, healthy and passed the smoke
+      # test". A failed run leaves no tag, so the same version can be tried again.
       - name: Push the release tag
         run: git push origin "refs/tags/v$VERSION"
 
