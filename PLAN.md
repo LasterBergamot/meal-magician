@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phase 1 done; UI redesign (#57) in parallel waves, Waves 1–4 landed, Wave 5 next (§9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phase 1 done; UI redesign (#57) in parallel waves, Waves 1–4 landed, Wave 5 under way (§9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -193,7 +193,9 @@ ids in that file are replaced with the real numbers then.
 - [x] Wave 3: R4 shell and navigation (the only UI item; PR #82, with B3 in PR #81).
 - [x] Wave 4: R5a sign-in/error/hello and R5c admin allowlist (#85, PR #90), R5b household pages
       (#86, PR #92), R6 theme preference (#87, PR #91), plus the Phase 2 pages (#88, PR #95).
-- [ ] Wave 5: R5d remove the old styles, R8 docs final pass, then R9 close-out with the owner.
+- [ ] Wave 5 (issues #96–#99, planned by Opus on 2026-11-02, D25): [x] R5d remove the old styles
+      (#96, PR #100); [x] week view 1/2 (#97, PR #101, beside it); [ ] week view 2/2 (#98); then
+      [ ] R8 docs final pass (#99), then R9 close-out with the owner.
 - Order: Phase 2 and 3 **pages** are built from these components, so they start once R1–R4 have
   landed (Phase 2 pages in Wave 4, Phase 3's week view after them). Their **backend** (module,
   migrations, services, tests) does not wait: it runs beside the waves (§9). *(Amended 2026-11-01;
@@ -228,7 +230,9 @@ no controllers or templates) and **the week view** (after R4 and the Phase 2 pag
       `recentlyPlannedMealIds` for "recently used first"), `@Version` with `PlanConflictException`
       (409), `SlotPlanned`, tenant-scoped. Archiving a meal leaves its slots alone; a still-planned
       meal cannot be hard-deleted.
-- [ ] Week view: a grid on desktop, a list of days on phone; ISO-week navigation; today highlighted.
+- [x] Week view: a grid on desktop, a list of days on phone; ISO-week navigation; today highlighted.
+      *(#97, PR #101; read-only, at `/plan`. A 7 × 4 table from 1024 px, a week strip plus day
+      sections below that. The Plan tab now points to `/plan`; `/` is still the hello page.)*
 - [ ] Slots: BREAKFAST / LUNCH / DINNER / SNACK. Add a meal from the library or create one inline;
       a note per slot; reorder and move slots.
 - [ ] Optimistic locking (`@Version`) with a friendly "someone else changed this, reload" message.
@@ -455,6 +459,11 @@ meal-magician/
    | 4 | R5a + R5c (one agent), R5b, R6 | Phase 2 meal pages (uses R4 and B2) | UI-D8 (theme cookie) confirmed 2026-11-02 |
    | 5 | R5d, R8 | Phase 3 week view (uses R4, B2, B3) | R9 walk-through on a phone and a laptop |
 
+   *Wave 5 as planned and filed 2026-11-02 (D25):* 5a R5d #96 (`haiku` high) beside week view 1/2
+   #97 (`sonnet` high); 5b week view 2/2 #98 (`sonnet` high, alone, blocked by #97); then R8 #99
+   (`haiku` high, docs only, blocked by #96–#98, because it rewrites the files the others edit).
+   Merge order #96, #97, #98, #99. No Flyway version is needed (V9 stays free).
+
    Never more than five subagents at once. Flyway versions are reserved so parallel branches do not
    collide: V6 = B2, V7 = B3; anything else takes the next free number after rebasing (Flyway
    refuses two files with one version, so the tests catch a clash). #13 (PWA install on a real
@@ -506,3 +515,4 @@ meal-magician/
 | 2026-11-02 | Owner checks done: #16 (first wiki page created, docs sync) and #18 (sign-in on a phone works) closed. Owner confirmed UI-D8 (theme cookie) and the occasion-type decision (enum in `catalog`, V8). **Wave 4 started** (D24): #85 (R5a + R5c, one agent), #86 (R5b), #87 (R6) under #57, and #88 (Phase 2 meal pages) under #3, one worktree subagent each. Backups (#62) stay after Phase 5. | #16, #18, #57, #3, #85, #86, #87, #88 |
 | 2026-11-02 | Wave 4 resumed after the 5-hour usage limit stopped the first session: #85 (PR #90) and #87 (PR #91) had merged, #86 was in PR #92 (checks green), #88 was a pushed WIP branch. Owner decided **D25**: plans by Opus (high) with a full `## Execution` brief per issue, a Haiku (high) coordinator, Haiku/Sonnet subagents chosen per issue, latest releases by alias. Docs only for the rule (`workflow.md`, `issues.md`, `CLAUDE.md`, `plan-ui-redesign.md` §7.1). | #85, #86, #87, #88, #90, #91, #92 |
 | 2026-11-02 | **Wave 4 landed.** #85 (PR #90), #87 (PR #91) and #86 (PR #92) merged; the meal pages (#88, PR #95) finish Phase 2: the `/meals` list with search, tag filter, recently-used-first and an archived switch, the form with 422 and 409 states, quick add (phone sheet, desktop bar), archive and restore, `OccasionType` owned by `catalog` (V8), `RecentMealsProvider` implemented by `planning`. Checked at 390 and 1280 px in light and dark. Open for the owner: the phone Meals list shows the gold add button and the gold current tab together, which the spec itself prescribes (the "Add" row of its navigation table and the FAB row of its component table), so it is left for the R9 walk-through. Wave 5 (R5d, R8, then R9) and the Phase 3 week view are next. | #57, #3, #85, #86, #87, #88, #90, #91, #92, #95 |
+| 2026-11-02 | **Wave 5 planned and half-built.** An Opus planner wrote the briefs; issues #96 (R5d), #97 (week view 1/2), #98 (week view 2/2) and #99 (R8) were filed with parents and blockers. **R5d landed** (#96, PR #100): the old `brand-50…800` scale is gone and `UiGuardTest` now fails on `brand-<digit>`, `stone-` or a raw Tailwind colour in a template or `app.js`, and on the old scale in `app.css`. **Week view 1/2 landed** (#97, PR #101): `GET /plan?week=YYYY-Www` (read-only), the Plan tab on `/plan`, `htmx.config.refreshOnHistoryMiss`. **Owner decisions:** the planner's five week-view deviations from the design are accepted (table from 1024 px, no swipe, one shared sheet, slot chips as row headers, remove-confirm over the slot sheet); the gold stays exactly as designed and is judged live at R9; the hello page may be removed once `/` can redirect (to be filed after #98). | #57, #4, #96, #97, #98, #99, #100, #101 |

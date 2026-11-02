@@ -1,6 +1,6 @@
 # Plan: Meal Magician UI redesign — a storybook look for the whole app
 
-Status: **Waves 1–4 landed, Wave 5 next; split into waves for parallel subagents (§7)** · Written: 2026-11-01 · Owner: @LasterBergamot
+Status: **Waves 1–4 landed, Wave 5 under way; split into waves for parallel subagents (§7)** · Written: 2026-11-01 · Owner: @LasterBergamot
 
 This file is the working plan for giving Meal Magician a new look and a new way to move around:
 a design system (colours, type, shapes, components), an app shell (a bottom tab bar on phones, a
@@ -200,7 +200,9 @@ states and success moments ("Ta-da! Week copied."), none in errors. Hungarian fi
 | Collapse | — | A button shrinks it to 72 px (icons only, each with a tooltip and `aria-label`). The choice is kept in `localStorage` (a per-viewer convenience, so wrap it in try/catch). Starts collapsed below 1024 px. |
 | Add | Floating gold **add button** above the tab bar on Plan and Meals | A normal violet `primary` button in the page header |
 | Content width | full, gutter `space-4` | `layout-content` max, gutter `space-8`; forms and single-column pages `layout-reading` |
-| Week | A list of days with a week strip; swipe changes week | A 7 × 4 grid with a side panel |
+| Week | A list of days with a week strip; the arrows change the week | A 7 × 4 table from 1024 px (a day list below that) and one shared sheet or dialog for the meal picker |
+
+*(Amended 2026-11-02, owner accepted the planner's proposal in #97/#98; was: swipe changes the week, a 7 × 4 grid from 768 px and a side panel for the picker. Eight columns at 768 px are about 80 px wide; a swipe needs gesture code the arrows do not; one sheet reuses the R3 component. The week view's slot chips are the row headers instead of a separate legend, and removing a meal opens its confirm dialog over the slot sheet.)*
 
 Rules shared by both:
 
@@ -406,9 +408,11 @@ one subagent takes both and the wave has four UI subagents.**
 
 **Wave 5: after Wave 4.**
 
-- [ ] **R5d Remove the old styles.** Delete the `brand-50/100/600/700/800` scale from `app.css` and
+- [x] **R5d Remove the old styles.** Delete the `brand-50/100/600/700/800` scale from `app.css` and
       extend `UiGuardTest` to fail on a leftover `brand-\d`/`stone-` class. Last, because it would
       fail every page that is not restyled yet, including Phase 2 pages still in review.
+      *(#96, PR #100. By then every page was restyled, so it ran beside the week view. The guard also
+      rejects raw Tailwind colours, and `RestyledPageTemplatesTest` was deleted as redundant.)*
 - [ ] **R8 Docs and rules: final pass.** Every item updates its own part of
       `.claude/rules/web-ui.md` and `documentation/Current-State-Frontend.md` in its PR (the docs gate
       wants that anyway); R8 reads them as a whole, then updates `Roadmap-Frontend.md`,
@@ -934,3 +938,4 @@ The slot mark on its own soft tile (`slot-<type>` on `slot-<type>-soft`, minimum
 | 2026-11-02 | **R4 follow-ups** (#83): the owner decided both open questions. The shell's top-bar avatar uses a new `soft` tone of `ui/_avatar` (`brand-soft` with `brand-ink`), so a phone screen has one gold mark, the current tab; and the language switch is now `POST /language` (CSRF-protected, public, redirects to the same-origin page it came from) instead of a `?lang=` GET, which replaces `LanguageSwitchInterceptor`. Wave 3's open items (1) and (3) are done. | #57, #83 |
 | 2026-11-02 | Owner checks done: #16 (first wiki page created, docs sync) and #18 (sign-in on a phone works) closed. Owner confirmed UI-D8 (theme cookie) and the occasion-type decision (enum in `catalog`, V8). **Wave 4 started** (D24): #85 (R5a + R5c, one agent), #86 (R5b), #87 (R6) under #57, and #88 (Phase 2 meal pages) under #3, one worktree subagent each. Backups (#62) stay after Phase 5. | #57, #85, #86, #87, #88 |
 | 2026-11-02 | **Wave 4 landed** (D24, D25): R5a + R5c (#85, PR #90), R6 (#87, PR #91) and R5b (#86, PR #92), beside the Phase 2 meal pages (#88, PR #95). The meal pages were checked at 390 and 1280 px in light and dark. **Open for the owner (R9):** on the phone Meals list the gold floating add button and the gold current-tab outline are both on screen, although §3.1 wants one gold mark per screen; the Add row and FAB row of this file's tables prescribe both, so nothing was changed. Options if it should change: a neutral active-tab pill, or a violet FAB. Also noted: a fixed bottom tab bar can cover a control that Playwright still counts as in view, so phone e2e tests that click near the bottom of a long form should scroll it up first. | #57, #85, #86, #87, #88, #90, #91, #92, #95 |
+| 2026-11-02 | **Wave 5 started.** R5d landed (#96, PR #100) and the read-only week view (#97, PR #101), whose phone Plan screen has the gold tab outline, today's gold number disc and the Today marker together. **The owner decided** (a) the week-view deviations above stay (§4 amended), and (b) the gold is **not** changed: the design is kept as written and judged on a real phone at R9, together with the Meals add button. R8 (#99) comes after the editing half of the week view (#98). | #57, #96, #97, #98, #99, #100, #101 |
