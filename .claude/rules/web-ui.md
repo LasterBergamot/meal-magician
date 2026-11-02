@@ -149,4 +149,13 @@ paths:
   other 4xx are a field error or a `danger` alert. Avatars in a list inside the shell use the `soft`
   tone, because the phone tab bar's current tab is the screen's gold highlight. An empty list in a
   card is a dashed `border-border-strong` box; a whole empty page is `ui/_empty`.
+- **Meal pages (#88), `meal/`:** built from the `ui/` components. A link that navigates is
+  `meal/_link_button`, because `ui/_button` always draws a `<button>`. The quick add is a
+  name-only form in two copies, one in the phone's `ui/_sheet` and one inline from `md` up, with ids
+  that differ by variant. A hidden `form` field says which copy posted, and `QuickAdd.variantOf`
+  maps anything unknown to the inline copy, so a hand-edited value cannot reach an element id. A
+  form that swaps itself (`hx-target="this"`, `hx-swap="outerHTML"`, as `meal/_form` and
+  `meal/_quick` do) must answer with the same root element and attributes, because the response
+  replaces it. The textarea and the occasion checkboxes in `meal/_form` have no `ui/` component yet;
+  they use the same tokens as `ui/_field` and should move to `ui/` when a second page needs them.
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.

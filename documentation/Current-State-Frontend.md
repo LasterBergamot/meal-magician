@@ -75,6 +75,62 @@ before real screens are built on top. Planned UI work: [[Roadmap: Frontend]].
   section, which also closes the open dialog; a refused change answers 422 (add) or 409 (remove) with
   the same section and the message.
 
+## Meal pages (#88)
+
+The meal library: a searchable list with filters, one meal's page, the create and edit form, the
+phone's quick add, and archive and restore. The controllers are `MealLibraryController` and
+`MealFormController` in `catalog/internal`, the page models are `MealsPage`, `MealFilter`,
+`MealForm` and `MealFormPage`, and the templates are in `meal/`. Every route is registered in
+`TenantEndpoints`, so the tenant guard test checks it: a person in no household gets 404, and so
+does a meal of another household. Every member may use the library, so no route is owner-only. The
+behaviour is in [[Current State: Backend]].
+
+- **Routes:** `GET /meals` is the list, with `q` (part of a name), `tag`, `archived=true` and
+  `sort` (`recent`, the default, or `name`). `GET /meals/{id}` is one meal. `GET /meals/new` and
+  `POST /meals` create a meal; `GET /meals/{id}/edit` and `POST /meals/{id}` edit it.
+  `POST /meals/quick` is the quick add (name only). `POST /meals/{id}/archive` and
+  `POST /meals/{id}/restore` take a meal out of the list and put it back.
+- **The list's state is in the URL.** `MealFilter` reads the parameters, and every chip, segment
+  and the search box keeps the parts it does not change, so a reload, Back and a shared link show
+  the same list. A tag filter is one tag at a time; pressing the chip of the active tag clears it.
+  "Show archived" adds the archived meals.
+- **Recently used first** is the default sort: the meals planned lately come first, the most
+  recently planned first, then the others, newest first. "A to Z" sorts by name. The planned order
+  comes from the plan, through the catalog's `RecentMealsProvider`.
+- **htmx on the list:** the search box waits 300 ms after the last keystroke, then fetches only the
+  results (`meal/_results.jte`) into `#meal-results` and updates the address. The tag chips, the
+  archived chip and the sort segments do the same. The search box is a GET form, so Enter works
+  without htmx. The list URL answers an htmx request with the results only and any other request
+  with the whole page (`Htmx.view`).
+- **Phone and desktop quick add:** on a phone a floating add button (`ui/_fab`) opens the quick-add
+  form in a bottom sheet (`ui/_sheet`). From `md` up the same form is a bar under the heading. There
+  are two copies with their own ids (`quick-sheet-form` and `quick-bar-form`); a hidden field
+  `form` says which copy posted, so a rejected name draws the same copy again.
+- **Saving and refusing:** a saved create, edit, quick add, archive or restore ends with
+  `Htmx.redirect`: to the list, or to the meal's page after an edit or a restore. A rejected form
+  answers 422 with its own fragment, the message under the field and what was typed, so nothing is
+  lost. A form that was opened before someone else saved the meal answers 409 with a warning and a
+  link to reload the edit form, and nothing is written. A rejected quick add answers 422 with the
+  quick-add form for htmx; without htmx it shows the full create form with the name filled in.
+- **Archive** is behind the confirm dialog (`ui/_confirm`, a centred alert), because it takes the
+  meal out of the list. The meal keeps its history and its planned slots, and its page then shows an
+  info alert with a Restore button.
+- **Recipe links** are shown on the meal's page only. They open in a new tab with
+  `rel="noopener noreferrer"`, so the other site cannot reach back into this tab. The list card
+  shows no recipe link, because a link inside the card's stretched link is not allowed.
+- **Occasion types** are checkboxes on the form and badges on the meal's page. The labels come from
+  the `meal.occasion.*` keys.
+- **Templates:** `meal/list.jte` (the page) and `meal/_results.jte` (the part htmx swaps),
+  `_card.jte` (one meal in the list), `detail.jte`, `form.jte` (the create and edit page) and
+  `_form.jte` (its form, which swaps itself), `_quick.jte` (the quick-add form) and
+  `_link_button.jte` (a link drawn like a `ui/_button`, because `ui/_button` always draws a
+  `<button>`). The textarea and the occasion checkboxes are drawn in `_form.jte` itself, since the
+  design system has no component for them yet.
+- **Tests:** `MealPagesTest` runs the pages through MockMvc (the list, filters, sort, htmx
+  fragments, the form, the tenant cases), `MealPageModelsTest` covers the page models, and the
+  browser test `MealPagesE2ETest` adds, finds, edits, archives and restores a meal at phone and
+  desktop size.
+
 ## App shell and navigation (R4, #79)
 
 Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` chooses it when
@@ -92,8 +148,8 @@ Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` 
   under `mm.sidebarCollapsed`, for this browser only; every access is in try/catch because some
   browsers refuse storage.
 - **Destinations** (`shared.web.NavDestination`): Plan (`/`; until Phase 3 it is the hello page),
-  Meals (`/meals`) and Occasions (`/occasions`) and Household (`/households`). Meals and Occasions
-  have no page yet, so they are **not listed** (a flag on the enum; switching one on is a one-word
+  Meals (`/meals`, the meal library, #88) and Household (`/households`). Occasions (`/occasions`)
+  has no page yet, so it is **not listed** (a flag on the enum; switching one on is a one-word
   change). `NavDestination.matching` picks the current tab from the request path, so
   `/households/members` highlights Household and `/` highlights only Plan.
 - **The household switcher** (`layout/_household_switcher.jte`) is in both shells. Its button opens
