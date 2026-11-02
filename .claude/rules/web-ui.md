@@ -13,7 +13,7 @@ paths:
 > rewrites this file to match what was built.
 
 - **Mobile-first.** Design for a ~375 px phone first, then enhance for tablet/desktop
-  (`md:`/`lg:`). The week view is a list of days on phone and a grid on desktop. Touch targets ≥ 44 px.
+  (`md:`/`lg:`). The week view is a list of days on phone and a table from `lg` (1024 px). Touch targets ≥ 44 px.
 - **JTE** templates are precompiled; layouts in `src/main/jte/layout/`, one folder per module,
   fragments named `_*.jte`. Pass typed view-model records, never entities.
 - **htmx** for interactivity: forms post with `hx-post`, the server returns the updated fragment;
@@ -158,4 +158,12 @@ paths:
   `meal/_quick` do) must answer with the same root element and attributes, because the response
   replaces it. The textarea and the occasion checkboxes in `meal/_form` have no `ui/` component yet;
   they use the same tokens as `ui/_field` and should move to `ui/` when a second page needs them.
+- **Week view (#97), `plan/`:** one swap region, `#plan-week`, holds the stepper, the phone's
+  strip and day list and the desktop table; `plan/_week` is the fragment and `plan/week` the page.
+  The stepper links go through `HtmlAttributes.htmxFetch` and keep stable ids (`plan-prev`,
+  `plan-next`, `plan-today`) so htmx returns focus to the same arrow after a swap. Back is safe
+  because `htmx-config` has `refreshOnHistoryMiss: true` (history snapshots are off, so a miss
+  reloads the page). Dates are formatted in the page model (`PlanDates`), never in a template, and
+  the `slot-*` colour class is written as an `@if` chain so Tailwind finds it. `data-group` and
+  `data-slot-id` are for tests.
 - Accessibility: semantic HTML, labels on inputs, visible focus, sufficient contrast.

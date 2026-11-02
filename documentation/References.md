@@ -36,6 +36,7 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | `@font-face`, `font-display`, `unicode-range` | https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face |
 | WCAG 2 contrast ratio (the formula in `ContrastTokensTest`) | https://www.w3.org/TR/WCAG21/#dfn-contrast-ratio |
 | `fontTools` (instancing and WOFF2 subsetting of the font files) | https://fonttools.readthedocs.io/ |
+| `java.time` ISO weeks and localized patterns (`IsoFields`, `DateTimeFormatter.ofLocalizedPattern`) | https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/time/temporal/IsoFields.html |
 | Content-Security-Policy | https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP |
 | Service Worker API | https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API |
 | Web app manifest (installability, maskable icons) | https://web.dev/articles/add-manifest |
