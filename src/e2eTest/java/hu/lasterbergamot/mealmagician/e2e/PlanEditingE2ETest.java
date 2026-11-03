@@ -18,6 +18,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -168,6 +169,7 @@ class PlanEditingE2ETest {
       assertThat(item(page, lunch, gulyas).textContent()).doesNotContain("Késő változtatás");
 
       // Keyboard: Enter on the add control opens the pick sheet, Escape gives the focus back.
+      reveal(page, breakfast);
       add(page, breakfast).focus();
       page.keyboard().press("Enter");
       page.locator("dialog#pick-sheet[open]").waitFor();
@@ -203,6 +205,68 @@ class PlanEditingE2ETest {
     }
   }
 
+  @Test
+  void aBreakfastIsAddedThroughTheOtherMealsDisclosureOnThePhone() {
+    LocalDate today = LocalDate.now(ZoneId.of("Europe/Budapest"));
+    String breakfast = today + "/BREAKFAST";
+    String lunch = today + "/LUNCH";
+    String meal = "Rántotta " + System.nanoTime();
+
+    try (BrowserContext context =
+        browser.newContext(new Browser.NewContextOptions().setViewportSize(390, 844))) {
+      Page page = context.newPage();
+      signIn(page);
+      createHousehold(page, "E2E lunch first phone " + System.nanoTime());
+      page.navigate(BASE_URL + "/plan");
+
+      // An empty day: Lunch up front, the other three behind a closed disclosure.
+      group(page, lunch).waitFor();
+      Locator disclosure = page.locator("details[data-more='day-" + today + "']");
+      assertThat(disclosure.getAttribute("open")).isNull();
+      assertThat(disclosure.locator("li[data-group]").count()).isEqualTo(3);
+      assertThat(group(page, breakfast).isVisible()).isFalse();
+      shots(page, "phone", "lunch-first");
+
+      // Opening it shows the empty slots with their add controls; a quick add plans a breakfast.
+      quickAdd(page, breakfast, meal);
+
+      // After the save the page reloaded: Breakfast is outside the disclosure, which keeps two.
+      page.locator("section#day-" + today + " > ul > li[data-group='" + breakfast + "']").waitFor();
+      assertThat(disclosure.locator("li[data-group]").count()).isEqualTo(2);
+    }
+  }
+
+  @Test
+  void aSnackIsAddedAfterShowingAllMealsOnTheDesktop() {
+    LocalDate today = LocalDate.now(ZoneId.of("Europe/Budapest"));
+    String snack = today + "/SNACK";
+    String meal = "Alma " + System.nanoTime();
+
+    try (BrowserContext context =
+        browser.newContext(new Browser.NewContextOptions().setViewportSize(1280, 800))) {
+      Page page = context.newPage();
+      signIn(page);
+      createHousehold(page, "E2E lunch first desktop " + System.nanoTime());
+      page.navigate(BASE_URL + "/plan");
+
+      // An empty week: only the Lunch row; the box above the table shows the others.
+      page.locator("tr[data-row='LUNCH']").waitFor();
+      assertThat(page.locator("tr[data-row='SNACK']").isVisible()).isFalse();
+      assertThat(page.locator("tr[data-row='DINNER']").isVisible()).isFalse();
+      shots(page, "desktop", "lunch-first");
+      page.locator("label[for='plan-show-all']").click();
+      assertThat(page.locator("tr[data-row='SNACK']").isVisible()).isTrue();
+      assertThat(page.locator("tr[data-row='BREAKFAST']").isVisible()).isTrue();
+      shots(page, "desktop", "show-all");
+
+      // Add a snack; the page reloads and the Snack row stays, now because it holds a meal.
+      quickAdd(page, snack, meal);
+      page.locator("tr[data-row='DINNER']")
+          .waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
+      assertThat(page.locator("tr[data-row='SNACK']").isVisible()).isTrue();
+    }
+  }
+
   private static Locator.WaitForOptions detached() {
     return new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED);
   }
@@ -233,7 +297,25 @@ class PlanEditingE2ETest {
     locator.click();
   }
 
+  /**
+   * Makes a slot's box visible when lunch-first (D30) hides it: opens the day's "Other meals"
+   * disclosure on the phone, ticks "Show all meals" above the table on the desktop. Does nothing
+   * for a slot that is already shown (Lunch, or any slot that holds a meal).
+   */
+  private static void reveal(Page page, String key) {
+    if (group(page, key).isVisible()) {
+      return;
+    }
+    if (page.viewportSize().width < DESKTOP_FROM) {
+      page.locator("details[data-more='day-" + key.substring(0, 10) + "'] > summary").click();
+    } else {
+      page.locator("label[for='plan-show-all']").click();
+    }
+    group(page, key).waitFor();
+  }
+
   private static void openAdd(Page page, String key) {
+    reveal(page, key);
     click(add(page, key));
     sheetLoaded(page, "#pick-quick-form");
   }

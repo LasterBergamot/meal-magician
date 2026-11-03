@@ -190,6 +190,13 @@ paths:
   reloads the page). Dates are formatted in the page model (`PlanDates`), never in a template, and
   the `slot-*` colour class is written as an `@if` chain so Tailwind finds it. `data-group` and
   `data-slot-id` are for tests.
+- **Lunch first (#127, D30):** the week shows Lunch by default. The phone day card draws
+  `DayPlan.shownGroups()` (Lunch and any slot with a meal) and keeps `hiddenGroups()` in a native
+  `<details data-more>` ("Other meals"); the table draws every row but gives a row of a type with no
+  meal in the week (`WeekPage.shownTypes()`) `hidden group-has-[:checked]/grid:table-row`, and the
+  checkbox `#plan-show-all` ("Show all meals") inside the `group/grid` wrapper shows them. CSS only;
+  write the variant classes whole and keep a space before `@endif`, or Tailwind misses the class.
+  A test or script must open the disclosure or tick the box before it uses a hidden slot's control.
 - **Week editing (#98):** the week's many slot controls share two page-level sheets: a `ui/_sheet`
   with an empty `trigger`, opened by a link with `x-data="sheetOpener"`, `data-sheet="<id>"` and
   `hx-get`/`hx-target` (the link also works without JavaScript). A confirm may open from a sheet,

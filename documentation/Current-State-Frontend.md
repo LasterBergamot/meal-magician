@@ -144,10 +144,21 @@ is in [[Current State: Backend]].
   this week, by the application `Clock`. The URL answers an htmx request with the `plan/_week`
   fragment and any other request with the whole page (`Htmx.view`).
 - **Phone and desktop:** below 1024 px the page shows a week strip (seven day buttons that jump to
-  the day) and seven day sections, each with four slot rows. From 1024 px (`lg`) it shows a table,
-  one column per day and one row per slot type. The table starts at `lg` and not at `md` because
-  at 768 px eight columns are about 80 px each, too narrow for a meal name. Both versions are in
-  the markup and CSS shows one.
+  the day) and seven day sections. From 1024 px (`lg`) it shows a table, one column per day and one
+  row per slot type. The table starts at `lg` and not at `md` because at 768 px eight columns are
+  about 80 px each, too narrow for a meal name. Both versions are in the markup and CSS shows one.
+- **Lunch first (#127, D30):** Lunch is the household's main meal, so it is the only slot always
+  drawn. On the phone a day section shows Lunch plus any slot that already holds a meal
+  (`DayPlan.shownGroups()`), and the remaining empty slots sit in a native `<details>` ("Other
+  meals" / "Más étkezések", `plan.slot.more`) with their usual add controls
+  (`DayPlan.hiddenGroups()`); a day with all four slots filled draws no disclosure. In the table
+  the Lunch row is always shown and the row of another type is shown when any day of the week holds
+  a meal of that type (`WeekPage.shownTypes()`); the other rows are in the markup with the classes
+  `hidden group-has-[:checked]/grid:table-row` and appear when the viewer ticks **Show all meals**
+  (`plan.grid.showall`, the checkbox `#plan-show-all` above the table). That is CSS only (the
+  wrapper is `group/grid`), so there is no JavaScript. A swap or reload closes the disclosure and
+  clears the box. Nothing changes in the backend: all four `SlotType`s exist and copying,
+  templates, occasions and ratings work on all of them.
 - **Today** is marked in both: the strip's day circle and the table's column header carry
   `aria-current="date"`, and the day section header and the column header have a gold fill with a
   "Today" badge.
@@ -163,7 +174,7 @@ is in [[Current State: Backend]].
   the page with `HX-Request` and swapped only a fragment into `<body>`. Now a history miss reloads
   the whole page. This also fixes Back on `/meals`, which had the same fault.
 - **Content:** a slot with meals shows each meal's name, an "Archived" badge for an archived meal
-  (the plan keeps it) and the slot's note; every slot, empty or not, ends with an add control. The names come from one `MealService.search` of the whole library (archived included), not one
+  (the plan keeps it) and the slot's note; every slot that is drawn, empty or not, ends with an add control. The names come from one `MealService.search` of the whole library (archived included), not one
   lookup per slot.
 - **Templates:** `week.jte` (the page) and `_week.jte` (the swap region), `_week_stepper.jte`,
   `_strip.jte`, `_day.jte` and `_slot_row.jte` (the phone), `_grid.jte` and `_cell.jte` (the
@@ -171,8 +182,9 @@ is in [[Current State: Backend]].
   model and never in a template; the `slot-*` colour class is an `@if` chain so Tailwind finds it.
   `data-group` and `data-slot-id` are for the tests.
 - **Tests:** `IsoWeekTest` (year boundaries, invalid codes), `PlanPageModelsTest`, `PlanPagesTest`
-  (MockMvc: the page, an htmx fragment, planned meals, another household, a stranger, English) and
-  the browser test `PlanWeekE2ETest` at phone and desktop size.
+  (MockMvc: the page, an htmx fragment, planned meals, the lunch-first disclosure and table rows,
+  another household, a stranger, English) and the browser tests `PlanWeekE2ETest` and
+  `PlanEditingE2ETest` at phone and desktop size.
 - **Not yet:** swipe to change week (dropped from the design on 2026-11-02, see `plan-ui-redesign.md` §4).
 
 ### Editing the week (#98)
