@@ -49,13 +49,14 @@ changes no domain logic.
 | UI-D2 | **Two full themes:** *Moonlight* (light) and *Midnight* (dark), not an inversion: lighter fills carry dark `on-*` text. The theme is `light`, `dark` or `system` (default: follow `prefers-color-scheme`). | Decided |
 | UI-D3 | **Colour roles:** `brand` = spell violet (primary action, active navigation, links); `accent` = starlight gold, **a fill only, never text**, once per screen (add button, today, occasion); meal types own a trio each (sunrise yellow, mint, night sapphire, candy pink); `danger` is cherry red and never the accent. Meal type is always colour + icon + word. | Decided |
 | UI-D4 | **Type:** headings in **Baloo 2** (rounded, cartoon), body in **Nunito** (rounded, quiet), both open-licensed (SIL OFL), **self-hosted** as `woff2` in `static/fonts/` (the CSP is `font-src 'self'`; no CDN). Hungarian needs the **latin-ext** subset (ő, ű): both Nunito and Baloo 2 have it (Fredoka, the first choice, had **no Latin Extended-A glyphs**, so its ő and ű came from Nunito and looked thinner; #130). Display stack: `"Baloo 2", "Nunito", "Trebuchet MS", system-ui, sans-serif` (Nunito is a safety net only). Neither font has the `tnum` feature, so there are no tabular numerals. Alternative faces the owner named as acceptable: Baloo 2, Sniglet (display), Fraunces (serif storybook); *(Amended 2026-11-01; was Fredoka alone, with Baloo 2 named but not hosted)* *(Amended 2026-11-03; was Fredoka with a Nunito fallback for ő/ű. The owner chose Baloo 2 after a specimen comparison, #130)* | Decided (owner chose "other fonts could be good too"; Fredoka + Nunito proposed 2026-11-01; Nunito fallback for ő/ű decided by the owner 2026-11-01, #71) |
-| UI-D5 | **Navigation:** phone = top bar (household switcher pill, avatar) + **bottom tab bar** with four destinations (Plan, Meals, Occasions, Household) + a floating add button on Plan and Meals; desktop (≥ 768 px) = **left sidebar** (household switcher, the same four destinations, language, sign-out; collapsible to icons). The household switcher moves from `/households` into both shells. | Decided |
+| UI-D5 | **Navigation:** phone = top bar (household switcher pill, avatar) + **bottom tab bar** with four destinations (Plan, Meals, Occasions, Household) + a floating add button on Plan and Meals; desktop (≥ 768 px) = **left sidebar** (household switcher, the same four destinations, language, sign-out; collapsible to icons). The household switcher moves from `/households` into both shells. *(Amended 2026-11-03, UI-D12; was four destinations only. When the assistant is on, a fifth destination, **Varázsló / Wizard**, follows Household in both the tab bar and the sidebar; when it is off, the shell is unchanged.)* | Decided |
 | UI-D6 | **Editing in context:** a **bottom sheet** on phone and a **side panel or dialog** on desktop (one markup, CSS chooses by breakpoint, native `<dialog>` + an Alpine component). Destructive confirmations are always dialogs. | Decided |
 | UI-D7 | **Implementation on the existing stack:** Tailwind v4 `@theme` in `src/main/css/app.css` with the colours as CSS variables per theme; JTE fragments under `src/main/jte/ui/` and `layout/`; no new JS libraries (Alpine CSP build + htmx stay); icons are inline SVG in one JTE fragment. Everything stays inside the CSP (no inline `style=`, no inline script, no CDN). | Decided |
 | UI-D8 | **Theme preference** is a cookie `mm_theme` (`light`\|`dark`\|`system`), like `mm_lang` (D14), read by the server so `<html data-theme>` is right on first paint (no flash). Per user in the DB comes later, together with the per-user language. | Decided (owner confirmed 2026-11-02; implemented in R6, #87) |
 | UI-D9 | **UI copy** stays Hungarian by default, English selectable (D14); every new string goes in both bundles. Tone: warm, short, a touch whimsical in empty states and success moments, never in errors or destructive confirmations. | Decided |
 | UI-D10 | **Accessibility is a gate, not a nice-to-have:** the contrast pairs in Appendix C are checked by a test in both themes; touch targets ≥ 44 px (the `sm` button is the one pointer-only exception); status is never colour alone; visible 3 px focus ring; `prefers-reduced-motion` turns every transition and animation off. | Decided |
 | UI-D11 | **Brand mark = the wizard.** The cartoon wizard on a gold tile (`favicon.svg`, PR #61) is both the app icon and the logo inside the app (sign-in, sidebar, top bar). | Decided (owner, 2026-11-01) *(was: a `wand` icon in a violet rounded tile)* |
+| UI-D12 | **The assistant is the wizard, and the wand marks its work** (Phase 7, `PLAN.md` #160, #161). The interface calls the assistant **Varázsló / Wizard** (shorter than "Asszisztens" in the tab bar, and the brand mark is already a wizard, UI-D11). The `wand` icon means "the assistant does this": every assistant button, the nav item and the label on anything it drafted; `sparkles` stays decoration (so the nav item is `IconName.WAND`, not the `SPARKLES` #161's brief names). Assistant entry points are never gold, because the add button and today already hold each screen's one gold mark. Things the assistant made up that are not real yet (an **idea** not in the library) get a **dashed** outline, the same "not real yet" cue as an empty slot. No new tokens. The full design is Appendix D; where #160 or #161 differ from it, Appendix D wins. | Decided (owner, 2026-11-03) |
 
 The visual reference is a private design-system artifact in the owner's Claude account
 (`https://claude.ai/artifact/XAHNAEX9ZGGhGpp2FwTMXU`, "Meal Magician Design System"; light/dark
@@ -248,6 +249,7 @@ design-system names. The behaviour column is the contract.
 | **Week (phone)** | `plan/_day.jte`, `plan/_slot_row.jte`, `plan/_strip.jte`, `plan/_pick_sheet.jte` | Week strip (7 numbers, today = gold disc), day sections with four slot rows (≥ 56 px; empty = dashed "Add lunch"), pick sheet with search, recent meals and **Quick add** by name. Phase 3. *(Amended 2026-11-03, #127, D30; was: four slot rows every day. Lunch is the main slot: a day shows Lunch and any slot that holds a meal, and the empty rest sit behind a native `<details>` "Other meals". The desktop table always shows the Lunch row; the other rows show when the week holds a meal of that type or the viewer ticks "Show all meals", a CSS-only checkbox.)* |
 | **Meals** | `catalog/meals.jte`, `_list.jte`, `_card.jte`, `_quick_add.jte`, `_detail.jte` | Search + tag chips + meal cards; quick-add bar pinned above the tab bar on phone; two-column (three from `xl`) grid on desktop. Phase 2. |
 | **Occasions** | `occasion/list.jte`, `_row.jte`, `detail.jte`, `_menu.jte`, `template.jte` (Phase 4, built); `feedback/_prompt.jte` (Phase 5) | Next occasion as a gold-soft card, templates as rows, occasion detail with a menu and "Save as template"; the "How did it go?" card on Plan. Phase 4–5. *(Amended 2026-11-02, #113; was: `planning/occasions.jte`, `_occasion_card.jte` and `occasion.jte`. The built fragments are the ones listed; the menu's pick sheet (`occasion/_pick.jte`) is a copy of the plan's, and the card is drawn inside `list.jte`.)* |
+| **Assistant** | `ui/_check_chip.jte` and a text-area variant of `ui/_field` (new, shared); `assistant/_entry.jte`, `_week_sheet.jte`, `_waiting.jte`, `_draft.jte`, `_draft_item.jte`, `_idea_card.jte`, `_refine.jte`, `_slot.jte`, `_error.jte`, `chat.jte`, `_chat_messages.jte`, `_menu_suggestions.jte` | Phase 7 (#160, #161), built only from the components above. Entry fragments answer 204 when the assistant is off, so the host page shows nothing. Wand on every entry, dashed idea cards, never gold. Appendix D has the screens, states, copy and accessibility rules. *(Added 2026-11-03, UI-D12.)* |
 
 ---
 
@@ -531,6 +533,9 @@ not depend on the redesign and runs beside it (`PLAN.md` §9).
   under its details. The print page (`/plan/print`) and the public share page (`/share/{token}`)
   are the same week drawn on the bare layout, with no shell.)*
 - **Admin allowlist (Phase 1, #45):** same list-and-card pattern, instance admins only.
+- **Assistant (Phase 7, #160, #161):** the "Suggest my week" sheet, the one-slot ideas in the pick
+  sheet, "Suggest a menu" on an occasion and the Wizard chat page. All of it is in Appendix D
+  (UI-D12).
 
 ---
 
@@ -576,6 +581,14 @@ not depend on the redesign and runs beside it (`PLAN.md` §9).
 | 2026-11-01 | Wave 1 started (D24): sub-issues #64 (R1) and #65 (R2a) filed under #57. **R1 landed** (#64, PR #69): Appendix A tokens in `app.css`, `data-theme` and the light/dark `theme-color` metas, self-hosted Fredoka and Nunito, `sw.js` v2, the manifest colours and `ContrastTokensTest` (all 53 Appendix C pairs in both themes, and it fails on a bad token). **The owner decided** what to do about two font findings: Fredoka has no Latin Extended-A glyphs (no ő/ű), so headings take those letters from **Nunito** (Fredoka stays the display font, not Baloo 2; fixed in #71); neither font has `tnum`, so there are no tabular numerals (UI-D4 and §3.3 amended). | #57, #64, #69, #71 |
 | 2026-11-01 | **R2a landed** (#65, PR #70): `ui/_icon` (30 icons, `IconName` enum), `ui/_button` (4 variants, 4 sizes, busy/disabled), `ui/_fab`, the dev-only `/dev/ui` page with the empty `_content`, `_forms` and `_overlays` stubs, and `HtmlAttributes` for extra attributes (JTE has no `@for` in attribute-name position). R1's E2E failure (the login page's font preloads were saved as the post-sign-in redirect because `/fonts` was not in `PUBLIC_PATHS`) was fixed in PR #69, with a test that requests every static file anonymously. | #57, #65, #69, #70 |
 | 2026-11-01 | **Wave 2 landed** (#73, #74, #75; PRs #77, #76, #78): the content and status components, the form components with the 422 state, and the sheet and confirm dialog (native `<dialog>`, Alpine `sheet`, keyboard e2e). The e2e stack now runs with profiles `dev,postgres` so the browser tests can open `/dev/ui`. Open for later: arrow keys for `ui/_segmented` need an Alpine behaviour in `app.js` (R4 or a follow-up); the htmx branch of `_segmented` is tested only through its helper until a page uses it; the avatar is a gold disc, which the first members list should check against "one gold highlight per screen"; R2b's merge commit lost its `#73 - ` subject (git treated it as a comment during a rebase). | #57, #73, #74, #75, #76, #77, #78 |
+| 2026-11-02 | **Wave 3 landed** (#79, PR #82; B3 #80, PR #81 beside it): the app shell (phone top bar and 64 px tab bar, desktop sidebar that collapses to icons, household switcher in both, avatar menu, sign-out as a CSRF POST, stored per-user language, arrow keys for `ui/_segmented`), tabs for pages that do not exist are hidden, 25 e2e tests at 390 and 1280 px, and a screenshot check in light and dark. **Open for the owner or Wave 4:** (1) on a phone the gold avatar disc and the gold current-tab outline are two gold marks (§3.1 says one): pick a `brand-soft` avatar variant for the shell or a neutral active-tab pill; (2) no `hx-boost` yet, because pages return whole documents (revisit when they return fragments); (3) `?lang=` saves the stored language on a GET, so a cross-site link could flip it (low impact; consider a POST in R6); (4) old pages still have white cards on the dark theme until R5; (5) the on-screen keyboard and safe-area inset were not checked (headless Chromium has neither), so R9 checks them on a real phone. | #57, #79, #80, #81, #82 |
+| 2026-11-02 | **R4 follow-ups** (#83): the owner decided both open questions. The shell's top-bar avatar uses a new `soft` tone of `ui/_avatar` (`brand-soft` with `brand-ink`), so a phone screen has one gold mark, the current tab; and the language switch is now `POST /language` (CSRF-protected, public, redirects to the same-origin page it came from) instead of a `?lang=` GET, which replaces `LanguageSwitchInterceptor`. Wave 3's open items (1) and (3) are done. | #57, #83 |
+| 2026-11-02 | Owner checks done: #16 (first wiki page created, docs sync) and #18 (sign-in on a phone works) closed. Owner confirmed UI-D8 (theme cookie) and the occasion-type decision (enum in `catalog`, V8). **Wave 4 started** (D24): #85 (R5a + R5c, one agent), #86 (R5b), #87 (R6) under #57, and #88 (Phase 2 meal pages) under #3, one worktree subagent each. Backups (#62) stay after Phase 5. | #57, #85, #86, #87, #88 |
+| 2026-11-02 | **Wave 4 landed** (D24, D25): R5a + R5c (#85, PR #90), R6 (#87, PR #91) and R5b (#86, PR #92), beside the Phase 2 meal pages (#88, PR #95). The meal pages were checked at 390 and 1280 px in light and dark. **Open for the owner (R9):** on the phone Meals list the gold floating add button and the gold current-tab outline are both on screen, although §3.1 wants one gold mark per screen; the Add row and FAB row of this file's tables prescribe both, so nothing was changed. Options if it should change: a neutral active-tab pill, or a violet FAB. Also noted: a fixed bottom tab bar can cover a control that Playwright still counts as in view, so phone e2e tests that click near the bottom of a long form should scroll it up first. | #57, #85, #86, #87, #88, #90, #91, #92, #95 |
+| 2026-11-02 | **Wave 5 started.** R5d landed (#96, PR #100) and the read-only week view (#97, PR #101), whose phone Plan screen has the gold tab outline, today's gold number disc and the Today marker together. **The owner decided** (a) the week-view deviations above stay (§4 amended), and (b) the gold is **not** changed: the design is kept as written and judged on a real phone at R9, together with the Meals add button. R8 (#99) comes after the editing half of the week view (#98). | #57, #96, #97, #98, #99, #100, #101 |
+| 2026-11-02 | **Wave 5 build done except R8.** The week view's editing half landed (#98, PR #104) and the hello page was retired (#103, PR #105): `/` redirects to `/plan`, or to `/households` for a person without a household. R8 (#99) is the last build item; R9 is the owner's walk-through, where the gold on the phone Plan and Meals screens is judged live. | #57, #98, #103, #104 |
+| 2026-11-02 | **Wave 5 landed, the redesign is built.** R8 (#99, PR #106) is merged after the week view (#97, #98), R5d (#96) and the hello-page removal (#103). Left: **R9**, the owner's close-out. Things to look at there: the gold on the phone Plan and Meals screens (the design is kept as written), the week table's mid-word wrapping of a long single word such as "Gulyásleves" in a ~115 px cell at 1280 px, Lighthouse accessibility and PWA on a phone, and installing the PWA on a real phone. | #57, #99, #106 |
+| 2026-11-03 | **Assistant design added and approved from a mockup** (owner, UI-D12): the assistant is "Varázsló / Wizard", the `wand` marks everything it does, entry points are `secondary` and never gold, ideas are dashed cards, and the chat page is a plain-text thread with a sticky composer. Appendix D holds the screens, states, copy and checks for #160 and #161 and wins where their briefs differ (the nav icon is `WAND`, not `SPARKLES`). UI-D5 amended for the fifth destination; §5 and §8 point to Appendix D. Also moved seven progress-log rows that had landed after Appendix C back into this table. Docs only. | #160, #161 |
 
 ---
 
@@ -942,10 +955,242 @@ All on a `viewBox="0 0 24 24"`, `fill="none"`, `stroke="currentColor"`, `stroke-
 | `outline` on `slot-snack-soft` | 3 | 12.34 | 4.44 |
 
 The slot mark on its own soft tile (`slot-<type>` on `slot-<type>-soft`, minimum 2.5) is decoration next to a text label, so it is allowed below 3. `accent` is a fill only and has no text pair.
-| 2026-11-02 | **Wave 3 landed** (#79, PR #82; B3 #80, PR #81 beside it): the app shell (phone top bar and 64 px tab bar, desktop sidebar that collapses to icons, household switcher in both, avatar menu, sign-out as a CSRF POST, stored per-user language, arrow keys for `ui/_segmented`), tabs for pages that do not exist are hidden, 25 e2e tests at 390 and 1280 px, and a screenshot check in light and dark. **Open for the owner or Wave 4:** (1) on a phone the gold avatar disc and the gold current-tab outline are two gold marks (§3.1 says one): pick a `brand-soft` avatar variant for the shell or a neutral active-tab pill; (2) no `hx-boost` yet, because pages return whole documents (revisit when they return fragments); (3) `?lang=` saves the stored language on a GET, so a cross-site link could flip it (low impact; consider a POST in R6); (4) old pages still have white cards on the dark theme until R5; (5) the on-screen keyboard and safe-area inset were not checked (headless Chromium has neither), so R9 checks them on a real phone. | #57, #79, #80, #81, #82 |
-| 2026-11-02 | **R4 follow-ups** (#83): the owner decided both open questions. The shell's top-bar avatar uses a new `soft` tone of `ui/_avatar` (`brand-soft` with `brand-ink`), so a phone screen has one gold mark, the current tab; and the language switch is now `POST /language` (CSRF-protected, public, redirects to the same-origin page it came from) instead of a `?lang=` GET, which replaces `LanguageSwitchInterceptor`. Wave 3's open items (1) and (3) are done. | #57, #83 |
-| 2026-11-02 | Owner checks done: #16 (first wiki page created, docs sync) and #18 (sign-in on a phone works) closed. Owner confirmed UI-D8 (theme cookie) and the occasion-type decision (enum in `catalog`, V8). **Wave 4 started** (D24): #85 (R5a + R5c, one agent), #86 (R5b), #87 (R6) under #57, and #88 (Phase 2 meal pages) under #3, one worktree subagent each. Backups (#62) stay after Phase 5. | #57, #85, #86, #87, #88 |
-| 2026-11-02 | **Wave 4 landed** (D24, D25): R5a + R5c (#85, PR #90), R6 (#87, PR #91) and R5b (#86, PR #92), beside the Phase 2 meal pages (#88, PR #95). The meal pages were checked at 390 and 1280 px in light and dark. **Open for the owner (R9):** on the phone Meals list the gold floating add button and the gold current-tab outline are both on screen, although §3.1 wants one gold mark per screen; the Add row and FAB row of this file's tables prescribe both, so nothing was changed. Options if it should change: a neutral active-tab pill, or a violet FAB. Also noted: a fixed bottom tab bar can cover a control that Playwright still counts as in view, so phone e2e tests that click near the bottom of a long form should scroll it up first. | #57, #85, #86, #87, #88, #90, #91, #92, #95 |
-| 2026-11-02 | **Wave 5 started.** R5d landed (#96, PR #100) and the read-only week view (#97, PR #101), whose phone Plan screen has the gold tab outline, today's gold number disc and the Today marker together. **The owner decided** (a) the week-view deviations above stay (§4 amended), and (b) the gold is **not** changed: the design is kept as written and judged on a real phone at R9, together with the Meals add button. R8 (#99) comes after the editing half of the week view (#98). | #57, #96, #97, #98, #99, #100, #101 |
-| 2026-11-02 | **Wave 5 build done except R8.** The week view's editing half landed (#98, PR #104) and the hello page was retired (#103, PR #105): `/` redirects to `/plan`, or to `/households` for a person without a household. R8 (#99) is the last build item; R9 is the owner's walk-through, where the gold on the phone Plan and Meals screens is judged live. | #57, #98, #103, #104 |
-| 2026-11-02 | **Wave 5 landed, the redesign is built.** R8 (#99, PR #106) is merged after the week view (#97, #98), R5d (#96) and the hello-page removal (#103). Left: **R9**, the owner's close-out. Things to look at there: the gold on the phone Plan and Meals screens (the design is kept as written), the week table's mid-word wrapping of a long single word such as "Gulyásleves" in a ~115 px cell at 1280 px, Lighthouse accessibility and PWA on a phone, and installing the PWA on a real phone. | #57, #99, #106 |
+
+## Appendix D — The assistant (Phase 7)
+
+The look of the AI assistant (UI-D12). `PLAN.md` Phase 7 is the backend design, and #160 (week and
+slot) and #161 (chat and occasion menu) hold the routes, services and tests. This appendix says how
+it looks and behaves. Where #160 or #161 differ from it, this appendix wins. The owner approved it
+from a clickable mockup of every screen and state below, phone and desktop, in both themes
+(`https://claude.ai/artifact/J6ibJiQ9uqxEBioyv6Lx5p`, "Wizard assistant screens", private to the
+owner like the design-system artifact). As with that artifact, this file is the source of truth. It adds **no tokens and
+no JS library**: everything is built from §5's components, plus:
+
+- a **text area** variant of `ui/_field` (`multiline`, `rows`): the same visible label, 2 px
+  `border-strong`, 16 px text and 422 error line as the input;
+- a **check chip**, `ui/_check_chip.jte`: a `<label>` around a visually hidden checkbox, drawn
+  exactly like `ui/_chip`, selected when checked (`has-[:checked]:` classes, with the `check`
+  icon), so it works in a plain form with no JS and the checkbox itself carries the state;
+- one CSS animation, `mm-twinkle` (D.3), and one line in the `sheet` component (D.3);
+- one Alpine component for the chat composer (D.6).
+
+The first two belong on `/dev/ui` with the other components.
+
+### D.1 Rules
+
+- **Name and mark.** The assistant is **Varázsló / Wizard** everywhere in the UI (never "AI" or
+  "assistant" in copy). The `wand` icon goes on every assistant button, the nav item and the label of
+  anything it drafted. `sparkles` stays decoration.
+- **Never gold.** Entry buttons are `secondary` (white, outlined) with the wand. The add button and
+  today keep the screen's one gold mark (§3.1). The only gold the assistant brings is `ui/_empty`'s
+  icon disc and sparkles on the empty chat page. On a phone that screen also shows the current
+  tab's gold pill, so it has two gold marks, like the Meals list with its add button. The owner
+  accepted this in the mockup (2026-11-03); R9 judges it on a real phone with the others.
+- **Not real yet = dashed.** An **idea** (a meal the model made up, not in the library) is a card
+  with a dashed outline and no shadow. A library meal in a draft is a normal row. Nothing reaches the
+  plan or a menu before the member says so.
+- **Off = invisible.** With `mm.ai.enabled=false` there is no button, row, tab or sidebar item, and no
+  "disabled" hint either: entry fragments answer 204 and the host page shows nothing.
+- **Model text is untrusted and plain.** Reasons and chat replies are escaped by JTE and shown with
+  `whitespace-pre-line`, so line breaks survive and markdown does not render. The prompts ask for
+  short paragraphs and "–" lists, never `**` or `#`.
+- **Honest about limits.** Every place where a member types a request shows, in `caption` under the
+  field, that it goes to Google Gemini and that the wizard knows nothing about allergies or diets.
+
+### D.2 Entry points
+
+| Where | What | Built from | Behaviour |
+|---|---|---|---|
+| Plan page, the action row in `#plan-week` (after Share) | "Suggest my week" | `ui/_button` `secondary` `md`, icon `wand` | Loaded by `hx-get="/assistant/entry?week=…" hx-trigger="load"`; opens the page-level `assistant-sheet` with the `sheetOpener` pattern. When the week has no meals, the fragment also renders one `body-sm` line under the row: `assistant.suggest.week.hint`. It stays `secondary` either way (the add button is the page's primary). |
+| Meal-pick sheet, first row under the search field | "Ask the wizard for ideas" | a `ui/_row`-styled button with the `wand` icon and a `right` chevron | Loads `_slot` into a region right under the row, inside the same sheet (never a sheet from a sheet, §5). |
+| Occasion page, the menu section header | "Suggest a menu" | `ui/_button` `secondary` `md`, icon `wand` | Loads `_menu_suggestions` under the menu, inline. |
+| Shell | Varázsló / Wizard | `NavDestination.ASSISTANT` with `IconName.WAND` | Fifth tab after Household on phone, fifth sidebar item on desktop (UI-D5). Five tabs at 375 px are 75 px each; "Háztartás" is the longest label and fits. Hidden when off. |
+
+### D.3 "Suggest my week" (#160)
+
+One sheet, `assistant-sheet`: a bottom sheet on phone (up to 92 dvh) and the right side panel on
+desktop, so the week stays visible beside it. Its body is swapped through five states.
+
+1. **Request** (`_week_sheet`)
+   - `h2` `assistant.sheet.title`, and the week range in `caption` under it.
+   - A `ui/_field` text area, 3 rows, max 1 000 characters: label `assistant.request.label`,
+     placeholder `assistant.request.placeholder`.
+   - **Quick requests:** a `fieldset` (legend `assistant.hint.label`) of four check chips
+     (`ui/_check_chip`): `assistant.hint.lessMeat`, `.quick`, `.vegStew`, `.leftovers`. Each one
+     ticked is sent as a `hint` value, and the server adds its translated text to the request.
+   - A compact `info` alert, `assistant.notice.allergy`, then `caption` `assistant.notice.provider`.
+   - Footer: `primary` `assistant.start`.
+2. **Waiting** (`_waiting`, 10–30 s)
+   - `ui/_skeleton_rows` shaped like three day cards, the region `aria-busy="true"`.
+   - Above them a status line in a `role="status"` region: the `wand` icon with the class
+     `mm-twinkle` and `assistant.thinking`.
+   - A `ghost` `assistant.cancel`, which closes the sheet. On close, the `sheet` component aborts the
+     body's request in flight (one line in `app.js`: `htmx.trigger(body, 'htmx:abort')`). The server
+     call may still finish; its draft is purged with the others (`PLAN.md`, Drafts).
+   - `mm-twinkle` (add to `app.css` in `@layer components`): opacity 1 → 0.4 → 1 and scale 1 → 0.9 → 1
+     over 1.2 s, infinite. It is off under `prefers-reduced-motion` like every other animation.
+3. **Draft** (`_draft`, `_draft_item`, `_idea_card`, `_refine`)
+   - `h2` `assistant.draft.title` with the week range; `caption` `assistant.draft.summary`.
+   - One block per day that has items: the day name as `h3`, then the items in slot order.
+   - **Library item** (`_draft_item`): a `ui/_row` with the slot chip, the meal name (row title), the
+     model's reason in `body-sm` `ink-muted` (two lines at most, `line-clamp-2`) and a 44 px `ghost`
+     icon button `x` (`aria-label` `assistant.item.remove`).
+   - **Idea** (`_idea_card`): a card on `surface-raised` with `border-2 border-dashed border-outline`
+     and **no** shadow. Inside: a `ui/_badge` with tone `brand` (`brand-soft` fill), the `wand` icon and
+     `assistant.idea.badge`, the slot chip, the name, the reason, the ingredients as one `caption`
+     line, then `secondary` `assistant.idea.add` and the remove icon button. Once added, the card
+     swaps to a normal library row with a `check` icon and `caption` `assistant.idea.added` in
+     `success-ink`. Ideas not added are left out on accept.
+   - **Refine** (`_refine`), at the end of the draft: label `assistant.refine.label`, the same four
+     chips, a 2-row text area (placeholder `assistant.refine.placeholder`) and `secondary`
+     `assistant.refine.send`. While a refine runs, the current draft stays visible but dimmed
+     (`opacity-60`, `inert`) under the same status line as step 2, so the member sees what is being
+     changed.
+   - **Footer**, sticky at the bottom of the sheet (`sticky bottom-0`, `surface-raised`,
+     `border-t-2 border-outline`, safe-area padding): a two-option `ui/_segmented` (label
+     `assistant.accept.mode`; `assistant.accept.merge` selected by default, `assistant.accept.replace`),
+     then a row with `ghost` `assistant.discard` on the left and `primary` `assistant.accept.submit` on
+     the right (full width on phone). Replace goes through `ui/_confirm` with
+     `assistant.accept.replace.confirm`.
+4. **Accepted.** The sheet closes and the plan refreshes (#160's `HX-Refresh` path). A `success` alert
+   at the top of the plan says `assistant.accepted`; how it survives the refresh (a flash attribute)
+   is #160's call. The star pop (§3.3 Motion) is allowed here.
+5. **Errors** (`_error`), in the sheet body. The member's request text is kept.
+   - Spend cap: `warning` alert, `assistant.error.cap`, no button.
+   - Model unavailable or timed out: `danger` alert, `assistant.error.unavailable`, with a
+     `secondary` `assistant.retry` that sends the same form again.
+   - Too long: the field's own 422 state (`ui/_field`, `assistant.error.invalid`), not an alert.
+   - Draft already accepted or discarded (409): the existing conflict pattern, a `warning` with
+     Reload.
+   - Discard needs no confirmation: it removes nothing from the plan.
+
+Focus: when a draft or a refined draft arrives, focus moves to its `h2` (`tabindex="-1"`); when an
+idea is added, focus stays on its card.
+
+### D.4 One slot (#160)
+
+The pick-sheet row loads `_slot` under itself: `assistant.slot.title` as `h3`, three skeleton rows
+with the twinkling wand and `assistant.thinking` while waiting, then up to three library meals as
+the pick sheet's own rows, each with its existing "plan this" form, the model's reason as a
+`body-sm` line under the name. No result: `assistant.slot.none` in `body-sm`. Errors as in D.3
+step 5, inline.
+
+### D.5 Occasion menu (#161)
+
+"Suggest a menu" loads `_menu_suggestions` under the menu: `h3` `assistant.menu.title`, up to six
+library meals as rows with the menu's existing "Add to menu" form, and up to three ideas as D.3's
+idea cards. It never edits the menu by itself. Waiting and errors as in D.4.
+
+### D.6 The Wizard chat page (#161)
+
+`/assistant`, inside the shell, content at `layout-reading` width.
+
+- **Header:** `h1` `assistant.chat.title`, and `ghost` `assistant.chat.new` (icon `plus`) on the
+  right. No confirmation: the conversation lives only in the session anyway.
+- **Empty state:** `ui/_empty` with the `wand` icon (its gold-soft disc and two sparkles),
+  `assistant.chat.empty.title` and `assistant.chat.empty.message`. Under it, three starter chips
+  (`assistant.chat.starter.season`, `.forgotten`, `.sunday`): each is a small form that posts its
+  text as the message, styled as a chip (no JS).
+- **Thread:** a `role="log"` list with `aria-live="polite"`.
+  - The member's messages: right-aligned, at most 85 % wide, `bg-brand-soft text-brand-ink`,
+    `rounded-lg` with the bottom-right corner `rounded-br-sm`, no outline (they are not tappable).
+  - The wizard's messages: left-aligned, `bg-surface-raised text-ink border-2 border-outline
+    shadow-1`, `rounded-lg` with the bottom-left corner `rounded-bl-sm`.
+  - No avatars. Each bubble starts with an `sr-only` `assistant.chat.you` or `assistant.chat.wizard`
+    and a colon.
+  - An off-topic question gets a normal wizard bubble (the polite redirect).
+  - New turns are appended with `hx-swap="beforeend show:bottom"`.
+- **Composer**, sticky at the bottom: above the tab bar on phone
+  (`bottom-[calc(var(--mm-bottom-bar)+env(safe-area-inset-bottom))]`), at the bottom of the viewport
+  on desktop. On `surface-raised` with `border-t-2 border-outline`:
+  - a `ui/_field` text area (`sr-only` label `assistant.chat.input`, 2 rows, growing to 6 with
+    `field-sizing: content` where the browser has it), and a 44 px `primary` icon button `right`
+    (`aria-label` `assistant.chat.send`), the page's one primary;
+  - a counter `assistant.chat.count` in `caption`, shown from 800 characters (an Alpine component in
+    `app.js`, which also sends on Ctrl or Cmd + Enter);
+  - `caption` `assistant.chat.footnote` under it.
+- **Waiting:** the form uses `hx-disabled-elt` on the field and the button, and `hx-indicator`
+  shows a static wizard bubble with the twinkling wand and `assistant.chat.thinking`. The typed text
+  stays in the field until the reply arrives; the response then clears the field (an out-of-band
+  swap of the composer) and appends both turns. No custom JS.
+- **Errors:** an alert as the last item of the thread, not stored in the history. Spend cap:
+  `warning`, `assistant.error.cap`. Unavailable: `danger`, `assistant.error.unavailable`; the text is
+  still in the field, so sending again is the retry. Too long: the field's 422 state.
+
+### D.7 Copy (both bundles)
+
+#160's keys keep their names; the texts below are the ones to use. **New** marks keys #160 and #161
+do not list. English avoids plural forms the way the bundles already do ("Meals planned: {0}").
+
+| Key | Hungarian | English |
+|---|---|---|
+| `nav.assistant` | Varázsló | Wizard |
+| `assistant.suggest.week` | Heti javaslat | Suggest my week |
+| `assistant.suggest.week.hint` (new) | Még üres ez a hét. A varázsló megtervezi neked. | Nothing planned yet. Let the wizard draft it. |
+| `assistant.sheet.title` | Heti javaslat | Suggest my week |
+| `assistant.request.label` | Van valami különleges ezen a héten? | Anything special this week? |
+| `assistant.request.placeholder` | Pl. szerdán vendégek jönnek | E.g. guests on Wednesday |
+| `assistant.hint.label` (new) | Gyors kérések | Quick requests |
+| `assistant.hint.lessMeat` (new) | Kevesebb hús | Less meat |
+| `assistant.hint.quick` (new) | Gyors ételek | Quick meals |
+| `assistant.hint.vegStew` (new) | Több főzelék | More vegetable stews |
+| `assistant.hint.leftovers` (new) | Maradékbarát | Leftover-friendly |
+| `assistant.notice.allergy` | A varázsló nem tud az allergiákról és a diétákról, ezért minden javaslatot ellenőrizz. | The wizard doesn't know about allergies or diets, so check every suggestion yourself. (#160 had "The assistant does not know…".) |
+| `assistant.notice.provider` (new) | A kérésedet a Google Gemini dolgozza fel. | Your request is sent to Google Gemini. |
+| `assistant.start` | Kérem a javaslatot | Get suggestions |
+| `assistant.thinking` | A varázsló már főzi a hetedet… ez akár fél percig is eltarthat. | The wizard is cooking up your week… this can take up to half a minute. |
+| `assistant.cancel` (new) | Mégse | Cancel |
+| `assistant.draft.title` | Javaslat: {0} | Draft for {0} |
+| `assistant.draft.summary` | Az ételeid közül: {0} · Új ötlet: {1} | From your meals: {0} · New ideas: {1} |
+| `assistant.item.remove` | {0} eltávolítása | Remove {0} |
+| `assistant.idea.badge` | Ötlet | Idea |
+| `assistant.idea.add` | Felvétel az ételek közé | Add to meals |
+| `assistant.idea.added` | Felvéve az ételek közé | Added to your meals |
+| `assistant.refine.label` | Változtatnál valamin? | Change something? |
+| `assistant.refine.placeholder` (new) | Pl. pénteken legyen hal | E.g. fish on Friday |
+| `assistant.refine.send` | Küldés | Send |
+| `assistant.accept.mode` (new) | Hogyan kerüljön a tervbe? | How should it go into the plan? |
+| `assistant.accept.merge` | Üres helyek kitöltése | Fill empty slots |
+| `assistant.accept.replace` | A hét lecserélése | Replace the week |
+| `assistant.accept.submit` (new) | Hozzáadás a tervhez | Add to plan |
+| `assistant.accept.replace.confirm` | Lecseréled a teljes tervet erre a hétre: {0}? | Replace everything planned for {0}? |
+| `assistant.discard` | Elvetés | Discard |
+| `assistant.accepted` | Tádám! Bekerült a hetedbe: {0} étel. Kimaradt ötlet: {1}. | Ta-da! Meals added to your week: {0}. Ideas left out: {1}. |
+| `assistant.error.cap` | Elfogyott a varázsló e havi kerete. Jövő hónap elsején újra használhatod. | This month's wizard budget is used up. It's back on the first of next month. |
+| `assistant.error.unavailable` | A varázsló most nem érhető el. Próbáld újra egy kicsit később. | The wizard isn't available right now. Try again in a little while. |
+| `assistant.error.invalid` | Legfeljebb 1000 karakter lehet. | Keep it to 1,000 characters or fewer. |
+| `assistant.retry` (new) | Újra | Try again |
+| `assistant.slot.ask` | Ötletet kérek a varázslótól | Ask the wizard for ideas |
+| `assistant.slot.title` | A varázsló ötletei | The wizard's ideas |
+| `assistant.slot.none` | Most nincs jó ötletem erre. | No good ideas for this one right now. |
+| `assistant.menu.suggest` | Menüjavaslat | Suggest a menu |
+| `assistant.menu.title` (new) | A varázsló menüötletei | The wizard's menu ideas |
+| `assistant.chat.title` | Varázsló | Wizard |
+| `assistant.chat.new` | Új beszélgetés | New conversation |
+| `assistant.chat.empty.title` | Kérdezz az ételekről | Ask me about food |
+| `assistant.chat.empty.message` | Segítek az ételeitekkel, a szezonnal és a heti tervvel. | I can help with your meals, what's in season and your plan. |
+| `assistant.chat.starter.season` | Mi van most szezonban? | What's in season now? |
+| `assistant.chat.starter.forgotten` | Mit nem ettünk már egy hónapja? | What haven't we eaten in a month? |
+| `assistant.chat.starter.sunday` | Ötletek vasárnapi ebédre | Ideas for Sunday lunch |
+| `assistant.chat.input` | Üzenet a varázslónak | Message the wizard |
+| `assistant.chat.send` | Küldés | Send |
+| `assistant.chat.count` | {0} / 1000 | {0} / 1,000 |
+| `assistant.chat.you` | Te | You |
+| `assistant.chat.wizard` | Varázsló | Wizard |
+| `assistant.chat.thinking` | A varázsló gondolkodik… | The wizard is thinking… |
+| `assistant.chat.footnote` | Az üzeneteidet a Google Gemini dolgozza fel. Allergiákról és diétákról nem tud. | Your messages are sent to Google Gemini. It doesn't know about allergies or diets. |
+
+### D.8 Accessibility and checks
+
+- **Contrast:** no new pairs. The assistant uses `brand-ink` on `brand-soft`, `ink` and `ink-muted`
+  on `surface-raised`, `outline` on `surface-raised` (the dashed idea border, 3:1) and the alert
+  pairs, all in Appendix C.
+- **Live regions:** the waiting line is `role="status"`; the chat thread is `role="log"`
+  (`aria-live="polite"`); warning and danger alerts are `role="alert"` (§5 Alert).
+- **Targets:** chips, remove buttons and the send button are at least 44 px.
+- **Motion:** `mm-twinkle` and the star pop are off under `prefers-reduced-motion`; the text says
+  the same thing without them.
+- **Screens to check** (390 and 1280 px, Moonlight and Midnight, E2E with the fake model gateway):
+  the request, waiting, draft with ideas, refine-waiting and cap-error states of the week sheet; the
+  one-slot ideas; the occasion suggestions; the chat page empty, with a few turns, waiting and with
+  an error; the shell with the fifth tab.
