@@ -27,6 +27,11 @@ paths:
 - Child rows of a template or menu (`plan_template_item`, `occasion_item`,
   `occasion_template_item`) carry `household_id` with composite foreign keys to their parent and to
   `meal`; the `meal` side has no `ON DELETE`, so a used meal cannot be deleted.
+- `rating` (V10, D27) has a composite foreign key `(meal_id, household_id)` to `meal` (no
+  `ON DELETE`) and deliberately **no foreign key to `meal_slot`**: a rating outlives its slot, so it
+  copies the slot's date, type and meal. `(slot_id, user_id)` is unique; a second writer loses the
+  insert, so write it in its own transaction and retry (`feedback.internal.RatingWriter`), because a
+  failed statement aborts a Postgres transaction.
 - The plan is stored **per date** (`meal_slot.date`); a week is a query over seven dates.
 - Timestamps: `timestamptz` / `Instant`; dates of the plan: `date` / `LocalDate`.
 - Migrations must be compatible with the previous release (expand/contract), since Flyway

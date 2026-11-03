@@ -3,7 +3,8 @@
 What exists in `main` today: the build skeleton, the database, the `identity` module (sign-in), the
 first part of the `household` module (create, rename, switch), the `catalog` module (the meal
 library, services and pages, #88) and the `planning` module (the weekly plan's services and the
-week page, `planning/internal/PlanController`); no other business modules yet.
+week page, `planning/internal/PlanController`) and the `feedback` module's ratings service (#124, no
+pages yet); no other business modules yet.
 
 - **Application class** `MealMagicianApplication` starts Spring Boot; everything lives below its
   package `hu.lasterbergamot.mealmagician`.
@@ -217,6 +218,35 @@ week page, `planning/internal/PlanController`); no other business modules yet.
   `version` column is there for a later rename); occasions made from a template stay when it is
   deleted. Data: `occasion_template` and `occasion_template_item` (V9). Every member may do
   everything (D26), and the composite keys guard the tenant as above.
+- **Ratings (#124), module `feedback`:** `RatingService` is the public entry point; there are no
+  pages yet (#128). A member rates a planned slot with a **thumb** (UP or DOWN, required), optional
+  **stars** (1 to 5) and an optional **comment** of at most 500 characters (`RatingRules.check`
+  trims it, and a blank comment is stored as `null`). Methods:
+  - `give(userId, householdId, slotId, input)` rates a slot dated today or earlier (a later one is
+    `InvalidRatingException` with `NOT_YET`; the other problems are `THUMB_REQUIRED`,
+    `STARS_OUT_OF_RANGE`, `COMMENT_TOO_LONG`). Rating again **updates** the one row of that member
+    and slot; it never adds a second. Two tabs giving at once end the same way: on Postgres a
+    failed insert aborts its transaction, so the write lives in `feedback.internal.RatingWriter`
+    (its own short transaction) and `give` retries it once, which then finds the winner's row.
+    `give` therefore runs with `SUPPORTS` and not inside a transaction of its own.
+  - `clear` deletes the caller's own rating (found by slot id, user and household, so it works
+    after the slot is gone) and returns whether anything was deleted.
+  - `forSlot` lists every current member's rating of a slot (`mine` flags the caller's own);
+    `forMeal` gives a meal's thumbs up and down, the mean of the stars and the newest ratings;
+    `nextToRate(userId, householdId, today, lookbackDays)` finds the latest slot of the last days
+    the caller has not rated yet, calling `PlanningService.week` once per Monday it spans.
+  - **Events:** `RatingGiven` (a new rating and an update alike, without the comment) and
+    `RatingWithdrawn` (only when `clear` really deleted a row), both published inside the
+    transaction.
+  - **Privacy:** every member sees every rating, by display name only; `RatingView` has no e-mail
+    field. Only the author can change or clear a rating, because every write is keyed by the
+    caller's own id. Another household's slot or meal is 404, as everywhere (D8).
+  - **Data (V10):** table `rating` with a composite foreign key `(meal_id, household_id)` to `meal`
+    and **no foreign key to `meal_slot`**, so a rating outlives its slot (D26's Replace removes
+    slots); the rating copies the slot's date, type and meal for that reason. Unique
+    `(slot_id, user_id)`. A rated meal can no longer be deleted (the library only archives).
+  - **Module direction (D27):** `feedback` depends on `planning`, `catalog` and `household`, never
+    the reverse; the plan pages will load its fragments over htmx.
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
   "today" instead of calling `LocalDate.now()`, so tests can fix the date.
 - **Config:** `application.yml` turns on virtual threads and graceful shutdown, and tells JTE to
@@ -239,7 +269,8 @@ week page, `planning/internal/PlanController`); no other business modules yet.
     (`meal`, `tag` and `meal_tag`, see the meal library below), `V7__planning.sql` (`meal_slot`,
     see the weekly plan below), `V8__meal_occasion_type.sql` (`meal_occasion_type`, see the meal
     library below) and `V9__reuse_and_occasions.sql` (plan templates, occasions and occasion
-    templates with their items, see the copy, occasion and template bullets above).
+    templates with their items, see the copy, occasion and template bullets above) and
+    `V10__rating.sql` (`rating`, see the ratings bullet above).
   - **Profiles:** `dev` points at in-memory H2 in PostgreSQL mode; `postgres` points at the
     compose Postgres (override with `SPRING_DATASOURCE_URL`/`_USERNAME`/`_PASSWORD`) and adds the
     `postgresql/` folder. Use them together as `dev,postgres`. With no profile there is no
