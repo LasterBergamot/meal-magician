@@ -95,6 +95,12 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | `gcloud run deploy` | https://cloud.google.com/sdk/gcloud/reference/run/deploy |
 | Secret Manager | https://cloud.google.com/secret-manager/docs |
 | Neon | https://neon.com/docs |
+| `age` (file encryption; `age-keygen -y` prints the public key of a private key) | https://github.com/FiloSottile/age · https://age-encryption.org/ |
+| Cloud Storage object lifecycle (`matchesPrefix`, `age`) | https://cloud.google.com/storage/docs/lifecycle · https://cloud.google.com/storage/docs/managing-lifecycles |
+| `pg_dump` and `pg_restore` (custom format, `--clean --if-exists`) | https://www.postgresql.org/docs/17/app-pgdump.html · https://www.postgresql.org/docs/17/app-pgrestore.html |
+| Cloud Monitoring alerting policies (threshold conditions, missing data, notification channels) | https://cloud.google.com/monitoring/alerts · https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.alertPolicies |
+| Cloud Storage metrics (`storage.googleapis.com/api/request_count`) | https://cloud.google.com/monitoring/api/metrics_gcp_p_z#gcp-storage |
+| Cloud Storage IAM roles (`storage.objectCreator`) | https://cloud.google.com/storage/docs/access-control/iam-roles |
 | GitHub Actions | https://docs.github.com/en/actions |
 | Dependabot configuration | https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference |
 | GitHub Wiki (and pushing to its git repo) | https://docs.github.com/en/communities/documenting-your-project-with-wikis/adding-or-editing-wiki-pages-locally |

@@ -13,6 +13,7 @@ repo's `PLAN.md`.
 - [[Setup]]: from a fresh clone to a working dev environment (people and agents).
 - [[Newcomer Guide]]: tools and why, glossary, how a request flows, your first change.
 - [[References]]: official docs for everything we use.
-- Runbooks: [[Auth Setup]] (Google OAuth client), [[Hosting Setup]] (Cloud Run + Neon, deploys, backups).
+- Runbooks: [[Auth Setup]] (Google OAuth client), [[Hosting Setup]] (Cloud Run + Neon, deploys),
+  [[Backup and Restore]] (what is backed up, the one-time setup, how to restore).
 - Current state: [[Current State: Backend]], [[Current State: Frontend]], [[Current State: Everything Else]].
 - Roadmap: [[Roadmap: Backend]], [[Roadmap: Frontend]], [[Roadmap: Everything Else]].
