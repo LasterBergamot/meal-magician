@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phases 0–4 done (the week planner, reuse and occasions are live); UI redesign (#57): Waves 1–5 landed, R9 (the owner's walk-through) left; Phase 4 landed in Waves 6a–6c (#109–#113, §9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phases 0–4 done (the week planner, reuse and occasions are live); UI redesign (#57): Waves 1–5 landed, R9 (the owner's walk-through) left; Phase 4 landed in Waves 6a–6c (#109–#113, §9); Phase 5 planned 2026-11-03 as #124–#134 (§9 item 9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -69,6 +69,10 @@ after a server.
 | D24 | **Parallel work with subagents, in waves.** Work that touches different files runs at once: one subagent per issue, each in its own git worktree and branch. The session the owner talks to is the coordinator: it files a wave's issues first, gives every subagent the list of files it owns (one writer per file per wave), and merges the PRs itself, one at a time, rebasing on `main` first when `main` has moved (branch protection does not require up-to-date branches). Workers never append to the checklists or progress logs; the coordinator does. At most five subagents at once, across all tracks. Local `task test-e2e` uses fixed ports, so parallel workers leave E2E to CI. The UI waves and file table are in `plan-ui-redesign.md` §7; the tracks are in §9 below. | Decided (owner asked, 2026-11-01) |
 | D25 | **Models and effort for coordinated work.** Whenever a coordinator runs subagents (D24 waves and anything later): the **plan is written by Opus at high effort** with every detail a cheaper model needs, as an `## Execution` section in each issue (files owned, read-first list, ordered steps with exact names, test table, docs, commands, pitfalls, stop conditions); the **coordinator is Haiku at high effort**; each **subagent is Haiku high, Sonnet high or Sonnet medium**, chosen per issue by the planner (pattern-following work → Haiku; migrations, concurrency, security, new logic → Sonnet high; recipe-style edits → Sonnet medium). A subagent that fails twice goes one step up, not to Opus; a missing decision goes back to the planner or owner. **Always the newest release of each family:** plans, issues and prompts use the aliases `opus`, `sonnet`, `haiku`, never a pinned model ID ("5.5" is only what was newest on 2026-11-02). Detail: `.claude/context/workflow.md`. | Decided (owner asked, 2026-11-02) |
 | D26 | **Phase 4 reuse rules (planned 2026-11-02 by Opus, D25).** These rules apply to copy and to templates alike. (1) **Merge** appends copied meals after the meals already in each target date and slot type. **Replace** first removes every slot of the whole target day or week, then writes the copy. (2) Copying onto the same day or week, or copying or saving something empty, is refused before any write (422). (3) Notes and archived meals are copied as they are. Copy and apply publish one `SlotPlanned` per new slot; no new event types. (4) Template items are frozen: plan templates can be renamed and deleted, and occasion templates only deleted. (5) Occasion menus are ordered meal lists without notes or versions. "Reuse next year" is save-as-template, then "plan it again" on a date. (6) **Nothing in Phase 4 is owner-only**: every member may do all of it. Another household's data is 404 (D8). (7) Everything lives in `planning`. Flyway V9 holds all six tables. | Decided (planner, 2026-11-02; owner confirmed the four defaults, 2026-11-02) |
+| D27 | **Rating rules (planned 2026-11-03).** A rating is one per member per slot: `thumb` UP/DOWN (required), `stars` 1–5 (optional) and a `comment` of at most 500 characters (optional). It can be given on a slot dated today or earlier, and its author can edit or clear it. Every current member sees every rating of a slot or meal, by display name (never an email). A rating stores `meal_id`, `slot_date` and `slot_type` and has **no foreign key to `meal_slot`**, so ratings outlive a slot that D26's Replace removes; it does have a composite foreign key to `meal`. Events: `RatingGiven` (create and update) and `RatingWithdrawn` (clear); the second is new. The "how did it go" prompt shows the latest unrated meal of the last 7 days, one at a time, and "Not now" hides it for the rest of the day. `feedback` depends on `planning`, `catalog`, `household` and `identity`, never the reverse, so the plan pages load its fragments over htmx. | Decided (owner confirmed the defaults 2026-11-03; #124, #128, #132) |
+| D28 | **Share-link rules (planned 2026-11-03).** *Token:* 256 bits from `SecureRandom`, base64url, 43 characters; only the SHA-256 hex is stored; the raw link is shown in exactly one response and is never stored or logged. *Scope and expiry:* one household and one ISO week per link; expiry 1, 7 (default) or 30 days, never unlimited; a link is active only while `revoked_at IS NULL AND expires_at > now`, checked in the lookup query itself; at most 10 active links per household; any member may create and revoke; expired rows older than 30 days are purged when a link is created (no scheduler, D11). *Route:* `GET /share/{token}` is the only unauthenticated business route. It matches the single-segment, GET-only pattern `/share/*` (never `/share/**`; `/share/x/`, `/share/x.json`, `/share/x/y` and any POST stay protected), writes nothing (no view counter, no session, no cookie, no CSRF token), and answers an unknown, malformed, expired or revoked token with one identical 404, a malformed one without touching the database. It sends `X-Robots-Tag: noindex, nofollow, noarchive`, `Referrer-Policy: no-referrer` and `Cache-Control: no-store`; `/robots.txt` disallows everything; the service worker never caches it. *Data:* the public read goes through `planning.SharedWeekReader`, an unchecked reader whose result type holds only dates, slot types, meal names and occasion names (no notes, ids, ratings, member or household names); an ArchUnit test limits who may call it. *Throttle:* one global in-memory fixed window (120 a minute, 429 with `Retry-After`), because the client IP is not reliable behind Cloud Run's proxy; **per-IP limiting comes with Phase 6's invite and join limiter**. *Logs:* Cloud Run's own request log contains the path, so `/share/<token>` appears in it; **accepted** (only the owner reads the logs, and links expire and can be revoked). A Cloud Logging exclusion for `/share/` is possible later but is a Google Cloud change and needs the owner's OK. The application never logs the token (a test checks it). | Decided (owner confirmed 2026-11-03; #125, #129, #131) |
+| D29 | **Print and release (planned 2026-11-03).** Print is a dedicated light-theme page (`/plan/print?week=`, with slot notes, members only) built from the same fragment as the share page, not a print stylesheet bolted onto the shell. Lighthouse on a phone, the PWA installed on a real phone and the share-link walk-through are owner-only (#134). **v1.0.0** is cut by a manual `release.yml` run (`version=1.0.0`) once #134 passes, because the last Phase 5 PR is docs-only and does not release itself; the coordinator needs the owner's OK to trigger it. | Decided (2026-11-03; #131, #134) |
+| D30 | **Lunch is the main slot (2026-11-03).** The week page shows **Lunch** every day by default. Breakfast, dinner and snack are optional: they show when they hold a meal, and otherwise sit behind an "Other meals" disclosure on the day card (phone) or a "Show all meals" checkbox (desktop table). The backend still has all four `SlotType`s, so copying, templates, occasions and ratings are unchanged. The print and share pages list only slot types that hold a meal. | Decided (owner chose design A 2026-11-03; #127) |
 
 ---
 
@@ -257,9 +261,18 @@ tables), then three page issues side by side, then the occasion menus and the do
 
 ### Phase 5 — Feedback, sharing, PWA polish (`M1`, epic #6) → **v1.0.0**
 - [ ] Rate an eaten meal: each member gives a thumbs up/down or 1–5, with an optional comment;
-      a "how did it go" prompt on past slots.
+      a "how did it go" prompt on past slots. *(Planned 2026-11-03, D27: #124 backend and Flyway V10,
+      #128 the rating form and the prompt, #132 the history on the meal page.)*
 - [ ] Print-friendly week view; read-only share link (hashed token, expires, can be revoked).
-- [ ] PWA polish: icons, theme colour, install hint. Lighthouse check on a phone.
+      *(Planned 2026-11-03, D28, D29: #125 backend and Flyway V11, #129 the public route, #131 the
+      print view and link management.)*
+- [ ] PWA polish: icons, theme colour, install hint. Lighthouse check on a phone. *(Icons and the
+      theme colour landed with #61 and R1; #126 adds the install hint, manifest shortcuts, iOS metas
+      and a service-worker guard. Lighthouse and the real-phone install are #134, the owner's.)*
+- [ ] Lunch first: the week shows Lunch by default, other meals on request (#127, D30).
+- [ ] Heading font: Baloo 2 replaces Fredoka, so ő and ű are drawn in one family (#130; the owner
+      chose it on 2026-11-03 after a specimen comparison).
+- [ ] #133 Phase 5 docs close-out; #134 the owner's checks, then **v1.0.0** (D29).
 
 ### Phase 6 — Hardening (`M2 – Hardening`, epic #7)
 - [ ] #62 Backups: nightly `db-backup.yml` in GitHub Actions: `pg_dump` as a read-only role, a test
@@ -302,8 +315,8 @@ an ICS calendar feed, a custom domain, email notifications.
 | `household` | `Household`, `Membership(role)`, `Invite`, the current-household resolver | listens for nothing; its API is used by every module below |
 | `catalog` | `Meal`, `Tag` | publishes `MealChanged` |
 | `planning` | `MealSlot` (per date), `PlanTemplate(scope DAY|WEEK)`, `Occasion`, `OccasionTemplate` | publishes `SlotPlanned` |
-| `feedback` | `Rating` (member × slot) | publishes `RatingGiven` |
-| `sharing` | print view, `ShareLink` | uses `planning`'s API |
+| `feedback` | `Rating` (member × slot) | publishes `RatingGiven` and `RatingWithdrawn` *(Amended 2026-11-03, D27; was `RatingGiven` only)* |
+| `sharing` | print view, `ShareLink` | uses `planning.SharedWeekReader` (an unchecked, minimal read) and `catalog.MealNameLookup` *(Amended 2026-11-03, D28; was `planning`'s API)* |
 | `assistant` *(Phase 7)* | embeddings, preference profile, agent tools | listens for `MealChanged` and `RatingGiven` |
 | `shared` | base entity, auditing, errors, i18n `t()` helper, htmx helpers | a shared kernel, not a business module |
 
@@ -327,8 +340,10 @@ support. Other modules may only use the root package; the Modulith test enforces
 - `occasion(id, household_id, name, date, occasion_type, notes, created_at, version)`, `occasion_item(id, occasion_id, household_id, position, meal_id)`,
   and `occasion_template(id, household_id, name, occasion_type, notes, created_at, version)` with `occasion_template_item(id, template_id, household_id, position, meal_id)`.
   *(Amended 2026-11-02, D26; was: `occasion_item(occasion_id, position, meal_id, note)` and "an occasion template (the same shape, without a date)". Item tables carry their own id and the household for the composite keys; menu items have no note.)*
-- `rating(slot_id, user_id, score, comment, created_at)`
-- `share_link(id, household_id, token_hash, scope, expires_at, revoked_at)`
+- `rating(id, household_id, slot_id, meal_id, slot_date, slot_type, user_id, thumb, stars, comment_text, created_at, updated_at)`, unique on `(slot_id, user_id)`, composite foreign key to `meal`, no foreign key to `meal_slot`
+  *(Amended 2026-11-03, D27; was `rating(slot_id, user_id, score, comment, created_at)`)*
+- `share_link(id, household_id, token_hash, week_start, created_by, created_at, expires_at, revoked_at)`
+  *(Amended 2026-11-03, D28; was `share_link(id, household_id, token_hash, scope, expires_at, revoked_at)`)*
 - Spring Session tables (`spring_session*`). Phase 7 adds `vector_store` (pgvector).
 
 ### 4.3 Request flow (for the Newcomer Guide)
@@ -343,7 +358,8 @@ support. Other modules may only use the root package; the Modulith test enforces
 
 - **Security:**
   - Security headers and a CSP with no inline scripts.
-  - Request size limit and rate limits on invite and join.
+  - Request size limit and rate limits on invite and join. The public `GET /share/*` route has one
+    global in-memory throttle (D28); the full per-IP limiter for invite and join is Phase 6.
   - **Fail-closed production config:** the app won't start under the `prod` profile without
     the Google client id/secret, `MM_ADMIN_EMAILS`, a Postgres URL and
     `server.forward-headers-strategy=framework` behind Cloud Run's proxy.
@@ -435,7 +451,9 @@ meal-magician/
 - **Phase 0:** sign in on a phone against Cloud Run, check that someone not on the allowlist gets
   403, check that the app and the database scale to zero and wake up.
 - **Phase 1–5:** the scenario from §1 on a real phone and a laptop, with two Google accounts in
-  one household and a third account that isn't a member (it must get 404s).
+  one household and a third account that isn't a member (it must get 404s). **Phase 5 adds:** a
+  revoked or expired share link gives an anonymous browser a 404, the rating and share-management
+  URLs of another household give 404, Lighthouse on a phone, and the PWA installed on a real phone.
 - **Phase 7:** the eval set passes; suggestions are only drafts; the spend cap is enforced.
 
 ---
@@ -500,8 +518,25 @@ meal-magician/
      The Occasions tab appears with #112.
    - **Beside Phase 4, small and independent:** ~~#58, the post-deploy smoke test in `release.yml`~~
      *(Done 2026-11-02, PR #108.)*
-   - **Then** Phase 5 (ratings, sharing, PWA polish) → **v1.0.0**, then backups (#62), Phase 6
+   - **Then** Phase 5 (ratings, sharing, PWA polish; planned in item 9) → **v1.0.0**, then backups (#62), Phase 6
      hardening and Phase 7 (the assistant). #27 stays parked.
+
+9. **Next up (2026-11-03, Phase 5; D24/D25 apply).** Planned into eleven issues under epic #6,
+   with the briefs in the issues. A Sonnet planner wrote them because Opus's budget was used up
+   (D25 says Opus). Blocked-by links are on GitHub.
+
+   | Wave | Items (model) | Merge order |
+   |------|---------------|-------------|
+   | 7a | #124 ratings backend, V10 (`sonnet` high), #125 sharing backend, V11 (`sonnet` high), #126 PWA polish (`sonnet` medium), #127 lunch first (`sonnet` high) | #124, #125, #126, #127 |
+   | 7b | #128 rating pages (`sonnet` high), #129 public share route (`sonnet` high), #130 Baloo 2 (`sonnet` medium) | #128 and #129 in either order; #130 after #126 |
+   | 7c | #131 print view and share-link management (`sonnet` high), #132 meal history (`haiku` high) | #131, #132 |
+   | 7d | #133 docs close-out (`haiku` high), then #134 the owner's checks and **v1.0.0** | #133 |
+
+   Flyway: V10 is #124 and V11 is #125; V10 must merge, and release, before V11 (Flyway has no
+   `outOfOrder`, and every code merge releases). #127 changes the templates that #128 and #131 also
+   edit, so it merges first; #130 and #126 both touch `base.jte` and `sw.js`. At most four
+   subagents run at once. Workers do not edit `PLAN.md`; the coordinator ticks the Phase 5 items and
+   adds the log rows. The per-IP rate limit is deferred to Phase 6 (D28).
 
 ---
 
@@ -557,3 +592,5 @@ meal-magician/
 | 2026-11-02 | **Occasion pages landed** (#112, PR #117): `/occasions` (the next occasion, the rest of the upcoming ones, past ones), the create and edit form with 422 and 409 states, the detail page with a read-only menu, delete behind a confirm, and the **Occasions tab** in the bottom bar and the sidebar (`NavDestination.OCCASIONS`); seven tenant-guard registrations and `OccasionPagesE2ETest`. Covered by MockMvc tests and CI's E2E; not yet looked at on a phone. The occasion strip on the week is #110; menu editing and occasion templates are #113. | #5, #112, #117 |
 | 2026-11-02 | **Plan page reuse landed** (#110, PR #118, one `sonnet` high subagent; Wave 6b is complete with #111 and #112): the week view gets a reuse sheet to copy a day or a week onto another date or week (merge, or replace behind a confirm), save it as a template or apply a template, a link to `/plan/templates`, and a strip of the week's occasions; six tenant-guard registrations and `PlanReuseE2ETest`. `PlanResponses` now holds the redirect helpers that `PlanSlotController` had. Not yet looked at on a phone; `PlanReuseE2ETest` writes screenshots to `build/e2e-screenshots/plan-reuse-*` for that. Wave 6c (#113) is next. | #5, #110, #118 |
 | 2026-11-02 | **Occasion menus and the Phase 4 close-out landed** (#113, PR #119, one `sonnet` high subagent; Wave 6c, Phase 4 is complete): an occasion's menu can be edited on `/occasions/{id}` (a page-level pick sheet that copies the plan's, with library search and create-and-add; move up and down; remove behind a confirm), a menu can be saved as an occasion template, `/occasions/templates/{id}` shows a template and plans it again on a date or deletes it (the occasions made from it stay), and `/occasions` lists the templates. Nine new tenant-guard rows, `OccasionMenuE2ETest` and `PlanTemplatesE2ETest` (the first browser test of the #111 pages). The docs now say Phase 4 is built (README, `CLAUDE.md`, Current State, Roadmap, glossary, `plan-ui-redesign.md` amendments). The slot-sheet E2E flake on the phone viewport is still being investigated separately. Not yet checked on a real phone (the owner's R9 walk-through). | #5, #113, #119 |
+| 2026-11-03 | **Phase 5 planned** (D25 says Opus; its budget was used up, so a Sonnet planner wrote the briefs). The owner confirmed the defaults and the security design, and filed as #124–#134 under epic #6 with blockers and board fields: ratings backend V10 (#124), sharing backend V11 (#125), PWA polish (#126), lunch first (#127), rating pages (#128), public share route (#129), Baloo 2 (#130), print view and link management (#131), meal history (#132), docs close-out (#133), the owner's checks and v1.0.0 (#134). Decided D27 (ratings), D28 (share links; per-IP limiting deferred to Phase 6; the share URL in Cloud Run's request log is accepted), D29 (print and release) and D30 (lunch first, design A with a desktop checkbox). Amended §4.1, §4.2, §4.4, §8 and §9. The slot-sheet E2E flake mentioned in the #113 row was fixed by #120 and #121 (PRs #122, #123). Docs only. | #6, #124–#134 |
+| 2026-11-03 | **The owner chose Baloo 2 for headings** after comparing Fredoka + Nunito, Baloo 2, Quicksand, Varela Round, Comfortaa and Nunito 800 on a specimen page: Fredoka has no ő or ű (Google's own latin-ext file for it has 22 glyphs and none of them), and Baloo 2 covers them in two hosted files like Nunito. Filed as #130, which amends UI-D4 in `plan-ui-redesign.md` when it lands. Docs only. | #130, #71 |
