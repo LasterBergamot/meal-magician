@@ -1,11 +1,13 @@
 # Newcomer Guide
 
-For a junior developer joining Meal Magician. **Status:** covers what exists today (households, the meal library, the week planner). The build works; run `./gradlew build`.
+For a junior developer joining Meal Magician. **Status:** covers what exists today (households, the meal
+library, the week planner, ratings, share links and the print view; Phases 0 to 5). The build works; run `./gradlew build`.
 
 ## What the app does
 
 A household plans meals per day (breakfast, lunch, dinner, snack) and for special occasions,
-reuses meals, days and weeks, and rates what it ate. Everyone signs in with Google; only
+reuses meals, days and weeks, and rates what it ate. It can also send one week of its plan to someone
+outside the household as a read-only link that needs no sign-in. Everyone signs in with Google; only
 allowlisted emails get in; households are shared through email-bound invite links.
 
 ## Tools and why
@@ -40,6 +42,23 @@ allowlisted emails get in; households are shared through email-bound invite link
   members add, reorder and remove.
 - **Occasion template:** a saved occasion menu (with its kind and notes), used to plan it again on
   a new date, for example next Christmas.
+- **Rating:** a member's answer about a meal that was planned on a past or current day: a required
+  thumb (up or down), optional stars (1 to 5) and an optional comment of up to 500 characters. Each
+  member has one rating per slot, so giving again changes it. The ratings are the history the later
+  AI assistant will learn from (PLAN.md D27).
+- **Snooze ("Not now"):** pressing "Not now" on the "How did it go?" card hides it for the rest of
+  the day. The only thing stored is a cookie with a date (`mm_rating_snooze`); the server keeps nothing.
+- **Share link:** a read-only link to one ISO week of the plan, valid for 1, 7 (the default) or 30
+  days, that opens without signing in. Only the SHA-256 hash of its token is stored, and the full
+  link is shown once, when it is made. A household may have 10 active links at a time (PLAN.md D28).
+- **Print page:** `/plan/print`, the week laid out for paper: names, notes and occasions. Its Print
+  and Back buttons are hidden when printing (`print:hidden`). Members only, because the notes are
+  private; the public share page has no notes.
+- **Unchecked reader:** a service method that reads household data without checking who is asking.
+  The rule is that every public method checks membership, so this is allowed only for the public
+  share link, where nobody is signed in. It returns a narrow record type and an ArchUnit test
+  (`UncheckedReadersTest`) fails if another module uses it. The two are `SharedWeekReader` and
+  `MealNameLookup`.
 - **Allowlist:** emails allowed to sign in at all; invites add to it.
 - **Invite:** an owner's single-use, expiring `/join/<code>` link for one e-mail address; only the
   code's hash is stored.
@@ -88,6 +107,34 @@ overwrites the first.
 
 Errors take a similar path: an unknown URL ends up in `AppErrorController`, which renders the
 404 page (or a fragment for htmx).
+
+### A request with no sign-in: `GET /share/{token}`
+
+The share link is the one business page that needs no session, so it is the place to see how the
+rules bend and where they still hold. Here is one visitor opening a link, `GET /share/<token>`:
+
+1. `SecurityHeadersFilter` adds the security headers. Spring Security lets the request through
+   because `SecurityConfig.PUBLIC_GET_PATHS` matches exactly one path segment of token characters,
+   for GET only. `/share/x/y`, `/share` or a POST still go to the sign-in page.
+2. `PublicShareController` (in `sharing.internal`) sets its privacy headers first, on every answer:
+   no caching, no referrer and no indexing. Then the one global throttle, `RateLimiter`, is asked
+   for a slot (120 requests a minute for all visitors together). Over the limit the answer is 429
+   with `Retry-After`, before any database work.
+3. The token is checked for shape with `TokenCodes.isWellFormed` (43 base64url characters). A
+   malformed token is a 404 here, without a database call.
+4. `ShareLinkService.open(token)` hashes the token with SHA-256 (`TokenCodes.hash`). The `share_link`
+   table holds only that hash, so the lookup compares hashes and the token itself is never stored.
+5. The query `findActiveByTokenHash` returns the link only while `revoked_at` is empty and
+   `expires_at` is later than now. An unknown, expired or revoked token gives nothing, and the
+   controller answers all of those with the same 404 page, so a guesser learns nothing about which
+   tokens exist.
+6. For an active link, `SharedWeekReader.read(householdId, weekStart)` (the unchecked reader) loads
+   the seven days from the link's Monday, with the meal names and the occasions. It does not check
+   membership, because nobody is signed in here. Its result, `SharedWeek`, has no ids, notes or
+   member names, so the page cannot show them even by mistake.
+7. The controller puts a `SharedWeekPage` in the model and returns the template `sharing/week`,
+   drawn on `layout/bare.jte`: no shell, no navigation, no form and no CSRF token. Nothing is
+   written and no session is created, so the visit leaves no trace in the database.
 
 ## Your first change
 

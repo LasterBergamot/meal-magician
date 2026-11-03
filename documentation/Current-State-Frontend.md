@@ -1,8 +1,10 @@
 # Current State: Frontend
 
-What exists in `main` today: the signed-in app shell with the meal library and the week planner,
-built from the design system (tokens, `ui/` components, light and dark themes), plus the sign-in,
-error and household pages. Planned UI work: [[Roadmap: Frontend]].
+What exists in `main` today: the signed-in app shell with the meal library, the week planner (with
+reuse, plan templates and occasions), the ratings, the print page and the share links, built from
+the design system (tokens, `ui/` components, light and dark themes), plus the sign-in, error and
+household pages and the PWA shell with its install hint. Phases 0 to 5 are built; what is still open
+is the owner's phone checks (#134). Planned UI work: [[Roadmap: Frontend]].
 
 ## Pages and templates
 
@@ -397,11 +399,16 @@ instead of calling them. All five routes are registered in `TenantEndpoints` and
 | `GET /feedback/slots/{id}` | The rating form of a slot (also a page of its own). |
 | `POST /feedback/slots/{id}` (`thumb`, `stars`, `comment`) | Gives or changes the member's rating. A success shows the form again with a thanks line and sends `HX-Trigger: ratingSaved`. A refusal (no thumb, stars outside 1 to 5, a comment over 500 characters, a slot after today) is **422** with the same form, the message and the typed values. |
 | `POST /feedback/slots/{id}/clear` | Takes the member's rating back; the form comes back empty, again with `ratingSaved`. |
+| `GET /feedback/meals/{id}` | The "How it went" block of a meal's page (#132): thumbs up and down counts, the mean stars and the newest 10 ratings by display name. A meal of another household is 404. |
 
 - **Plan page:** `plan/week.jte` has `<div id="rating-prompt" hx-get="/feedback/prompt" hx-trigger="load, ratingSaved from:body">`.
   The card has a link to the slot sheet (the same `sheetOpener` shape as a planned meal) and a
   "Not now" button. Saving or clearing a rating fires `ratingSaved`, so the card moves on to the
   next unrated meal, or comes back after a clear.
+- **Meal page, "How it went" (#132):** `meal/detail.jte` holds an empty `#meal-history` section that
+  loads `GET /feedback/meals/{id}` on `load`, so the meal page renders quickly and `catalog` never
+  imports `feedback`. The block is `feedback/_meal_history.jte`; it shows the counts and the
+  ratings, with no e-mail address, and the average stars only when someone gave stars.
 - **Slot sheet:** for a slot dated today or earlier (`SlotEditor.past()`, from the `Clock`),
   `plan/_slot_editor.jte` adds `#rating-section`, which loads `SlotEditor.rateHref()` on `load`,
   above the note form. A later day has no such section.
@@ -459,6 +466,17 @@ are registered in `TenantEndpoints` and are open to every member (D28, D29).
   (row mapping, the address, week codes), the four rows in `TenantEndpoints`, and
   `ShareLinkE2ETest` (create, copy, open in a fresh signed-out context, revoke, the dead link, and
   the print page with print media emulated, at phone and desktop size).
+
+## Install hint (#126)
+
+Phase 5's PWA item, kept next to the other Phase 5 pages. `layout/_install_hint.jte`, rendered once
+above the page in the shell and driven by the Alpine component `installHint` in
+`static/js/install-hint.js`, is an info alert. Where the browser fires `beforeinstallprompt` it
+shows an Install button that calls the browser's prompt; on iPhone and iPad Safari (no prompt
+exists) it shows "Tap the Share button, then choose Add to Home Screen.". It stays hidden when the
+app already runs standalone, after `appinstalled`, and for 30 days after "Not now". The dismissal is one local key,
+`mm_install_dismissed` (a timestamp), in `localStorage` inside try/catch; nothing goes to the
+server. Whether the hint shows on a real phone is an owner check (#134), not covered by tests.
 
 ## App shell and navigation (R4, #79)
 
@@ -768,7 +786,7 @@ for it, and `sw.js` (cache `mm-static-v3` since #126), which only caches `/css`,
 and its `background_color` is `#f8f5ff`, the Moonlight brand and stage. It never caches HTML or htmx fragments and there is no offline
 mode. While developing, tick "Update on reload" in the browser's dev tools, or a cached old
 stylesheet will confuse you. Chromium reports the manifest as installable; installing on a real
-Android/iOS phone is still a manual check (see the PR for the steps).
+Android/iOS phone is still a manual check (see the owner checks at the end of this page, #134).
 
 The manifest also has `categories` (food, lifestyle) and three `shortcuts` (Terv, Ételek,
 Alkalmak, pointing at `/plan`, `/meals`, `/occasions`, with `icon-192.png`). `base.jte` adds the
@@ -776,11 +794,20 @@ iOS home-screen metas (`apple-mobile-web-app-capable`, `-title`, `mobile-web-app
 meta description. The service worker never caches `/share/...` (D28) or any HTML;
 `PwaAssetsTest.serviceWorkerPatternNeverMatchesSharePaths` fails if its pattern could match.
 
-**Install hint (#126).** `layout/_install_hint.jte`, rendered once above the page in the shell and
-driven by the Alpine component `installHint` in `static/js/install-hint.js`, is an info alert. Where
-the browser fires `beforeinstallprompt` it shows an Install button that calls the browser's prompt;
-on iPhone and iPad Safari (no prompt exists) it shows "Share, then Add to Home Screen". It stays
-hidden when the app already runs standalone, after `appinstalled`, and for 30 days after Dismiss.
-The dismissal is one local key, `mm_install_dismissed` (a timestamp), in `localStorage` inside
-try/catch; nothing goes to the server. The Lighthouse check and a real-phone install are
-owner-only (#134), not covered by tests.
+## Owner checks before v1.0.0 (#134)
+
+These need a real phone and a real browser, so no test can do them. The owner runs them once before
+v1.0.0 is cut and records the result in #134:
+
+- **Lighthouse on a phone:** accessibility score 95 or more, and the PWA check reports the app as
+  installable.
+- **Install on a real phone:** the install hint shows, the app installs to the home screen, and a
+  home-screen shortcut (Terv, Ételek, Alkalmak) opens its page.
+- **Share link:** create a link from the plan and open it in a signed-out window; revoke it and
+  check that the page now says the link is not found. Then wait for a one-day link to expire and
+  check the same.
+- **Three accounts:** a person in another household, a member and the owner each see only what
+  their role allows (the tenant check, D8).
+- **Print preview:** `/plan/print` shows the week's names, notes and occasions without the Print
+  and Back buttons, and the pages fit the A4 landscape sheet the print CSS asks for.
+

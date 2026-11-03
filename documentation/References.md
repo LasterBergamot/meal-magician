@@ -38,6 +38,9 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | `fontTools` (instancing and WOFF2 subsetting of the font files) | https://fonttools.readthedocs.io/ |
 | `java.time` ISO weeks and localized patterns (`IsoFields`, `DateTimeFormatter.ofLocalizedPattern`) | https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/time/temporal/IsoFields.html |
 | Content-Security-Policy | https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP |
+| `Referrer-Policy` (the share page sends `no-referrer`) | https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Referrer-Policy |
+| `X-Robots-Tag` (the share page asks search engines not to index or keep it) | https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag |
+| HTTP 429 and `Retry-After` (the share page throttle) | https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/429 |
 | Service Worker API | https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API |
 | Web app manifest (installability, maskable icons) | https://web.dev/articles/add-manifest |
 | Spring MVC `LocaleResolver` | https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-servlet/localeresolver.html |
@@ -48,6 +51,9 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | WAI-ARIA tabs pattern (the segmented control) | https://www.w3.org/WAI/ARIA/apg/patterns/tabs/ |
 | WAI-ARIA modal dialog pattern (sheets and their focus trap) | https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/ |
 | htmx `hx-select` and `hx-push-url` | https://htmx.org/attributes/hx-select/ · https://htmx.org/attributes/hx-push-url/ |
+| Clipboard API (`navigator.clipboard.writeText`, the Copy button of a new share link) | https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API |
+| `beforeinstallprompt` event and `display-mode` (the PWA install hint) | https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeinstallprompt_event · https://developer.mozilla.org/en-US/docs/Web/CSS/@media/display-mode |
+| `window.print()` and `@media print` / `@page` (the print page, A4 landscape) | https://developer.mozilla.org/en-US/docs/Web/API/Window/print · https://developer.mozilla.org/en-US/docs/Web/CSS/@page |
 
 ## Data, testing, tooling
 
@@ -61,6 +67,8 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | Spring Boot: Testcontainers and `@ServiceConnection` | https://docs.spring.io/spring-boot/reference/testing/testcontainers.html |
 | pgvector Docker image | https://hub.docker.com/r/pgvector/pgvector |
 | Testcontainers (Java) | https://java.testcontainers.org/ |
+| ArchUnit (architecture rules in `UncheckedReadersTest`; comes in through `spring-modulith-starter-test`, but the test imports it directly) | https://www.archunit.org/userguide/html/000_Index.html |
+| Base64url encoding, RFC 4648 section 5 (the share-link token, `TokenCodes`) | https://www.rfc-editor.org/rfc/rfc4648#section-5 |
 | Playwright for Java | https://playwright.dev/java/ |
 | JaCoCo | https://www.jacoco.org/jacoco/trunk/doc/ |
 | JaCoCo Gradle plugin | https://docs.gradle.org/current/userguide/jacoco_plugin.html |

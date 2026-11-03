@@ -1,10 +1,12 @@
 # Current State: Backend
 
 What exists in `main` today: the build skeleton, the database, the `identity` module (sign-in), the
-first part of the `household` module (create, rename, switch), the `catalog` module (the meal
-library, services and pages, #88) and the `planning` module (the weekly plan's services and the
-week page, `planning/internal/PlanController`) and the `feedback` module's ratings service and its
-pages (#124, #128, #132); no other business modules yet.
+`household` module (create, rename, switch, invites, members), the `catalog` module (the meal
+library, #66 and #88), the `planning` module (the weekly plan, reuse, occasions and their templates,
+and the week page, `planning/internal/PlanController`), the `feedback` module (ratings and the meal
+history, #124, #128, #132) and the `sharing` module (share links, the print view and the public
+share page, #125, #129, #131). Phases 0 to 5 are built; the `assistant` module (Phase 7) is still to
+come.
 
 - **Application class** `MealMagicianApplication` starts Spring Boot; everything lives below its
   package `hu.lasterbergamot.mealmagician`.
@@ -268,8 +270,12 @@ pages (#124, #128, #132); no other business modules yet.
     and a household may have 10 active links. Any member may create and revoke; another
     household's link is 404. Old expired rows are purged when a link is created (no scheduler, D11).
   - **The data:** `ShareLinkService.open(token)` is the one method without a signed-in person. It
-    reads through `planning.SharedWeekReader`, whose result type holds only dates, slot types, meal
-    names and occasion names: no notes, ids, ratings, member or household names.
+    reads through `planning.SharedWeekReader`, an *unchecked reader*: it skips the membership check
+    on purpose, because nobody is signed in on that route. Its result type holds only dates, slot
+    types, meal names and occasion names: no notes, ids, ratings, member or household names. Two
+    guards keep it narrow: `UncheckedReadersTest` (ArchUnit) fails if any module but `sharing`
+    uses it, and `catalog.MealNameLookup` (the unchecked meal-name reader it calls) is limited to
+    `planning` (see `.claude/rules/java-modules.md`).
   - **The public route, `GET /share/{token}` (`sharing.internal.PublicShareController`):** the only
     unauthenticated business route. `SecurityConfig.PUBLIC_GET_PATHS` opens exactly one path
     segment of base64url characters, for GET only; `/share/x/y`, `/share/x/`, `/share/x.json`,
@@ -295,6 +301,11 @@ pages (#124, #128, #132); no other business modules yet.
     `/share/<token>`; this is accepted (D28), because only the owner reads the logs and links expire
     and can be revoked. A Cloud Logging exclusion for `/share/` is possible later, but it is a
     Google Cloud change and needs the owner's OK.
+- **`shared.security`** holds the two helpers the Phase 5 code shares: `TokenCodes` (random
+  bearer tokens: 256 bits, base64url, SHA-256 for storage; `CodeHasher` for invites delegates to it)
+  and `RateLimiter` (a fixed one-minute window, used by the public share route). `TokenCodes` is in
+  `shared` because `household` (invite codes) and `sharing` (share links) both need it; the limiter
+  lives there so the Phase 6 invite limiter can reuse it.
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
   "today" instead of calling `LocalDate.now()`, so tests can fix the date.
 - **Config:** `application.yml` turns on virtual threads and graceful shutdown, and tells JTE to
@@ -317,8 +328,9 @@ pages (#124, #128, #132); no other business modules yet.
     (`meal`, `tag` and `meal_tag`, see the meal library below), `V7__planning.sql` (`meal_slot`,
     see the weekly plan below), `V8__meal_occasion_type.sql` (`meal_occasion_type`, see the meal
     library below) and `V9__reuse_and_occasions.sql` (plan templates, occasions and occasion
-    templates with their items, see the copy, occasion and template bullets above) and
-    `V10__rating.sql` (`rating`, see the ratings bullet above).
+    templates with their items, see the copy, occasion and template bullets above),
+    `V10__rating.sql` (`rating`, see the ratings bullet above) and `V11__share_link.sql`
+    (`share_link`, see the share links bullet above).
   - **Profiles:** `dev` points at in-memory H2 in PostgreSQL mode; `postgres` points at the
     compose Postgres (override with `SPRING_DATASOURCE_URL`/`_USERNAME`/`_PASSWORD`) and adds the
     `postgresql/` folder. Use them together as `dev,postgres`. With no profile there is no
