@@ -261,15 +261,16 @@ tables), then three page issues side by side, then the occasion menus and the do
 
 ### Phase 5 — Feedback, sharing, PWA polish (`M1`, epic #6) → **v1.0.0**
 - [ ] Rate an eaten meal: each member gives a thumbs up/down or 1–5, with an optional comment;
-      a "how did it go" prompt on past slots. *(Planned 2026-11-03, D27: #124 backend and Flyway V10,
-      #128 the rating form and the prompt, #132 the history on the meal page.)*
+      a "how did it go" prompt on past slots. *(Planned 2026-11-03, D27: #124 backend and Flyway V10
+      landed in PR #139; #128 the rating form and the prompt, #132 the history on the meal page, still open.)*
 - [ ] Print-friendly week view; read-only share link (hashed token, expires, can be revoked).
-      *(Planned 2026-11-03, D28, D29: #125 backend and Flyway V11, #129 the public route, #131 the
-      print view and link management.)*
+      *(Planned 2026-11-03, D28, D29: #125 backend and Flyway V11 landed in PR #138; #129 the public
+      route, #131 the print view and link management, still open.)*
 - [ ] PWA polish: icons, theme colour, install hint. Lighthouse check on a phone. *(Icons and the
       theme colour landed with #61 and R1; #126 adds the install hint, manifest shortcuts, iOS metas
-      and a service-worker guard. Lighthouse and the real-phone install are #134, the owner's.)*
-- [ ] Lunch first: the week shows Lunch by default, other meals on request (#127, D30).
+      and a service-worker guard. Lighthouse and the real-phone install are #134, the owner's.
+      The code landed in PR #136.)*
+- [x] Lunch first: the week shows Lunch by default, other meals on request (#127, D30; PR #137).
 - [ ] Heading font: Baloo 2 replaces Fredoka, so ő and ű are drawn in one family (#130; the owner
       chose it on 2026-11-03 after a specimen comparison).
 - [ ] #133 Phase 5 docs close-out; #134 the owner's checks, then **v1.0.0** (D29).
@@ -538,6 +539,9 @@ meal-magician/
    subagents run at once. Workers do not edit `PLAN.md`; the coordinator ticks the Phase 5 items and
    adds the log rows. The per-IP rate limit is deferred to Phase 6 (D28).
 
+   *Status (2026-11-03):* wave 7a is merged (#126 PR #136, #127 PR #137, #124 PR #139, #125 PR #138,
+   in that order). Wave 7b (#128, #129, #130) is running. Waves 7c and 7d follow.
+
 ---
 
 ## 10. Progress log
@@ -594,3 +598,4 @@ meal-magician/
 | 2026-11-02 | **Occasion menus and the Phase 4 close-out landed** (#113, PR #119, one `sonnet` high subagent; Wave 6c, Phase 4 is complete): an occasion's menu can be edited on `/occasions/{id}` (a page-level pick sheet that copies the plan's, with library search and create-and-add; move up and down; remove behind a confirm), a menu can be saved as an occasion template, `/occasions/templates/{id}` shows a template and plans it again on a date or deletes it (the occasions made from it stay), and `/occasions` lists the templates. Nine new tenant-guard rows, `OccasionMenuE2ETest` and `PlanTemplatesE2ETest` (the first browser test of the #111 pages). The docs now say Phase 4 is built (README, `CLAUDE.md`, Current State, Roadmap, glossary, `plan-ui-redesign.md` amendments). The slot-sheet E2E flake on the phone viewport is still being investigated separately. Not yet checked on a real phone (the owner's R9 walk-through). | #5, #113, #119 |
 | 2026-11-03 | **Phase 5 planned** (D25 says Opus; its budget was used up, so a Sonnet planner wrote the briefs). The owner confirmed the defaults and the security design, and filed as #124–#134 under epic #6 with blockers and board fields: ratings backend V10 (#124), sharing backend V11 (#125), PWA polish (#126), lunch first (#127), rating pages (#128), public share route (#129), Baloo 2 (#130), print view and link management (#131), meal history (#132), docs close-out (#133), the owner's checks and v1.0.0 (#134). Decided D27 (ratings), D28 (share links; per-IP limiting deferred to Phase 6; the share URL in Cloud Run's request log is accepted), D29 (print and release) and D30 (lunch first, design A with a desktop checkbox). Amended §4.1, §4.2, §4.4, §8 and §9. The slot-sheet E2E flake mentioned in the #113 row was fixed by #120 and #121 (PRs #122, #123). Docs only. | #6, #124–#134 |
 | 2026-11-03 | **The owner chose Baloo 2 for headings** after comparing Fredoka + Nunito, Baloo 2, Quicksand, Varela Round, Comfortaa and Nunito 800 on a specimen page: Fredoka has no ő or ű (Google's own latin-ext file for it has 22 glyphs and none of them), and Baloo 2 covers them in two hosted files like Nunito. Filed as #130, which amends UI-D4 in `plan-ui-redesign.md` when it lands. Docs only. | #130, #71 |
+| 2026-11-03 | **Phase 5 wave 7a landed** (D24, D25): four `sonnet` subagents in their own worktrees. Merged in this order: PWA polish #126 (PR #136, `base.jte`, `sw.js`, install hint), lunch first #127 (PR #137, D30, `DayPlan`/`WeekPage` and the week templates), ratings backend #124 (PR #139, Flyway V10, `feedback` module, `RatingService`, `RatingGiven`/`RatingWithdrawn`), sharing backend #125 (PR #138, Flyway V11, `share_link`, `SharedWeekReader`, `TokenCodes`). V10 merged and released before V11, as D27/D28 require. #124 replaces the duplicate-rating insert with an upsert and one retry, because a failed Postgres insert aborts the transaction. #125 has a known gap: the 10-link cap per household counts and then inserts without a lock, so two simultaneous creates can briefly exceed it (D28 says "at most 10"; the owner decides whether a lock is worth it). Docs only in this row. | #124, #125, #126, #127, #136, #137, #138, #139 |
