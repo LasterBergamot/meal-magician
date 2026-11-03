@@ -141,6 +141,15 @@ public final class TenantEndpoints {
               POST,
               "/plan/templates/{templateId}/apply",
               w -> Map.of("templateId", w.homeTemplateId())),
+          // ratings (#128): every member may rate and read the others' ratings
+          TenantEndpoint.forMembers(GET, "/feedback/prompt", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/feedback/prompt/snooze", w -> NONE),
+          TenantEndpoint.forMembers(
+              GET, "/feedback/slots/{slotId}", w -> Map.of("slotId", w.homeSlotId())),
+          TenantEndpoint.forMembers(
+              POST, "/feedback/slots/{slotId}", w -> Map.of("slotId", w.homeSlotId())),
+          TenantEndpoint.forMembers(
+              POST, "/feedback/slots/{slotId}/clear", w -> Map.of("slotId", w.homeSlotId())),
           // meals (catalog): every member may use the library, so none is owner-only
           TenantEndpoint.forMembers(GET, "/meals", w -> NONE),
           TenantEndpoint.forMembers(GET, "/meals/new", w -> NONE),

@@ -381,6 +381,44 @@ the household, so another household's occasion, menu item or template is a 404 o
   `OccasionMenuE2ETest` builds a menu, saves it as a template and plans it again, both at phone and
   desktop size with screenshots under `build/e2e-screenshots/`.
 
+## Ratings (#128)
+
+Members rate what they ate (D27). `RatingController` in `feedback/internal` holds the routes; the
+page models are `RatingPage`, `RatingForm` and `PromptPage`, built by `RatingPageFactory`; the
+templates are `feedback/_rate.jte` (the form, which swaps itself), `rate.jte` (the same form as a
+page, for a visit without JavaScript), `_stars.jte` and `_prompt.jte` (the card). `planning` may not
+import `feedback` (the dependency runs the other way), so the plan page loads both pieces over htmx
+instead of calling them. All five routes are registered in `TenantEndpoints` and open to every member.
+
+| Route | What it does |
+|---|---|
+| `GET /feedback/prompt` | The "How did it go?" card: the latest meal of the last 7 days (today included) that this member has not rated, one at a time. An empty `200` body when there is none, or when the cookie below says "Not now" was pressed today. |
+| `POST /feedback/prompt/snooze` | Sets the cookie `mm_rating_snooze=<today, ISO date>` (`Path=/`, `SameSite=Lax`, `Secure` on https, one day) and answers with an empty body. The cookie holds a date and nothing else. |
+| `GET /feedback/slots/{id}` | The rating form of a slot (also a page of its own). |
+| `POST /feedback/slots/{id}` (`thumb`, `stars`, `comment`) | Gives or changes the member's rating. A success shows the form again with a thanks line and sends `HX-Trigger: ratingSaved`. A refusal (no thumb, stars outside 1 to 5, a comment over 500 characters, a slot after today) is **422** with the same form, the message and the typed values. |
+| `POST /feedback/slots/{id}/clear` | Takes the member's rating back; the form comes back empty, again with `ratingSaved`. |
+
+- **Plan page:** `plan/week.jte` has `<div id="rating-prompt" hx-get="/feedback/prompt" hx-trigger="load, ratingSaved from:body">`.
+  The card has a link to the slot sheet (the same `sheetOpener` shape as a planned meal) and a
+  "Not now" button. Saving or clearing a rating fires `ratingSaved`, so the card moves on to the
+  next unrated meal, or comes back after a clear.
+- **Slot sheet:** for a slot dated today or earlier (`SlotEditor.past()`, from the `Clock`),
+  `plan/_slot_editor.jte` adds `#rating-section`, which loads `SlotEditor.rateHref()` on `load`,
+  above the note form. A later day has no such section.
+- **Form:** `thumb` is two radio inputs drawn as 56 px touch targets (thumb down is the up icon
+  turned upside down), `stars` is "no stars" and 1 to 5, and the comment is a textarea with a
+  500-character limit. Values are parsed leniently (`RatingForm`): a thumb that is not `UP` or
+  `DOWN`, or stars that are not a number, become a field error (422), never a 500. Under the form
+  the other members' ratings are listed by **display name**, thumb, stars and comment; an e-mail
+  address is never in the page model.
+- **Order of checks:** the slot is looked up in the household first, so another household's slot
+  is 404 on all three slot routes whatever was posted.
+- **Tests:** `RatingPagesTest` drives all routes through MockMvc (the card and its snooze, save,
+  change, clear, every refusal, the others' ratings, the sheet integration and the 404s);
+  `RatingModelsTest` covers the form parsing and the page records; `RatingE2ETest` rates, changes
+  and clears a meal and presses "Not now" at phone and desktop size, with screenshots in
+  `build/e2e-screenshots/`.
+
 ## App shell and navigation (R4, #79)
 
 Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` chooses it when

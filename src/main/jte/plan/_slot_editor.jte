@@ -27,6 +27,12 @@
     </div>
   </div>
 
+  @if(editor.past())
+    <%-- Rating (#128): feedback cannot be imported here, so the form loads over htmx. Only slots dated
+         today or earlier get it (D27). --%>
+    <div id="rating-section" hx-get="${editor.rateHref()}" hx-trigger="load" hx-swap="innerHTML" class="border-b-2 border-dashed border-border pb-4"></div>
+  @endif
+
   @template.plan._note_form(ctx = ctx, editor = editor)
 
   <form id="move-form" method="post" action="${editor.action("move")}" hx-post="${editor.action("move")}" class="flex flex-col gap-3 border-t-2 border-dashed border-border pt-4">

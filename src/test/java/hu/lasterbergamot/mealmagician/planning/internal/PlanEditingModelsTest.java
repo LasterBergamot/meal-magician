@@ -29,7 +29,8 @@ class PlanEditingModelsTest {
         List.of(new FormOption("2026-11-02", "Hétfő")),
         List.of(new FormOption("LUNCH", "Ebéd")),
         "régi",
-        null);
+        null,
+        true);
   }
 
   @Test
@@ -70,6 +71,7 @@ class PlanEditingModelsTest {
     assertThat(editor.slotName()).isEqualTo("DINNER");
     assertThat(editor.labelKey()).isEqualTo("slot.dinner");
     assertThat(editor.weekHref()).isEqualTo("/plan?week=2026-W45");
+    assertThat(editor.rateHref()).isEqualTo("/feedback/slots/7");
   }
 
   @Test
@@ -95,6 +97,7 @@ class PlanEditingModelsTest {
     assertThat(rejected.noteError()).isEqualTo("plan.editor.note.long");
     assertThat(rejected.slotId()).isEqualTo(7);
     assertThat(rejected.position()).isEqualTo(1);
+    assertThat(rejected.past()).isTrue();
   }
 
   @Test
