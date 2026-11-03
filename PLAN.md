@@ -278,8 +278,9 @@ tables), then three page issues side by side, then the occasion menus and the do
 - [x] #133 Phase 5 docs close-out (PR #147).
 - [ ] #134 the owner's checks (Lighthouse on a phone, the PWA installed on a phone, the share-link
       walk-through, the rating error state on a phone, the Baloo 2 weight), then **v1.0.0** (D29).
-      The release is a manual `release.yml` run with `version=1.0.0`, and the coordinator needs the
-      owner's go-ahead for it.
+      The owner's checks passed on 2026-11-03 (*Amended 2026-11-03; the owner's words: "everything
+      looks good"*). The release is a manual `release.yml` run with `version=1.0.0`, and the
+      coordinator needs the owner's go-ahead for it.
 
 ### Phase 6 — Hardening (`M2 – Hardening`, epic #7)
 - [ ] #62 Backups: nightly `db-backup.yml` in GitHub Actions: `pg_dump` as a read-only role, a test
@@ -547,8 +548,9 @@ meal-magician/
 
    *Status (2026-11-03):* waves 7a, 7b and 7c are merged (7a: #126 PR #136, #127 PR #137, #124 PR #139,
    #125 PR #138; 7b: #128 PR #142, #130 PR #141, #129 PR #143; 7c: #131 PR #145, #132 PR #144; 7d:
-   #133 PR #147). Phase 5 code and docs are done. **Next is #134, the owner's checks and v1.0.0**; the
-   coordinator does not trigger the release without the owner's go-ahead (D29).
+   #133 PR #147; the cap-race fix PR #150). Phase 5 code and docs are done, and the owner's checks
+   passed. **Next is v1.0.0**; the coordinator does not trigger the release without the owner's
+   go-ahead (D29).
 
 ---
 
@@ -609,3 +611,4 @@ meal-magician/
 | 2026-11-03 | **Phase 5 wave 7a landed** (D24, D25): four `sonnet` subagents in their own worktrees. Merged in this order: PWA polish #126 (PR #136, `base.jte`, `sw.js`, install hint), lunch first #127 (PR #137, D30, `DayPlan`/`WeekPage` and the week templates), ratings backend #124 (PR #139, Flyway V10, `feedback` module, `RatingService`, `RatingGiven`/`RatingWithdrawn`), sharing backend #125 (PR #138, Flyway V11, `share_link`, `SharedWeekReader`, `TokenCodes`). V10 merged and released before V11, as D27/D28 require. #124 replaces the duplicate-rating insert with an upsert and one retry, because a failed Postgres insert aborts the transaction. #125 has a known gap: the 10-link cap per household counts and then inserts without a lock, so two simultaneous creates can briefly exceed it (D28 says "at most 10"; the owner decides whether a lock is worth it). Docs only in this row. | #124, #125, #126, #127, #136, #137, #138, #139 |
 | 2026-11-03 | **Phase 5 waves 7b and 7c landed** (D24, D25; `sonnet` and `haiku` subagents, one worktree each, merged by the coordinator after a rebase on `main` when `main` had moved). 7b: rating pages #128 (PR #142: the how-did-it-go prompt, the rating form on the plan's past slots, `RatingE2ETest`), Baloo 2 #130 (PR #141: heading font, latin and latin-ext woff2, `sw.js` cache v4; squashed to one commit on the rebase), public share route #129 (PR #143: `GET /share/{token}` as a single-segment GET matcher, one identical 404, the D28 headers, the global throttle, `robots.txt`; the rebase combined its `WebSliceTest` exclusions with #128's). 7c: print view and share-link management #131 (PR #145: `/plan/print`, a `ShareLinkE2ETest`; the share-link creator is shown in the list; the Print and Share links sit inside `#plan-week`), meal history #132 (PR #144: the history on the meal page, `MealHistoryPagesTest`). **Known gaps for the owner:** `RatingService.forMeal` applies its limit of 10 before it drops former members' ratings, so the history can show fewer than 10 (a fix belongs in #124's service); `share.limit` hard-codes "10" in its message; the share-link cap race from wave 7a (see above). Docs only in this row. | #128, #129, #130, #131, #132, #141, #142, #143, #144, #145 |
 | 2026-11-03 | **Phase 5 close-out** (D24, D25): wave 7d. The docs close-out #133 (PR #147: README, `CLAUDE.md`, the Current State and Roadmap pages, the Newcomer Guide, References, the web UI rule and `plan-ui-redesign.md` amendments) is merged; a Javadoc fix the close-out found, that the sharing package still said its routes were "to come" (PR #148), is merged too. Phase 5 code and docs are done. Left for the owner (#134): Lighthouse and the PWA install on a phone, the share-link walk-through, the rating error state on a phone (the E2E screenshot is cropped below it), the Baloo 2 heading weight, and the two known gaps (the rating history limit, the share-link cap race). Then v1.0.0 (D29). Docs only. | #133, #134, #147, #148 |
+| 2026-11-03 | **Owner's checks passed; the cap race is fixed** (#134 part 1). The owner did the phone checks and said everything looks good. The owner accepted the rating history rule as it stands: the limit of 10 is applied before former members' ratings are dropped, so the history can show fewer than 10 (no change to #124). The share-link cap race is fixed (PR #150): `HouseholdService.requireForUpdate` takes the household row lock that the ownership changes already use, so the count and the insert of a new link run one after the other; a concurrency test with 40 rounds fails without the lock. Still open: the `share.limit` message hard-codes "10" (cosmetic). Then v1.0.0, once the owner gives the go-ahead (D29). Docs only. | #134, #150 |
