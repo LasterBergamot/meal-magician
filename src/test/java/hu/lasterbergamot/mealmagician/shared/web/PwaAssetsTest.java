@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -64,6 +66,44 @@ class PwaAssetsTest {
     String worker = mvc.perform(get("/sw.js")).andReturn().getResponse().getContentAsString();
 
     assertThat(worker).contains("css|js|icons|fonts").doesNotContain("text/html");
+  }
+
+  @Test
+  void manifestListsShortcutsToPlanMealsAndOccasionsWithServedIcons() throws Exception {
+    String body =
+        mvc.perform(get("/manifest.webmanifest")).andReturn().getResponse().getContentAsString();
+
+    JsonNode manifest = new ObjectMapper().readTree(body);
+    List<String> urls = new ArrayList<>();
+    for (JsonNode shortcut : manifest.get("shortcuts")) {
+      String url = shortcut.get("url").asText();
+      urls.add(url);
+      assertThat(url).startsWith("/");
+      assertThat(shortcut.get("name").asText()).isNotBlank();
+      for (JsonNode icon : shortcut.get("icons")) {
+        mvc.perform(get(icon.get("src").asText())).andExpect(status().isOk());
+      }
+    }
+    assertThat(urls).containsExactly("/plan", "/meals", "/occasions");
+    assertThat(manifest.get("categories")).extracting(JsonNode::asText).contains("food");
+  }
+
+  @Test
+  void serviceWorkerPatternNeverMatchesSharePaths() throws Exception {
+    String worker = mvc.perform(get("/sw.js")).andReturn().getResponse().getContentAsString();
+
+    Matcher declaration = Pattern.compile("STATIC_PATHS = /(.+)/;").matcher(worker);
+    assertThat(declaration.find()).as("STATIC_PATHS regex in sw.js").isTrue();
+    Pattern cached = Pattern.compile(declaration.group(1).replace("\\/", "/"));
+    for (String path : List.of("/share/abc", "/share/", "/plan", "/")) {
+      assertThat(cached.matcher(path).find()).as(path).isFalse();
+    }
+    assertThat(cached.matcher("/css/app.css").find()).isTrue();
+  }
+
+  @Test
+  void installHintScriptIsServed() throws Exception {
+    mvc.perform(get("/js/install-hint.js")).andExpect(status().isOk());
   }
 
   @Test

@@ -15,6 +15,7 @@
     <main id="main" class="mx-auto w-full max-w-[var(--mm-content)] flex-1 px-4 pt-4 pb-[calc(var(--mm-bottom-bar)_+_env(safe-area-inset-bottom)_+_24px)] md:px-8 md:py-8">
       <%-- htmx error fragments land here (HX-Retarget); empty:hidden keeps it invisible until then. --%>
       <div id="error-slot" class="mb-4 empty:hidden" role="alert"></div>
+      @template.layout._install_hint(ctx = ctx)
       ${content}
     </main>
   </div>

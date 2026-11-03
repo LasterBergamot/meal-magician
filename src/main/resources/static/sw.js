@@ -8,7 +8,10 @@
 // reloading or tick "Disable cache" / "Update on reload" in the browser's dev tools.
 // v2 (R1): the self-hosted fonts joined the cached paths. A new name makes the activate step drop
 // the v1 cache, so nothing stale survives an update.
-const CACHE = 'mm-static-v2';
+// v3 (#126): a new name drops the v2 cache. Public share pages (/share/..., D28) and every HTML
+// response are deliberately never cached: STATIC_PATHS must stay an allowlist of static folders
+// (PwaAssetsTest fails if it could match /share/).
+const CACHE = 'mm-static-v3';
 const STATIC_PATHS = /^\/(css|js|icons|fonts)\/|^\/manifest\.webmanifest$/;
 
 self.addEventListener('install', () => self.skipWaiting());

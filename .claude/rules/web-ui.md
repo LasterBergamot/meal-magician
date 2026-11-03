@@ -59,7 +59,10 @@ paths:
   a GET link; the browser's `Accept-Language` is ignored on purpose. Brand names and `HU`/`EN` come from the bundles too.
 - **PWA (D5):** `manifest.webmanifest`, icons (`favicon.svg`, 192/512, maskable; `scripts/generate-icons.py` draws them), `sw.js` that only caches
   static assets — no offline data, never cache HTML pages with user data. The manifest is served
-  by `ManifestController` (Tomcat does not know `.webmanifest`).
+  by `ManifestController` (Tomcat does not know `.webmanifest`). `sw.js` must never match `/share/`
+  (D28; `PwaAssetsTest` checks). The install hint (#126) is `layout/_install_hint.jte` plus
+  `static/js/install-hint.js` (loaded before Alpine); it binds plain properties only and keeps
+  one `localStorage` key, `mm_install_dismissed`, in try/catch.
 - **Design-system components (`ui/`, R2a):** `ui/_icon.jte` draws the icons, and its names are
   the enum `shared.web.IconName` (a typo is a compile error; add an icon there and as an
   `@elseif` branch). `ui/_button.jte` takes `variant` (primary, secondary, ghost, danger),
