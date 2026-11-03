@@ -89,3 +89,29 @@ paths:
   requests every file under `static/` anonymously and fails on a redirect.
 - A test walks every mapped endpoint and fails if any non-public one is reachable anonymously;
   keep the public list (`/login`, static assets, `/actuator/health`) explicit. `/join/**` is not on it.
+- **Share route (#129, D28):** `GET /share/{token}` (`sharing.internal.PublicShareController`) is the
+  only unauthenticated business route, so it has the narrowest possible rule: `SecurityConfig.PUBLIC_GET_PATHS`
+  = `/share/{token:[A-Za-z0-9_-]+}`, GET only. Never `/share/**` (it would open `/share/x/y` and
+  everything added under `/share/` later). Never plain `/share/*` either: Spring Security's `*`
+  matches `x.json`, which the tests caught. `/share/x/`, `/share/x.json`, `/share/x/y`, `/share` and
+  any POST must redirect to sign-in (`SecurityRulesTests`). `EveryEndpointNeedsSignInTests` takes
+  the GET-only list as a second argument. `/robots.txt` is in `PUBLIC_PATHS` (disallows everything).
+  - The route writes nothing: no counter, no session, no cookie, no CSRF token. The `csrfMetaSource`
+    lambda returns `null` for `/share/`, because reading the CSRF token creates a session;
+    `PublicSharePagesTest` checks the `spring_session` row count and `Set-Cookie`.
+  - Throttle first (`shared.security.RateLimiter`, one global window, 120 a minute, 429 with
+    `Retry-After`). It is global because `getRemoteAddr()` is Cloud Run's proxy and
+    `ForwardedHeaderFilter` does not change it; never trust `X-Forwarded-For` for it. Per-address
+    limiting is Phase 6.
+  - One 404 for malformed, unknown, expired and revoked tokens: one template (`sharing/not_found`),
+    one code path, identical headers. A malformed token (`TokenCodes.isWellFormed`) never reaches
+    the database. Do not add a reason to the answer.
+  - Headers are set by the controller before anything is written, on 200, 404 and 429 alike:
+    `X-Robots-Tag: noindex, nofollow, noarchive`, `Referrer-Policy: no-referrer` (it replaces the
+    `same-origin` that `SecurityHeadersFilter` wrote), `Cache-Control: no-store`.
+  - The page shows only what `planning.SharedWeekReader` returns. The token is never logged (a
+    test captures the log), never put in the model, never rendered, never in a query string or
+    header. `sw.js` never matches `/share/`.
+  - Cloud Run's own request log contains the path, so `/share/<token>` appears in it. Accepted by
+    the owner (D28): only the owner reads the logs, and links expire and can be revoked. A Cloud
+    Logging exclusion for `/share/` is a Google Cloud change and needs the owner's OK first.

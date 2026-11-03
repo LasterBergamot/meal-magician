@@ -63,6 +63,15 @@ paths:
   (D28; `PwaAssetsTest` checks). The install hint (#126) is `layout/_install_hint.jte` plus
   `static/js/install-hint.js` (loaded before Alpine); it binds plain properties only and keeps
   one `localStorage` key, `mm_install_dismissed`, in try/catch.
+- **Public share page (#129, D28):** `layout/bare.jte` is the frame of `GET /share/{token}`, for a
+  visitor with no session. It has no manifest, no `sw-register`, no htmx, no CSRF `<meta>`, no
+  language form, no household or person, a fixed light theme and `<meta name="robots">`; it loads
+  only `app.js` and the Alpine CSP build. **The public page has no form and no CSRF token**: a
+  token or a form would need a session, and the route writes nothing. The Print button is the only
+  control (`x-data="printPage"`, `print:hidden`). `sharing/week.jte` + `_days.jte` draw seven day
+  blocks (two columns from `md` and on paper), listing only the meal types that hold a meal and a
+  dash for an empty day (D30); `sharing/not_found.jte` is the single refusal page (404 and 429).
+  The page model (`SharedWeekPage`, `SharedDay`) is the only data a template sees.
 - **Design-system components (`ui/`, R2a):** `ui/_icon.jte` draws the icons, and its names are
   the enum `shared.web.IconName` (a typo is a compile error; add an icon there and as an
   `@elseif` branch). `ui/_button.jte` takes `variant` (primary, secondary, ghost, danger),

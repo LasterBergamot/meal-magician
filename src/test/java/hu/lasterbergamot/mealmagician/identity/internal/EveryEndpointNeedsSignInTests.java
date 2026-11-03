@@ -47,7 +47,11 @@ class EveryEndpointNeedsSignInTests {
         .as("the walk found the app's controllers")
         .extracting(Probe::path)
         .contains("/", "/login", "/error");
-    assertThat(anonymousLeaks(probes, List.of(SecurityConfig.PUBLIC_PATHS)))
+    assertThat(
+            anonymousLeaks(
+                probes,
+                List.of(SecurityConfig.PUBLIC_PATHS),
+                List.of(SecurityConfig.PUBLIC_GET_PATHS)))
         .as("add the path to SecurityConfig.PUBLIC_PATHS only if it is meant to be public")
         .isEmpty();
   }
@@ -58,7 +62,7 @@ class EveryEndpointNeedsSignInTests {
   void anOpenEndpointThatIsNotListedAsPublicIsALeak() {
     Probe leaky = new Probe("GET", "/admin/allowlist", 200, null);
 
-    assertThat(anonymousLeaks(List.of(leaky), List.of("/login")))
+    assertThat(anonymousLeaks(List.of(leaky), List.of("/login"), List.of()))
         .singleElement()
         .asString()
         .contains("GET /admin/allowlist");
@@ -68,21 +72,21 @@ class EveryEndpointNeedsSignInTests {
   void aServerErrorIsNotProofThatTheEndpointIsProtected() {
     Probe broken = new Probe("POST", "/households", 500, null);
 
-    assertThat(anonymousLeaks(List.of(broken), List.of("/login"))).hasSize(1);
+    assertThat(anonymousLeaks(List.of(broken), List.of("/login"), List.of())).hasSize(1);
   }
 
   @Test
   void aRedirectToAnotherPageIsNotProtection() {
     Probe elsewhere = new Probe("GET", "/share/1", 302, "/somewhere-else");
 
-    assertThat(anonymousLeaks(List.of(elsewhere), List.of("/login"))).hasSize(1);
+    assertThat(anonymousLeaks(List.of(elsewhere), List.of("/login"), List.of())).hasSize(1);
   }
 
   @Test
   void aRedirectToTheLoginPageIsProtection() {
     Probe protectedEndpoint = new Probe("GET", "/households", 302, "/login");
 
-    assertThat(anonymousLeaks(List.of(protectedEndpoint), List.of("/login"))).isEmpty();
+    assertThat(anonymousLeaks(List.of(protectedEndpoint), List.of("/login"), List.of())).isEmpty();
   }
 
   @Test
@@ -90,7 +94,27 @@ class EveryEndpointNeedsSignInTests {
     Probe loginPage = new Probe("GET", "/login", 200, null);
     Probe asset = new Probe("GET", "/css/app.css", 200, null);
 
-    assertThat(anonymousLeaks(List.of(loginPage, asset), List.of("/login", "/css/**"))).isEmpty();
+    assertThat(anonymousLeaks(List.of(loginPage, asset), List.of("/login", "/css/**"), List.of()))
+        .isEmpty();
+  }
+
+  @Test
+  void aGetOnlyPublicPatternDoesNotOpenOtherMethods() {
+    Probe read = new Probe("GET", "/share/1", 404, null);
+    Probe write = new Probe("POST", "/share/1", 200, null);
+
+    assertThat(anonymousLeaks(List.of(read), List.of("/login"), List.of("/share/*"))).isEmpty();
+    assertThat(anonymousLeaks(List.of(write), List.of("/login"), List.of("/share/*")))
+        .singleElement()
+        .asString()
+        .contains("POST /share/1");
+  }
+
+  @Test
+  void aGetOnlyPublicPatternDoesNotOpenLongerPaths() {
+    Probe deeper = new Probe("GET", "/share/1/2", 200, null);
+
+    assertThat(anonymousLeaks(List.of(deeper), List.of("/login"), List.of("/share/*"))).hasSize(1);
   }
 
   @Test
@@ -107,14 +131,19 @@ class EveryEndpointNeedsSignInTests {
 
   /**
    * Endpoints that answered an anonymous caller with anything but "go and sign in", minus the paths
-   * the security configuration declares public.
+   * the security configuration declares public. {@code publicGetPatterns} open a path for GET only,
+   * so a POST to the same path still has to be sent to the login page.
    */
-  static List<String> anonymousLeaks(List<Probe> probes, List<String> publicPatterns) {
+  static List<String> anonymousLeaks(
+      List<Probe> probes, List<String> publicPatterns, List<String> publicGetPatterns) {
     List<String> leaks = new ArrayList<>();
     for (Probe probe : probes) {
       boolean sentToLogin = probe.status() == 302 && "/login".equals(probe.redirect());
       boolean declaredPublic =
-          publicPatterns.stream().anyMatch(pattern -> PATHS.match(pattern, probe.path()));
+          publicPatterns.stream().anyMatch(pattern -> PATHS.match(pattern, probe.path()))
+              || ("GET".equals(probe.method())
+                  && publicGetPatterns.stream()
+                      .anyMatch(pattern -> PATHS.match(pattern, probe.path())));
       if (!sentToLogin && !declaredPublic) {
         leaks.add(
             "%s %s answered %d to an anonymous caller"
