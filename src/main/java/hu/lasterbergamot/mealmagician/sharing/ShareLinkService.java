@@ -73,6 +73,11 @@ public class ShareLinkService {
   /**
    * Makes a share link for the week that contains a day. Any member may do it.
    *
+   * <p>The household row is locked first ({@link HouseholdService#requireForUpdate}), and the count
+   * of active links and the insert both run under that lock. Two members creating a link at the
+   * same moment therefore run one after the other, so the {@value #MAX_ACTIVE}-link cap cannot be
+   * passed by a race.
+   *
    * @param userId the {@code app_user} id of the person asking
    * @param householdId the household whose week is shared
    * @param anyDayOfWeek any date in the week; it is moved back to that week's Monday
@@ -84,7 +89,7 @@ public class ShareLinkService {
    */
   public CreatedShareLink create(
       long userId, long householdId, LocalDate anyDayOfWeek, ShareExpiry expiry) {
-    households.require(householdId, userId);
+    households.requireForUpdate(householdId, userId);
     Instant now = Instant.now(clock);
     if (links.countByHouseholdIdAndRevokedAtIsNullAndExpiresAtAfter(householdId, now)
         >= MAX_ACTIVE) {
