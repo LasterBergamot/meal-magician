@@ -588,7 +588,7 @@ not depend on the redesign and runs beside it (`PLAN.md` §9).
 | 2026-11-02 | **Wave 5 started.** R5d landed (#96, PR #100) and the read-only week view (#97, PR #101), whose phone Plan screen has the gold tab outline, today's gold number disc and the Today marker together. **The owner decided** (a) the week-view deviations above stay (§4 amended), and (b) the gold is **not** changed: the design is kept as written and judged on a real phone at R9, together with the Meals add button. R8 (#99) comes after the editing half of the week view (#98). | #57, #96, #97, #98, #99, #100, #101 |
 | 2026-11-02 | **Wave 5 build done except R8.** The week view's editing half landed (#98, PR #104) and the hello page was retired (#103, PR #105): `/` redirects to `/plan`, or to `/households` for a person without a household. R8 (#99) is the last build item; R9 is the owner's walk-through, where the gold on the phone Plan and Meals screens is judged live. | #57, #98, #103, #104 |
 | 2026-11-02 | **Wave 5 landed, the redesign is built.** R8 (#99, PR #106) is merged after the week view (#97, #98), R5d (#96) and the hello-page removal (#103). Left: **R9**, the owner's close-out. Things to look at there: the gold on the phone Plan and Meals screens (the design is kept as written), the week table's mid-word wrapping of a long single word such as "Gulyásleves" in a ~115 px cell at 1280 px, Lighthouse accessibility and PWA on a phone, and installing the PWA on a real phone. | #57, #99, #106 |
-| 2026-11-03 | **Assistant design added** (owner, UI-D12): the assistant is "Varázsló / Wizard", the `wand` marks everything it does, entry points are `secondary` and never gold, ideas are dashed cards, and the chat page is a plain-text thread with a sticky composer. Appendix D holds the screens, states, copy and checks for #160 and #161 and wins where their briefs differ (the nav icon is `WAND`, not `SPARKLES`). UI-D5 amended for the fifth destination; §5 and §8 point to Appendix D. Also moved seven progress-log rows that had landed after Appendix C back into this table. Docs only. | #160, #161 |
+| 2026-11-03 | **Assistant design added and approved from a mockup** (owner, UI-D12): the assistant is "Varázsló / Wizard", the `wand` marks everything it does, entry points are `secondary` and never gold, ideas are dashed cards, and the chat page is a plain-text thread with a sticky composer. Appendix D holds the screens, states, copy and checks for #160 and #161 and wins where their briefs differ (the nav icon is `WAND`, not `SPARKLES`). UI-D5 amended for the fifth destination; §5 and §8 point to Appendix D. Also moved seven progress-log rows that had landed after Appendix C back into this table. Docs only. | #160, #161 |
 
 ---
 
@@ -960,7 +960,10 @@ The slot mark on its own soft tile (`slot-<type>` on `slot-<type>-soft`, minimum
 
 The look of the AI assistant (UI-D12). `PLAN.md` Phase 7 is the backend design, and #160 (week and
 slot) and #161 (chat and occasion menu) hold the routes, services and tests. This appendix says how
-it looks and behaves. Where #160 or #161 differ from it, this appendix wins. It adds **no tokens and
+it looks and behaves. Where #160 or #161 differ from it, this appendix wins. The owner approved it
+from a clickable mockup of every screen and state below, phone and desktop, in both themes
+(`https://claude.ai/artifact/J6ibJiQ9uqxEBioyv6Lx5p`, "Wizard assistant screens", private to the
+owner like the design-system artifact). As with that artifact, this file is the source of truth. It adds **no tokens and
 no JS library**: everything is built from §5's components, plus:
 
 - a **text area** variant of `ui/_field` (`multiline`, `rows`): the same visible label, 2 px
@@ -980,7 +983,9 @@ The first two belong on `/dev/ui` with the other components.
   anything it drafted. `sparkles` stays decoration.
 - **Never gold.** Entry buttons are `secondary` (white, outlined) with the wand. The add button and
   today keep the screen's one gold mark (§3.1). The only gold the assistant brings is `ui/_empty`'s
-  icon disc and sparkles on the empty chat page, where nothing else is gold.
+  icon disc and sparkles on the empty chat page. On a phone that screen also shows the current
+  tab's gold pill, so it has two gold marks, like the Meals list with its add button. The owner
+  accepted this in the mockup (2026-11-03); R9 judges it on a real phone with the others.
 - **Not real yet = dashed.** An **idea** (a meal the model made up, not in the library) is a card
   with a dashed outline and no shadow. A library meal in a draft is a normal row. Nothing reaches the
   plan or a menu before the member says so.
