@@ -27,7 +27,9 @@ What exists in `main` today:
 - **Lombok** is configured (`lombok.config`) but not used yet.
 - **Taskfile (#10):** `Taskfile.yml` is the one command surface for people, agents and CI
   (`task --list`). Working today: `install`, `doctor`, `lint`, `format`, `serve`, `test`,
-  `test:fast`, `up`, `down`, `serve:pg`, `migrate-check`, `build`, `test-e2e` (#15) and `smoke` (#58, `task smoke -- <url>`).
+  `test:fast`, `up`, `down`, `serve:pg`, `migrate-check`, `build`, `test-e2e` (#15), `smoke` (#58, `task smoke -- <url>`) and `db:restore` (#154,
+  `task db:restore -- <file-or-gs://object> --target local|neon-branch|neon-project`: fetch, `age`-decrypt with
+  your private key file, `pg_restore`; guide: [[Backup and Restore]]).
   `docs:check` (#14) runs `DocsToolingTests` alone; the full `task test` runs it too. Why the tasks exist: everyone, including CI, runs the same commands,
   so "works on my machine" and "passes in CI" mean the same thing.
   - `scripts/doctor.sh` (`task doctor`) prints `ok`/`FAIL` per tool: Java 17+ (only to start

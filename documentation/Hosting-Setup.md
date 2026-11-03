@@ -173,6 +173,8 @@ gcloud secrets add-iam-policy-binding db-password \
    | `MM_ADMIN_EMAILS` | your Google e-mail (comma-separate several) |
    | `DB_URL` | `jdbc:postgresql://<neon host>/mealmagician?sslmode=require` |
    | `DB_USERNAME` | the Neon role |
+   | `BACKUP_AGE_RECIPIENT` | the **public** `age` key the backups are encrypted to (starts with `age1`; safe to store, the private half stays in your password manager; see [[Backup and Restore]], "One-time setup") |
+   | `BACKUP_BUCKET` | `meal-magician-backups` (the Cloud Storage bucket the backups go to) |
 
 2. **Settings → General → Pull Requests**: tick **Allow auto-merge**.
 
@@ -271,12 +273,17 @@ with Google (that cannot be automated); the sign-in on a phone stays a manual ch
 ## Backups
 
 Neon's Free plan keeps a point-in-time restore window of only about 6 hours, so it covers a
-mistake noticed the same day and nothing more. Real backups are planned in #62 (Phase 6, after the
-last regular feature and before the AI assistant): a nightly `db-backup.yml` workflow dumps the
-database as a read-only role, test-restores the dump, encrypts it with `age` and uploads it to a
-Cloud Storage bucket in `europe-west3` through a create-only service account. The owner's setup
-for it (bucket, service account, Neon role, `age` key) and the restore steps will be written here
-or in their own runbook when #62 is built.
+mistake noticed the same day and nothing more. Real backups run every night: `db-backup.yml`
+dumps the database as a read-only role, test-restores the dump, encrypts it with `age` and
+uploads it to the Cloud Storage bucket `meal-magician-backups` (`europe-west3`) through the
+create-only service account `mm-backup-writer`. Before each release one more copy is taken.
+
+Everything about them, written for someone who has never seen the setup, is on the wiki page
+[[Backup and Restore]]: what is and is not backed up, where the files are and how long they
+stay, your one-time steps (the `age` key, the read-only Neon role, the Google Cloud setup script
+`scripts/backup-gcp-setup.sh`), the three restore recipes (`task db:restore`) and what to do
+when the "no backup for two days" alert e-mail arrives. Do those one-time steps once, after the
+first deploy (parts 1 to 6 of this page).
 
 ## Rotating a secret
 

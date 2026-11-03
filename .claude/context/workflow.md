@@ -19,6 +19,7 @@ task test-e2e     # build the image, start compose.e2e.yml (app + stub OIDC + Po
 task test-e2e:run # the same without the image build (CI builds the image with a layer cache first)
 task build        # build the container image (meal-magician) from the Dockerfile
 task smoke -- URL # post-deploy smoke test of a running service, no sign-in (scripts/smoke.sh; release.yml runs it after each deploy; locally: `task smoke -- http://localhost:8080`)
+task db:restore -- SRC --target T  # restore a backup (file or gs://object; decrypts with `--key FILE`) into local | neon-branch | neon-project (scripts/db-restore.sh; guide: documentation/Backup-and-Restore.md)
 task up           # start compose.yml (Postgres + pgvector) and wait until it is healthy
 task down         # stop it
 task migrate-check  # runs PostgresMigrationTests: every migration applied to a throw-away pgvector Postgres (needs Docker; CI runs it)

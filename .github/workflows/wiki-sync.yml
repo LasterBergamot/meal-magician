@@ -46,6 +46,7 @@ jobs:
             References.md|References
             Auth-Setup.md|Auth Setup
             Hosting-Setup.md|Hosting Setup
+            Backup-and-Restore.md|Backup and Restore
             Current-State-Backend.md|Current State: Backend
             Current-State-Frontend.md|Current State: Frontend
             Current-State-Everything-Else.md|Current State: Everything Else
