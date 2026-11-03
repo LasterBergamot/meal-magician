@@ -242,3 +242,7 @@ paths:
   `ratingSaved from:body`. The prompt and the slot sheet's rating section load over htmx because
   `planning` cannot import `feedback`. An empty prompt is a truly empty body (not whitespace), so
   the container's `empty:hidden` applies. The snooze cookie `mm_rating_snooze` holds a date only.
+- **Meal history, "How it went" (#132), `feedback/_meal_history.jte`:** `meal/detail.jte` holds an
+  empty `#meal-history` section that loads `GET /feedback/meals/{id}` on `load` (the same reason as
+  the prompt: `catalog` may not import `feedback`). The fragment swaps only `#meal-history-body`, so
+  the heading stays in the meal page. It shows no e-mail address and no rating form.

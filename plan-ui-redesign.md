@@ -241,7 +241,7 @@ design-system names. The behaviour column is the contract.
 | **Alert** | `ui/_alert.jte` (`kind`, `title`, `message`, action) | Icon + bold title + one sentence; `success|info|warning|danger`; `role="alert"` for warning and danger. The **409 conflict** is a `warning` with a Reload button. No floating toasts in v1. |
 | **Sheet / dialog / confirm** | `ui/_sheet.jte`, `ui/_confirm.jte`; Alpine `sheet` | Native `<dialog>`; phone = bottom sheet (grabber, `rounded-t-xl`, scrim), desktop ≥ `md` = centred dialog or right side panel. Focus moves in, is trapped, returns to the trigger; Escape closes; swipe-down closes on phone. Content loads with htmx. Never a sheet from a sheet. |
 | **Empty state / skeleton** | `ui/_empty.jte`, `ui/_skeleton_rows.jte` | Gold outlined round icon with two sparkles, `h2`, one sentence, one primary action (+ at most one ghost). Skeleton mimics the coming layout, region has `aria-busy="true"`; use for htmx loads > ~300 ms (`hx-indicator`). |
-| **Rating** | `feedback/_rating.jte`, `feedback/_stars.jte` | Thumbs up/down (`aria-pressed`; up violet, down cherry; the icon differs), then optional 1–5 stars (gold when pressed) and a comment. Phase 5. |
+| **Rating** | `feedback/_rating.jte`, `feedback/_stars.jte` | Thumbs up/down (`aria-pressed`; up violet, down cherry; the icon differs), then optional 1–5 stars (gold when pressed) and a comment. Phase 5. *(Amended 2026-11-03, #128 and #132; was: `feedback/_rating.jte` only. Built as `feedback/_rate.jte` (the form, which swaps itself), `rate.jte` (the same form as a page for a visit without JavaScript), `_stars.jte`, `_prompt.jte` (the "How did it go?" card on Plan) and `_meal_history.jte` (the "How it went" block on a meal's page). Thumb down uses the danger tokens and the UP icon turned 180 degrees, not a new icon or a cherry token.)* |
 | **Icon** | `ui/_icon.jte` (`name`, `size`) | Switch over the names in Appendix B; renders the inline `<svg>`. One place to add icons. |
 | **Shell** | `layout/_shell.jte`, `layout/_tabbar.jte`, `layout/_sidebar.jte`, `layout/_household_switcher.jte`, `layout/_topbar.jte`; Alpine `shell`, `theme` | §4. `base.jte` keeps the `<head>` (CSP-safe metas, htmx config) and wraps `_shell` for signed-in pages. |
 | **Week (desktop)** | `plan/week.jte`, `plan/_grid.jte`, `plan/_cell.jte`, `plan/_panel.jte` | 7 × 4 grid built row by row (one grid row = one slot across the seven days, so rows line up), today column gold, occasion strip above, legend below, side panel for the meal picker. Phase 3. *(Amended 2026-11-02, #113; was: the occasion strip above the grid on desktop only. The strip is `plan/_occasions.jte`, drawn above the days in both layouts.)* |
@@ -526,7 +526,10 @@ not depend on the redesign and runs beside it (`PLAN.md` §9).
 - **Meals (Phase 2):** search, tag chips, cards with slot chip, name, tags, use count; quick-add bar;
   detail in a side panel (desktop) or a page (phone); empty library = EmptyState.
 - **Occasions (Phase 4) and rating (Phase 5):** §5 "Occasions" and "Rating"; at most one rating
-  prompt at a time, dismissible for a day.
+  prompt at a time, dismissible for a day. *(Amended 2026-11-03, #131 and #132: the Plan screen's
+  Print and Share links sit next to Reuse, as §4 says, and a meal's page has a "How it went" block
+  under its details. The print page (`/plan/print`) and the public share page (`/share/{token}`)
+  are the same week drawn on the bare layout, with no shell.)*
 - **Admin allowlist (Phase 1, #45):** same list-and-card pattern, instance admins only.
 
 ---

@@ -10,8 +10,9 @@ Planned backend work, by `PLAN.md` phase. Move items to [[Current State: Backend
 - **Phase 4:** done. The backend (#109, see [[Current State: Backend]]): copy day/week,
   `PlanTemplate` (DAY/WEEK), occasions (each carries one `OccasionType`, which `catalog` owns) and
   occasion templates. The pages (#110–#113) are in [[Current State: Frontend]].
-- **Phase 5:** the `feedback` backend landed in #124 (see [[Current State: Backend]]). Still to do:
-  the rating pages, `sharing` (print view, share links).
+- **Phase 5:** done (#124 to #132). The `feedback` ratings and the meal history, and the `sharing`
+  share links with the public page and the print view, are in [[Current State: Backend]]. What is
+  left for Phase 5 is the owner's phone checks (#134), not code.
 - **Phase 6:** data export/delete, rate limits, audit fixes.
 - **Phase 7:** `assistant` module: Spring AI (pluggable provider), ONNX embeddings → pgvector,
   preference profile, tool-calling week drafts, spend cap.

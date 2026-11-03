@@ -16,5 +16,7 @@ Planned UI work (JTE + htmx + Alpine + Tailwind), by `PLAN.md` phase. Move items
   open.
 - **Phase 4:** done (#110–#113), see [[Current State: Frontend]]: the reuse sheets on the plan,
   the plan template pages, and the occasion pages with their menus and templates.
-- **Phase 5:** rating prompts, print view, share link page, PWA install hint and a Lighthouse check on a phone.
+- **Phase 5:** done (#124 to #132), see [[Current State: Frontend]]: the rating prompt and form, the
+  meal's "How it went" block, the print page and the share sheet, the public share page and the PWA
+  install hint. What is left is the owner's Lighthouse check and install on a phone (#134).
 - **Phase 7:** "suggest my week" and chat-style refinement UI.

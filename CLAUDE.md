@@ -18,7 +18,7 @@ RAG, pluggable provider) drafts plans from that history.
 - Data: Postgres with pgvector and Flyway; H2 for fast tests and `task serve`.
 - Hosted on Google Cloud Run, database on Neon (both scale to zero).
 
-All decisions are in `PLAN.md` §2. **Status:** Phases 0–4 are done (Phase 4: #109–#113). The UI
+All decisions are in `PLAN.md` §2. **Status:** Phases 0–5 are built (Phase 4: #109–#113; Phase 5: #124–#132), pending the owner's phone checks (#134) before v1.0.0. The UI
 redesign (epic #57, `plan-ui-redesign.md`) has landed except R9, the owner's close-out on a real phone. **Next steps are in `PLAN.md` §9.**
 
 ## Router: working on X → read Y
