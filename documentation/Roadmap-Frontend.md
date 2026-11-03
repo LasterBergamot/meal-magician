@@ -24,4 +24,7 @@ Planned UI work (JTE + htmx + Alpine + Tailwind), by `PLAN.md` phase. Move items
   a text field).
 - **Phase 7:** "Suggest my week" with follow-ups, accept and discard (#160), a one-slot helper, an
   Assistant page for food questions and menu help on an occasion (#161). The plan page loads these as
-  small fragments, which are empty when the assistant is switched off.
+  small fragments, which are empty when the assistant is switched off. In the UI the assistant is
+  called **Varázsló / Wizard** and is marked by the wand icon; its ideas are dashed cards until a
+  member adds them, and it gets a fifth tab when it is on. The screens, states and copy are in
+  `plan-ui-redesign.md` (UI-D12, Appendix D).
