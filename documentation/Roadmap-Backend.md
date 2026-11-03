@@ -13,6 +13,12 @@ Planned backend work, by `PLAN.md` phase. Move items to [[Current State: Backend
 - **Phase 5:** done (#124 to #132). The `feedback` ratings and the meal history, and the `sharing`
   share links with the public page and the print view, are in [[Current State: Backend]]. What is
   left for Phase 5 is the owner's phone checks (#134), not code.
-- **Phase 6:** data export/delete, rate limits, audit fixes.
-- **Phase 7:** `assistant` module: Spring AI (pluggable provider), ONNX embeddings → pgvector,
-  preference profile, tool-calling week drafts, spend cap.
+- **Phase 6:** first the backup scripts and workflow (#62, #154, see [[Roadmap: Everything Else]]) and
+  ingredients in `catalog` (#155: `ingredient`, `meal_ingredient`, a read-only starter list, race-safe
+  creation that also fixes the tag race). Later: data export/delete, rate limits, audit fixes.
+- **Phase 7:** `assistant` module (#157 to #162). Spring AI with Gemini on Vertex AI, authenticated by
+  the Cloud Run service account (no key); Vertex embeddings in a `meal_embedding` table that is brought
+  up to date at the start of each request; read-only tools (recent weeks, meal search, preferences,
+  occasions); drafts validated against the library, with "ideas" that become meals only when a person
+  adds them; a monthly spend cap per household; `PlanningService.applyDraft` and
+  `RatingService.recent` as the new calls the assistant needs in other modules.
