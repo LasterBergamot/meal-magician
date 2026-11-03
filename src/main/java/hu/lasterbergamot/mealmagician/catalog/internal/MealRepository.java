@@ -1,5 +1,6 @@
 package hu.lasterbergamot.mealmagician.catalog.internal;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,6 +20,16 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
    * @return the meal, or empty if it does not exist or belongs to another household
    */
   Optional<Meal> findByIdAndHouseholdId(long id, long householdId);
+
+  /**
+   * Several meals of one household in a single query, for {@code MealNameLookup}. Ids that belong
+   * to another household are not returned.
+   *
+   * @param householdId the household the meals must belong to
+   * @param ids the meal ids, not empty
+   * @return the meals found, in no particular order
+   */
+  List<Meal> findByHouseholdIdAndIdIn(long householdId, Collection<Long> ids);
 
   /**
    * The library search. Each filter is optional: a {@code null} pattern or tag id means "no

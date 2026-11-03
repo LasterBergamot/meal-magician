@@ -178,14 +178,15 @@ jacoco {
 // Classes that are excluded from the coverage gate, each with the reason (tests.md):
 //  - MealMagicianApplication: only holds main(), which would start the whole app.
 //  - gg/jte/generated: JTE template classes generated at build time, not hand-written code.
-//  - CodeHasher: its only uncovered line is the handler for a missing SHA-256, which every Java
-//    runtime provides, so no test can reach it; CodeHasherTest covers everything else.
+//  - TokenCodes: its only uncovered line is the handler for a missing SHA-256, which every Java
+//    runtime provides, so no test can reach it; TokenCodesTest covers everything else (CodeHasher
+//    delegates to it).
 // Lombok output is skipped through lombok.addLombokGeneratedAnnotation in lombok.config.
 val coverageExclusions =
     listOf(
         "hu/lasterbergamot/mealmagician/MealMagicianApplication.class",
         "gg/jte/generated/**",
-        "hu/lasterbergamot/mealmagician/household/internal/CodeHasher.class",
+        "hu/lasterbergamot/mealmagician/shared/security/TokenCodes.class",
     )
 
 fun JacocoReportBase.excludeFromCoverage() {

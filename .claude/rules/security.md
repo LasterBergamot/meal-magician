@@ -31,6 +31,25 @@ paths:
   `household.InviteService` does it; a single use is a guarded `UPDATE` (check its row count), never
   read-then-write. `/join/<code>` is not public: it needs sign-in, and opening it must not use the
   invite up (joining is a POST).
+- **Share links (D28, #125):** a read-only link to one household and one ISO week. The token is
+  made by `shared.security.TokenCodes` (also used by `CodeHasher`): 256 bits from `SecureRandom`,
+  43 base64url characters; only the SHA-256 hex is stored (`share_link.token_hash`) and the raw
+  token is returned once, in `sharing.CreatedShareLink`, never logged and never in an exception
+  message. Expiry is 1, 7 (default) or 30 days; a link is active only while `revoked_at IS NULL AND
+  expires_at > now`, which the lookup query itself checks; at most 10 active per household
+  (`ShareLimitException`, 422); expired rows older than 30 days are purged when a link is created.
+  - **404 for everything:** `ShareLinkService.open(token)` returns `Optional.empty()` for a
+    malformed (checked with `TokenCodes.isWellFormed`, before the database), unknown, expired or
+    revoked token, and the public route must answer all four with one identical 404. Management
+    methods are membership-checked and household-scoped; another household's link id gives
+    `ShareLinkNotFoundException` (404).
+  - **No write on the public path:** `open` is read-only. The table has no `last_viewed_at` and no
+    `version`; do not add either. Revoke is a guarded `UPDATE` whose row count is ignored, so
+    revoking twice is a no-op.
+  - **Narrow unchecked readers:** the public read goes through `planning.SharedWeekReader` and
+    `catalog.MealNameLookup`, which skip the membership check on purpose (see `java-modules.md`).
+    `SharedWeek` holds only dates, slot types, meal names and occasion names. A new field on it
+    is a privacy decision: ask the owner first.
 - **Tenancy (D8):** another household's data → 404; owner-only action by a member → 403.
   The current household comes from the session and is re-checked against membership on every request
   (`household.internal.CurrentHouseholdResolver`; controllers declare a `CurrentHousehold` parameter
