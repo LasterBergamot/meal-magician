@@ -79,6 +79,13 @@
       </dl>
     `)
 
+    @template.ui._card(variant = "default", content = @`
+      <section id="meal-history" aria-labelledby="meal-history-heading" hx-get="/feedback/meals/${meal.id()}" hx-trigger="load" hx-target="#meal-history-body" class="flex flex-col gap-3">
+        <h2 id="meal-history-heading" class="font-display text-xl font-semibold text-ink">${ctx.t("rating.meal.heading")}</h2>
+        <div id="meal-history-body" class="flex flex-col gap-3"></div>
+      </section>
+    `)
+
     <div class="flex flex-wrap gap-3">
       @template.meal._link_button(variant = "primary", href = "/meals/" + meal.id() + "/edit", label = ctx.t("meal.edit"), icon = IconName.EDIT)
       @if(!meal.archived())

@@ -150,6 +150,9 @@ public final class TenantEndpoints {
               POST, "/feedback/slots/{slotId}", w -> Map.of("slotId", w.homeSlotId())),
           TenantEndpoint.forMembers(
               POST, "/feedback/slots/{slotId}/clear", w -> Map.of("slotId", w.homeSlotId())),
+          // meal history (#132): the lazy "How it went" block of a meal's page
+          TenantEndpoint.forMembers(
+              GET, "/feedback/meals/{mealId}", w -> Map.of("mealId", w.homeMealId())),
           // meals (catalog): every member may use the library, so none is owner-only
           TenantEndpoint.forMembers(GET, "/meals", w -> NONE),
           TenantEndpoint.forMembers(GET, "/meals/new", w -> NONE),
