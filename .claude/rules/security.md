@@ -37,7 +37,8 @@ paths:
   token is returned once, in `sharing.CreatedShareLink`, never logged and never in an exception
   message. Expiry is 1, 7 (default) or 30 days; a link is active only while `revoked_at IS NULL AND
   expires_at > now`, which the lookup query itself checks; at most 10 active per household
-  (`ShareLimitException`, 422); expired rows older than 30 days are purged when a link is created.
+  (`ShareLimitException`, 422), counted and inserted under the household row lock
+  (`HouseholdService.requireForUpdate`) so two simultaneous creates cannot both pass; expired rows older than 30 days are purged when a link is created.
   - **404 for everything:** `ShareLinkService.open(token)` returns `Optional.empty()` for a
     malformed (checked with `TokenCodes.isWellFormed`, before the database), unknown, expired or
     revoked token, and the public route must answer all four with one identical 404. Management

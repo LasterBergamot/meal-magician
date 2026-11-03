@@ -107,6 +107,29 @@ public class HouseholdService {
   }
 
   /**
+   * Like {@link #require}, and also holds a database lock on the household's row until the
+   * surrounding transaction ends. Use it when a rule counts something that belongs to the household
+   * and then adds to it (for example "at most 10 active share links"): without the lock, two
+   * requests at the same moment can both count 9 and both add one, giving 11. With it, the second
+   * request waits here until the first has committed, so it counts 10 and is refused.
+   *
+   * <p>The membership check comes first, so a non-member gets exactly the same answer as from
+   * {@link #require} and never waits on the lock. The caller must be inside a transaction that
+   * covers both the count and the insert, otherwise the lock is released too early.
+   *
+   * @param householdId the household id
+   * @param userId the {@code app_user} id
+   * @return the household as the person sees it
+   * @throws HouseholdNotFoundException if it does not exist or the person is not a member
+   */
+  public CurrentHousehold requireForUpdate(long householdId, long userId) {
+    CurrentHousehold current = require(householdId, userId);
+    // The row exists (the membership check just found it), so the result is not needed.
+    households.findForUpdate(householdId);
+    return current;
+  }
+
+  /**
    * Renames a household. Only owners may.
    *
    * @param householdId the household to rename

@@ -2,6 +2,7 @@ package hu.lasterbergamot.mealmagician.household;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import hu.lasterbergamot.mealmagician.household.internal.MembershipRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,6 +83,20 @@ class HouseholdServiceTest {
     assertThat(service.find(annasId, bela)).isEmpty();
     assertThat(service.find(-1, anna)).isEmpty();
     assertThatThrownBy(() -> service.require(annasId, bela))
+        .isInstanceOf(HouseholdNotFoundException.class);
+  }
+
+  @Test
+  void requireForUpdateGivesTheHouseholdToAMemberAndTheSameErrorAsRequireToAStranger() {
+    long annasId = service.create(anna, "Annas").id();
+
+    CurrentHousehold current = service.requireForUpdate(annasId, anna);
+
+    assertThat(current).isEqualTo(service.require(annasId, anna));
+    assertThatThrownBy(() -> service.requireForUpdate(annasId, bela))
+        .isInstanceOf(HouseholdNotFoundException.class)
+        .hasMessage(catchThrowable(() -> service.require(annasId, bela)).getMessage());
+    assertThatThrownBy(() -> service.requireForUpdate(-1, anna))
         .isInstanceOf(HouseholdNotFoundException.class);
   }
 
