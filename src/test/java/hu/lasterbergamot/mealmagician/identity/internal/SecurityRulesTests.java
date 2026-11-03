@@ -110,4 +110,48 @@ class SecurityRulesTests {
         .andExpect(header().string("Referrer-Policy", "same-origin"))
         .andExpect(header().string("X-Content-Type-Options", "nosniff"));
   }
+
+  // ---- the public share route (PLAN.md D28): one narrow, GET-only rule ----
+
+  private static final String SHARE_TOKEN = "A".repeat(43);
+
+  @Test
+  void aShareLinkIsOpenWithoutSigningInAndAnUnknownOneIsA404() throws Exception {
+    mvc.perform(get("/share/" + SHARE_TOKEN)).andExpect(status().isNotFound());
+  }
+
+  @Test
+  void aSharePathThatIsNotExactlyOneSegmentGoesToTheLoginPage() throws Exception {
+    mvc.perform(get("/share/" + SHARE_TOKEN + "/"))
+        .andExpect(status().isFound())
+        .andExpect(redirectedUrl("/login"));
+    mvc.perform(get("/share/" + SHARE_TOKEN + "/extra"))
+        .andExpect(status().isFound())
+        .andExpect(redirectedUrl("/login"));
+    mvc.perform(get("/share/x/y")).andExpect(status().isFound()).andExpect(redirectedUrl("/login"));
+    mvc.perform(get("/share")).andExpect(status().isFound()).andExpect(redirectedUrl("/login"));
+    mvc.perform(get("/share/")).andExpect(status().isFound()).andExpect(redirectedUrl("/login"));
+  }
+
+  @Test
+  void aShareLinkWithAFileExtensionGoesToTheLoginPage() throws Exception {
+    mvc.perform(get("/share/" + SHARE_TOKEN + ".json"))
+        .andExpect(status().isFound())
+        .andExpect(redirectedUrl("/login"));
+  }
+
+  @Test
+  void onlyGetIsPublicOnTheShareRoute() throws Exception {
+    mvc.perform(post("/share/" + SHARE_TOKEN).with(csrf()))
+        .andExpect(status().isFound())
+        .andExpect(redirectedUrl("/login"));
+    mvc.perform(post("/share/x").with(csrf()))
+        .andExpect(status().isFound())
+        .andExpect(redirectedUrl("/login"));
+  }
+
+  @Test
+  void robotsTxtIsPublic() throws Exception {
+    mvc.perform(get("/robots.txt")).andExpect(status().isOk());
+  }
 }

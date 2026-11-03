@@ -12,7 +12,8 @@ pages yet); no other business modules yet.
   `sharing` and the open shared kernel `shared`. Each has a `package-info.java` that says what the
   module owns; `catalog` and `planning` have their services, `catalog` also has the meal pages and `planning` the week
   page;
-  `feedback` and `sharing` are still empty. The rule: a module's root package is its public API,
+  `feedback` has the ratings backend and `sharing` the share links with their public page (both
+  below). The rule: a module's root package is its public API,
   everything else goes in `internal/` and other modules may not import it.
   `ModularityTests` fails the build on a violation and writes module docs to
   `build/spring-modulith-docs`.
@@ -247,6 +248,41 @@ pages yet); no other business modules yet.
     `(slot_id, user_id)`. A rated meal can no longer be deleted (the library only archives).
   - **Module direction (D27):** `feedback` depends on `planning`, `catalog` and `household`, never
     the reverse; the plan pages will load its fragments over htmx.
+- **Share links (#125, #129), module `sharing`:** a member makes a read-only link to one ISO week of
+  the household's plan and sends it by any messenger; whoever opens it sees the week without
+  signing in (PLAN.md D28). Table `share_link` (V11) stores only the SHA-256 hash of the token.
+  - **Token:** 256 random bits from `SecureRandom`, 43 base64url characters
+    (`shared.security.TokenCodes`). The raw token is returned once by `ShareLinkService.create` and
+    is never stored, logged or put in an exception message.
+  - **Rules:** a link covers one household and one week, expires after 1, 7 (default) or 30 days,
+    is active only while `revoked_at IS NULL AND expires_at > now` (checked in the lookup query),
+    and a household may have 10 active links. Any member may create and revoke; another
+    household's link is 404. Old expired rows are purged when a link is created (no scheduler, D11).
+  - **The data:** `ShareLinkService.open(token)` is the one method without a signed-in person. It
+    reads through `planning.SharedWeekReader`, whose result type holds only dates, slot types, meal
+    names and occasion names: no notes, ids, ratings, member or household names.
+  - **The public route, `GET /share/{token}` (`sharing.internal.PublicShareController`):** the only
+    unauthenticated business route. `SecurityConfig.PUBLIC_GET_PATHS` opens exactly one path
+    segment of base64url characters, for GET only; `/share/x/y`, `/share/x/`, `/share/x.json`,
+    `/share` and any POST still go to the sign-in page. The route writes nothing: no counter, no
+    session, no cookie, and the page has no CSRF token (`csrfMetaSource` returns `null` under
+    `/share/`, because reading the token would start a session).
+  - **One answer for every bad token:** a malformed, unknown, expired or revoked token gets the
+    same 404, from the same template, with the same headers; a malformed one never reaches the
+    database. Every answer carries `X-Robots-Tag: noindex, nofollow, noarchive`,
+    `Referrer-Policy: no-referrer` and `Cache-Control: no-store`, besides the usual CSP.
+    `/robots.txt` (a static file) disallows everything and the service worker never caches `/share/`.
+  - **Throttle:** one global in-memory fixed window (`shared.security.RateLimiter`, 120 requests a
+    minute, `mm.share.rate-per-minute`); the next request gets 429 with `Retry-After`. It is global
+    because the client address is not reliable behind Cloud Run's proxy; per-address limiting comes
+    with Phase 6's invite and join limiter, which reuses the class.
+  - **Page:** `layout/bare.jte` + `sharing/week.jte` show seven days, only the meal types that hold
+    a meal (a dash for an empty day), the occasions, and a Print button. `SharedWeekPage` is the view model.
+  - **Logs:** the application never logs the token (a test captures the log around valid, unknown,
+    expired, revoked and malformed requests). Cloud Run's own request log does contain the path
+    `/share/<token>`; this is accepted (D28), because only the owner reads the logs and links expire
+    and can be revoked. A Cloud Logging exclusion for `/share/` is possible later, but it is a
+    Google Cloud change and needs the owner's OK.
 - **`shared.ClockConfig`** provides the one `Clock` bean (Europe/Budapest). Code asks it for
   "today" instead of calling `LocalDate.now()`, so tests can fix the date.
 - **Config:** `application.yml` turns on virtual threads and graceful shutdown, and tells JTE to
@@ -311,7 +347,7 @@ pages yet); no other business modules yet.
     (`SessionCleanupOnSignIn`) instead of by Spring's timer, because a timer would poll the
     database and keep the app and the database from scaling to zero.
   - **Rules** (`identity/internal/SecurityConfig`): everything needs a session except the explicit
-    `PUBLIC_PATHS` (login page, error page, the language switch `POST /language`, health check, static files, PWA files). CSRF stays on.
+    `PUBLIC_PATHS` (login page, error page, the language switch `POST /language`, health check, static files, PWA files, `/robots.txt`) and the GET-only share page `PUBLIC_GET_PATHS` (above). CSRF stays on.
     An anonymous browser request is redirected to `/login`; an anonymous **htmx** request gets
     `401` + `HX-Redirect: /login`, so a click after the session expired navigates the whole page
     instead of swapping a login form into a fragment. Responses carry `X-Frame-Options: DENY`,

@@ -172,6 +172,14 @@
       },
     }));
 
+    // The Print button of the public share page (sharing/week.jte, D28). It only opens the
+    // browser's print dialog; the page itself has no form, no htmx and no state to keep.
+    window.Alpine.data('printPage', () => ({
+      print() {
+        window.print();
+      },
+    }));
+
     // The sheet and the confirm dialog (ui/_sheet.jte, plan section 5). The markup is a native
     // <dialog> opened with showModal(), which makes the rest of the page inert, puts the dialog in
     // the top layer and closes it on Escape. This component adds what is left: a Tab trap (native

@@ -5,6 +5,7 @@ import hu.lasterbergamot.mealmagician.shared.web.CsrfMetaSource;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -47,8 +48,28 @@ class SecurityConfig {
     "/fonts/**",
     "/favicon.ico",
     "/manifest.webmanifest",
-    "/sw.js"
+    "/sw.js",
+    "/robots.txt"
   };
+
+  /**
+   * The public share page (PLAN.md D28, the only unauthenticated business route): exactly one path
+   * segment under {@code /share/}, made of the characters a token is made of (base64url). Never
+   * widen it to {@code /share/**}: that would also open {@code /share/x/y} and anything added under
+   * {@code /share/} later.
+   *
+   * <p>A plain {@code /share/*} is not enough, which the tests proved: Spring Security's parser
+   * lets {@code *} match {@code x.json}, so that would have reached the controller. The character
+   * class keeps the dot out. A trailing slash and a longer path do not match.
+   */
+  static final String SHARE_PATH = "/share/{token:[A-Za-z0-9_-]+}";
+
+  /**
+   * {@link #SHARE_PATH} as a list, for the guard test that walks every endpoint. These open for GET
+   * only: a POST to the same path, a trailing slash, an extension and a longer path stay behind the
+   * sign-in.
+   */
+  static final String[] PUBLIC_GET_PATHS = {SHARE_PATH};
 
   /**
    * Paths only instance admins may open (the allowlist page, #45). A signed-in person without the
@@ -76,6 +97,8 @@ class SecurityConfig {
     return http.authorizeHttpRequests(requests ->
             requests
                 .requestMatchers(PUBLIC_PATHS)
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, PUBLIC_GET_PATHS)
                 .permitAll()
                 .requestMatchers(ADMIN_PATHS)
                 .hasRole("ADMIN")
@@ -113,6 +136,11 @@ class SecurityConfig {
   @Bean
   CsrfMetaSource csrfMetaSource() {
     return request -> {
+      // The public share page (D28) must create no session and set no cookie. Reading the token's
+      // value would load it from the repository and start a session, so the page gets none.
+      if (request.getRequestURI().startsWith("/share/")) {
+        return null;
+      }
       CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
       return token == null ? null : new CsrfMeta(token.getHeaderName(), token.getToken());
     };
