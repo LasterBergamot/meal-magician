@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phases 0–4 done (the week planner, reuse and occasions are live); UI redesign (#57): Waves 1–5 landed, R9 (the owner's walk-through) left; Phase 4 landed in Waves 6a–6c (#109–#113, §9); Phase 5 planned 2026-11-03 as #124–#134 (§9 item 9)** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phases 0–5 done; v1.0.0 released 2026-11-03. Phase 6 (hardening) is next, in the order set in §3 (backups, the AI assistant, the repo audit, then the rest). R9, the owner's walk-through (#57), is still open.** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -283,29 +283,127 @@ tables), then three page issues side by side, then the occasion menus and the do
       coordinator needs the owner's go-ahead for it.
 
 ### Phase 6 — Hardening (`M2 – Hardening`, epic #7)
-- [ ] #62 Backups: nightly `db-backup.yml` in GitHub Actions: `pg_dump` as a read-only role, a test
-      restore in the job, encrypted with `age`, uploaded through WIF by a create-only service
-      account to a Cloud Storage bucket in `europe-west3` (daily/weekly/monthly lifecycle), plus a
-      backup before each release; `task db:restore` into a new Neon branch, a new project or the
-      local Postgres; one **restore drill**, documented. Cost: under a cent a month. Neon Free's own
-      restore window is only ~6 hours, which is why this is needed. **When:** after the last regular
-      feature (Phase 5), before Phase 7 (owner, 2026-11-01). *(Amended 2026-11-01; was: target
-      "artifact or object storage", undecided. GitHub artifacts are out: the repo is public.)*
-- [ ] GDPR basics: export my data, delete my account; privacy note page.
-- [ ] Security headers and CSP review, rate limit on invite and join, request size limit.
-- [ ] `repo-audit` run; fix or file its findings.
-- [ ] Review the cost and cold starts after one month (D17): stay on the JVM or move to native.
+*Order (amended 2026-11-03; was: backups first, then the rest in no fixed order, all before Phase 7):*
+**6a** backups (#62), **6b** the AI assistant (Phase 7 below), **6c** the repo audit, **6d** the rest
+(GDPR basics, security hardening, the cost review). Each stage lists the owner's manual steps. Agents
+write the code, tests and docs. Google Cloud and Neon changes need the owner's OK first (§9).
+
+- [ ] **6a #62 Backups** (owner, 2026-11-01: after the last regular feature and before the AI
+      assistant; Neon Free's own restore window is only ~6 hours, which is why this is needed; cost
+      under a cent a month. *Amended 2026-11-01; was: target "artifact or object storage", undecided.
+      GitHub artifacts are out: the repo is public.*) Design:
+  - **Read-only role.** A Neon role `mm_backup` with `CONNECT`, `USAGE` and `SELECT`, plus default
+    privileges, so Flyway tables added later are readable too. Its password is in Secret Manager as
+    `backup-db-password`.
+  - **Dump.** `pg_dump --format=custom --no-owner --no-privileges`, with the PostgreSQL 17 client from
+    a digest-pinned image, against Neon's direct endpoint. The custom format is compressed and lets
+    `pg_restore` pick single tables.
+  - **Test restore in the job.** Restore into a `pgvector/pgvector:pg17` service container, then check
+    that the Flyway history reaches the latest version and that row counts match the source. A failed
+    restore fails the job: a dump that cannot be restored is no backup.
+  - **Encryption.** `age`, to a public recipient key in the GitHub variable `BACKUP_AGE_RECIPIENT`. The
+    private key stays in the owner's password manager, so CI can write backups but cannot read them.
+  - **Upload.** The existing WIF pool and provider, and a new service account `mm-backup-writer` with
+    `roles/storage.objectCreator` on the bucket only, so it cannot read or delete. Object names carry
+    the timestamp, so nothing is overwritten.
+  - **Bucket.** `meal-magician-backups` in `europe-west3`, uniform access, public access prevention
+    enforced. Prefixes `daily/`, `weekly/` (copied on Sundays) and `monthly/` (copied on the 1st).
+    Lifecycle rules delete daily after 7 days, weekly after 5 weeks and monthly after 12 months. Google's
+    service agent runs the deletions, not the writer.
+  - **Schedule and release.** A nightly cron (UTC), and a call from `release.yml` before the deploy, so a
+    failed backup stops a release before its Flyway migrations run. The job also fails loudly if the
+    newest object is more than two days old.
+  - **Restore.** `task db:restore -- <file>` decrypts the file and runs `pg_restore` into a target chosen
+    by flag: local Postgres (compose), a new Neon branch or a new Neon project.
+  - **Drill.** Restore the latest backup into local Postgres, compare the counts and start the app on it.
+    Record the result on a new wiki page, added to `wiki-sync.yml` and `Home.md`.
+  - **Pitfalls.** GitHub disables scheduled workflows in a public repo after 60 days without repo
+    activity, which the age check above would catch. Each nightly dump wakes Neon for a few minutes, so
+    check it against Neon's free compute hours (§6).
+  - **Owner's manual steps:**
+    1. Generate the `age` key pair on your own machine. Keep the private key in your password manager
+       and set the public key as `BACKUP_AGE_RECIPIENT`.
+    2. In Neon, create the read-only role `mm_backup` and store its password in Secret Manager as
+       `backup-db-password`.
+    3. Create the bucket and its lifecycle rules in `europe-west3` (or approve an agent doing it with
+       `gcloud`).
+    4. Create `mm-backup-writer` with only `objectCreator` on the bucket, and bind it to the WIF provider
+       for this repo's `main` branch.
+    5. Check that the budget alert covers the bucket (expect cents a month).
+    6. Run the restore drill yourself: only the owner holds the private key.
+- [ ] **6b AI assistant:** Phase 7 below, built after 6a.
+- [ ] **6c `repo-audit`:** run the skill on the whole repo and reconcile its findings with the issues and
+      the board. Known gaps for it to check: the rating history limit (accepted by the owner, check it is
+      documented), the `share.limit` message that hard-codes "10", the tag race in B2 (two people creating
+      the same new tag at once), and the per-IP limiter that is still to come. **Owner:** approve filing
+      issues outside this plan (`CLAUDE.md`).
+- [ ] **6d GDPR basics:** export my data as a file, delete my account, and a privacy note page.
+      **Decisions for the owner:** what deleting a member does to shared content (meals stay, while the
+      person's name, email and ratings go, as they already do for former members). A deleted account
+      stays in the backups for up to 12 months, which the privacy note must say. **Owner:** approve the
+      wording of the note.
+- [ ] **6d Security hardening:** review the security headers and the CSP; rate limit on invite and join,
+      per IP, using the address Cloud Run appends rather than the first one the client sends (D28); a
+      request size limit.
+- [ ] **6d Cost and cold starts (D17):** after a month of nightly backups and the assistant running, read
+      the bill against the $5 budget and the cold-start times, then record whether to stay on the JVM or
+      move to native. **Owner:** read the bill.
 
 ### Phase 7 — AI assistant (`M3 – Assistant`, epic #8)
+*Built as stage 6b, after the backups (#62) and before the repo audit (amended 2026-11-03).*
+- [ ] **Before any code:** check that the Spring AI release supports Boot 4.1.2 (§7). **Owner:** pick the
+      provider and tier (D19; a free tier means amending D19 and accepting its training terms).
 - [ ] `assistant` module: Spring AI `ChatClient`, with the provider chosen by config (D19);
-      monthly spend cap per household.
-- [ ] In-process ONNX embeddings → `PgVectorStore`; re-index on `MealChanged` and
-      `RatingGiven` events.
-- [ ] Preference profile per member, built from ratings and history.
+      monthly spend cap per household. Design:
+  - **Module shape.** A public API `AssistantService` (draft, refine, accept). `internal/` holds the
+    tools, the `ChatClient` setup and the vector store. It depends on `planning`, `feedback`, `catalog`
+    and `household` only.
+  - **Provider.** One Spring AI starter, chosen by `mm.ai.provider`; the key is `MM_AI_API_KEY` in Secret
+    Manager. With no key the assistant is hidden, not an error. Prompts and answers are never logged.
+  - **Embeddings.** In-process ONNX, all-MiniLM-L6-v2 (384 dimensions). The model file is about 90 MB, so
+    decide whether it is baked into the image or fetched at build time. The ONNX runtime needs more
+    memory, so Cloud Run's memory setting may rise (owner's OK, and check it against the D17 cold starts).
+  - **Vector store.** `PgVectorStore`, its table created by Flyway in `db/migration/postgresql/` (V12), and
+    `household_id` on every row. Every similarity search filters by household, and a test asserts it. H2
+    cannot run pgvector, so these tests run on Testcontainers.
+  - **Indexed documents.** One per meal (name, tags, notes, occasion types and a rating summary), re-indexed
+    on `MealChanged`, `RatingGiven` and `RatingWithdrawn`.
+  - **Tools.** `recentWeeks`, `searchMeals`, `householdPreferences`, `upcomingOccasions` and `draftWeek`.
+    The household comes from the server's request context, never from the model. The tools read through
+    the other modules' public APIs. Only `draftWeek` writes, and only a draft.
+  - **Drafts.** Stored in `assistant_draft` (V13): a list of date, slot type and meal id, validated against
+    the household's catalog (unknown ids are rejected). Accepting a draft copies it into the plan through
+    the D26 merge or replace. Nothing reaches `meal_slot` by itself.
+  - **Prompt injection.** Meal names and notes are typed by members and go into prompts. Treat them as
+    data, and keep the tools unable to write to the plan.
+  - **Privacy.** Prompts carry meal names, tags, slot types, dates and ratings. Members appear as "member 1",
+    "member 2", never by name or email. A paid tier (D19) keeps the prompts out of training.
+  - **Spend cap.** A table `assistant_usage` (V12, with the vector store) records tokens per call per month.
+    It is checked before every call, and over the cap the member gets a message and no call is made. Also
+    set a hard monthly limit in the provider's console, as a second layer.
+  - **UI.** "Suggest my week" on the plan page opens the week as a draft with Accept, Edit and Discard, and a
+    box for chat-style follow-ups ("less meat"). Built from the `ui/` components, with strings in both
+    message files.
+  - **Owner's manual steps:**
+    1. Choose the provider and tier (free or paid, D19).
+    2. Create the provider account, on a paid tier if you chose one, and set a monthly limit in its console.
+    3. Create the API key, store it in Secret Manager as `ai-api-key`, and approve the `release.yml` change
+       that passes it to Cloud Run.
+    4. Approve the monthly cap per household.
+    5. Approve any Cloud Run memory increase.
+    6. Review the eval results and sign off the model choice.
+    7. Try the drafts on your phone and judge them, as with R9.
+- [ ] Preference profile per member, built from ratings and history. Computed on demand from the ratings, with
+      no table, which is enough at household scale; recomputed on `RatingGiven` and `RatingWithdrawn`.
+- [ ] In-process ONNX embeddings → `PgVectorStore`; re-index on `MealChanged`, `RatingGiven` and
+      `RatingWithdrawn` events (see the design above).
 - [ ] Agent tools: `recentWeeks`, `searchMeals` (semantic), `householdPreferences`,
       `upcomingOccasions`, `draftWeek`. **Drafts only**: a person accepts or edits them.
 - [ ] "Suggest my week" with chat-style refinement ("less meat", "Thursday is busy").
-- [ ] A small eval set (10–20 prompts) to pick the model; record the choice as a decision.
+- [ ] A small eval set (10–20 prompts in `src/test/resources/eval/`) to pick the model. Checks: no meal twice
+      in a row, "less meat" respected, occasions respected, only real meal ids. It runs by hand through a
+      `task` target, since it costs money and varies from run to run, so not in CI. Record the choice as a
+      decision.
 
 ### Later ideas (`Mx – Parked`)
 Ingredients and a generated shopping list, meal photos, leftovers and "eat again soon" hints,
@@ -325,7 +423,7 @@ an ICS calendar feed, a custom domain, email notifications.
 | `planning` | `MealSlot` (per date), `PlanTemplate(scope DAY|WEEK)`, `Occasion`, `OccasionTemplate` | publishes `SlotPlanned` |
 | `feedback` | `Rating` (member × slot) | publishes `RatingGiven` and `RatingWithdrawn` *(Amended 2026-11-03, D27; was `RatingGiven` only)* |
 | `sharing` | print view, `ShareLink` | uses `planning.SharedWeekReader` (an unchecked, minimal read) and `catalog.MealNameLookup` *(Amended 2026-11-03, D28; was `planning`'s API)* |
-| `assistant` *(Phase 7)* | embeddings, preference profile, agent tools | listens for `MealChanged` and `RatingGiven` |
+| `assistant` *(Phase 7)* | embeddings, preference profile, agent tools | listens for `MealChanged`, `RatingGiven` and `RatingWithdrawn` *(Amended 2026-11-03; was `MealChanged` and `RatingGiven`: a withdrawn rating must leave the profile and the index too)* |
 | `shared` | base entity, auditing, errors, i18n `t()` helper, htmx helpers | a shared kernel, not a business module |
 
 Package layout inside a module: the module's root package is its **public API** (services,
@@ -526,8 +624,10 @@ meal-magician/
      The Occasions tab appears with #112.
    - **Beside Phase 4, small and independent:** ~~#58, the post-deploy smoke test in `release.yml`~~
      *(Done 2026-11-02, PR #108.)*
-   - **Then** Phase 5 (ratings, sharing, PWA polish; planned in item 9) → **v1.0.0**, then backups (#62), Phase 6
-     hardening and Phase 7 (the assistant). #27 stays parked.
+   - **Then** Phase 5 (ratings, sharing, PWA polish; planned in item 9) → **v1.0.0** (done 2026-11-03), then
+     Phase 6 in the order set in §3 *(Amended 2026-11-03; was: backups, Phase 6 hardening and Phase 7 in no
+     fixed order)*: backups (#62), the AI assistant (Phase 7), the repo audit, then GDPR basics, security
+     hardening and the cost review. #27 stays parked.
 
 9. **Next up (2026-11-03, Phase 5; D24/D25 apply).** Planned into eleven issues under epic #6,
    with the briefs in the issues. A Sonnet planner wrote them because Opus's budget was used up
@@ -551,6 +651,16 @@ meal-magician/
    #133 PR #147; the cap-race fix PR #150). Phase 5 is done: the owner's checks passed and **v1.0.0
    was released on 2026-11-03**. The coordinator does not trigger a release without the owner's
    go-ahead (D29).
+
+10. **Next up (2026-11-03, Phase 6; the order is amended in §3).** Stages, with the owner's manual steps for
+    each. Issues are filed when a stage starts, and each stage is planned by Opus (D25) when filed.
+
+    | Stage | Items | Owner's manual steps |
+    |---|---|---|
+    | 6a | #62 backups (no migration) | Steps 1–6 under 6a in §3: the `age` key, the Neon read-only role, the bucket, the writer account, the budget check, the restore drill |
+    | 6b | Phase 7 assistant (V12, V13) | Provider and tier, its API key and monthly limit, the spend cap, the memory setting, the model sign-off, the phone check of the drafts |
+    | 6c | `repo-audit` | Approve filing issues outside this plan |
+    | 6d | GDPR basics, security hardening, cost review | Privacy note wording, the deletion rules, reading the bill |
 
 ---
 
@@ -613,3 +723,4 @@ meal-magician/
 | 2026-11-03 | **Phase 5 close-out** (D24, D25): wave 7d. The docs close-out #133 (PR #147: README, `CLAUDE.md`, the Current State and Roadmap pages, the Newcomer Guide, References, the web UI rule and `plan-ui-redesign.md` amendments) is merged; a Javadoc fix the close-out found, that the sharing package still said its routes were "to come" (PR #148), is merged too. Phase 5 code and docs are done. Left for the owner (#134): Lighthouse and the PWA install on a phone, the share-link walk-through, the rating error state on a phone (the E2E screenshot is cropped below it), the Baloo 2 heading weight, and the two known gaps (the rating history limit, the share-link cap race). Then v1.0.0 (D29). Docs only. | #133, #134, #147, #148 |
 | 2026-11-03 | **Owner's checks passed; the cap race is fixed** (#134 part 1). The owner did the phone checks and said everything looks good. The owner accepted the rating history rule as it stands: the limit of 10 is applied before former members' ratings are dropped, so the history can show fewer than 10 (no change to #124). The share-link cap race is fixed (PR #150): `HouseholdService.requireForUpdate` takes the household row lock that the ownership changes already use, so the count and the insert of a new link run one after the other; a concurrency test with 40 rounds fails without the lock. Still open: the `share.limit` message hard-codes "10" (cosmetic). Then v1.0.0, once the owner gives the go-ahead (D29). Docs only. | #134, #150 |
 | 2026-11-03 | **v1.0.0 released** (D29, #134). The owner's go-ahead came after the phone checks. The first manual `release.yml` run (`version=1.0.0`) stopped at its CI gate, before any push or deploy: CI on the merge commit `491c7ef` was still running, and the gate needs `Lint & test`, `Migrations (Postgres)` and `E2E` green on the exact commit. The second run, after that CI passed, built the image, deployed it to Cloud Run, polled `/actuator/health`, smoke-tested the live service (all checks passed), and pushed tag `v1.0.0` and the GitHub release. Phase 5 is done. Next: backups (#62), then Phase 6 (hardening) and Phase 7 (the assistant). Docs only. | #134, #151 |
+| 2026-11-03 | **Phase 6 re-ordered, with the backup and assistant designs written up** (owner's request). Order: backups (#62), the AI assistant (Phase 7), the repo audit, then GDPR basics, security hardening and the cost review. Each stage lists the owner's manual steps. Amended §3 (Phase 6, Phase 7), §4.1 (`assistant` also listens for `RatingWithdrawn`) and §9 item 10. `Roadmap-Everything-Else.md` follows the new order. Docs only. | #7, #62 |
