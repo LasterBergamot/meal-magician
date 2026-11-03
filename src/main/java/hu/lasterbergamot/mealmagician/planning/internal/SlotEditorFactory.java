@@ -7,6 +7,7 @@ import hu.lasterbergamot.mealmagician.planning.SlotType;
 import hu.lasterbergamot.mealmagician.planning.SlotView;
 import hu.lasterbergamot.mealmagician.shared.i18n.Messages;
 import hu.lasterbergamot.mealmagician.shared.web.FormOption;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -23,11 +24,13 @@ class SlotEditorFactory {
   private final PlanningService planning;
   private final MealService meals;
   private final Messages messages;
+  private final Clock clock;
 
-  SlotEditorFactory(PlanningService planning, MealService meals, Messages messages) {
+  SlotEditorFactory(PlanningService planning, MealService meals, Messages messages, Clock clock) {
     this.planning = planning;
     this.meals = meals;
     this.messages = messages;
+    this.clock = clock;
   }
 
   /**
@@ -36,7 +39,7 @@ class SlotEditorFactory {
    * @param userId the signed-in person's id
    * @param householdId the household whose plan it is
    * @param slotId the slot to edit
-   * @return the editor, with no note error
+   * @return the editor, with no note error; {@code past} is true for a slot dated today or earlier
    * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
    *     not a member of the household
    * @throws hu.lasterbergamot.mealmagician.planning.SlotNotFoundException if the slot is not in
@@ -74,7 +77,8 @@ class SlotEditorFactory {
         dayOptions,
         slotOptions,
         slot.note() == null ? "" : slot.note(),
-        null);
+        null,
+        !slot.date().isAfter(LocalDate.now(clock)));
   }
 
   private String dayLabel(LocalDate day, Locale locale) {

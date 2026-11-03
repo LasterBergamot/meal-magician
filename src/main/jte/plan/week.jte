@@ -21,6 +21,7 @@
       @template.meal._link_button(variant = "ghost", href = "/plan/templates", label = ctx.t("plan.reuse.templates"), icon = IconName.WAND)
     </div>
     <div id="plan-conflict" class="empty:hidden">@if(page.conflict())@template.plan._conflict(ctx = ctx, reloadHref = page.href())@elseif(page.reuseError() != null)@template.plan._reuse_error(ctx = ctx, messageKey = page.reuseError(), reloadHref = page.href())@endif</div>
+    <div id="rating-prompt" hx-get="/feedback/prompt" hx-trigger="load, ratingSaved from:body" hx-swap="innerHTML" class="empty:hidden"></div>
     <div id="plan-week" class="flex flex-col gap-6">
       @template.plan._week(ctx = ctx, page = page)
     </div>

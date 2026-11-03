@@ -23,6 +23,8 @@ import java.util.List;
  * @param slotOptions the four slot types, for the move form
  * @param note the note as the field shows it; empty when there is none
  * @param noteError the message key of a rejected note, or {@code null}
+ * @param past whether the slot is dated today or earlier, so the sheet offers the rating form
+ *     (D27); a later day cannot be rated yet
  */
 public record SlotEditor(
     long slotId,
@@ -38,7 +40,8 @@ public record SlotEditor(
     List<FormOption> dayOptions,
     List<FormOption> slotOptions,
     String note,
-    String noteError) {
+    String noteError,
+    boolean past) {
 
   /**
    * The address a form of this editor posts to.
@@ -58,6 +61,16 @@ public record SlotEditor(
    */
   public String removeAction() {
     return action("remove") + "?version=" + version;
+  }
+
+  /**
+   * The address of the rating form of this slot. The sheet loads it over htmx, because {@code
+   * planning} may not import {@code feedback} (it depends on this module).
+   *
+   * @return for example {@code /feedback/slots/7}
+   */
+  public String rateHref() {
+    return "/feedback/slots/" + slotId;
   }
 
   /**
@@ -165,6 +178,7 @@ public record SlotEditor(
         dayOptions,
         slotOptions,
         typed,
-        "plan.editor.note.long");
+        "plan.editor.note.long",
+        past);
   }
 }

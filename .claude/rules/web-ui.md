@@ -213,3 +213,10 @@ paths:
   nothing to copy) answers 422 with `HX-Retarget: #plan-conflict`, so its dialogs close, exactly
   like the 409. `PlanResponses` owns the redirect and the conflict helpers for every `/plan`
   controller.
+- **Rating (#128), `feedback/`:** the form `rating-form` swaps itself (`hx-target="this"`,
+  `hx-swap="outerHTML"`) and answers 422 with the same root, so it keeps what was typed. Thumb down
+  is the `UP` icon with `rotate-180`, never a new icon. A save sends `HX-Trigger: ratingSaved`
+  instead of a redirect, and the prompt container `#rating-prompt` on the plan page reloads on
+  `ratingSaved from:body`. The prompt and the slot sheet's rating section load over htmx because
+  `planning` cannot import `feedback`. An empty prompt is a truly empty body (not whitespace), so
+  the container's `empty:hidden` applies. The snooze cookie `mm_rating_snooze` holds a date only.
