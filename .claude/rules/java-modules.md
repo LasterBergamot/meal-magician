@@ -23,6 +23,13 @@ paths:
   package: `catalog.RecentMealsProvider`, implemented by `planning.internal.PlanningRecentMeals`.
   The arrow stays `planning -> catalog`. Shared types follow the same reasoning: `OccasionType`
   lives in `catalog`.
+- **Unchecked readers (D28):** the rule "every public service method checks household membership"
+  has exactly two guarded exceptions, both for the public share-link page where nobody is signed
+  in: `planning.SharedWeekReader` (used only by `sharing`) and `catalog.MealNameLookup` (used only
+  by `planning`). They take a household id from a stored, active share link, return minimal
+  record types (`SharedWeek`) and still scope every query by household. `UncheckedReadersTest`
+  (ArchUnit) fails if any other module depends on them. Do not add a third one without the owner's
+  OK, and keep each one tiny and read-only.
 - Every package, including each `internal/`, needs a `package-info.java` with Javadoc (Checkstyle
   `JavadocPackage`). A module's root `package-info.java` carries `@ApplicationModule(displayName = …)`;
   `shared` is `type = OPEN` because every module may use it.
