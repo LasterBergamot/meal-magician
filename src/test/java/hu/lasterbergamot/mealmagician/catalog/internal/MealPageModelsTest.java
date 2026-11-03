@@ -20,7 +20,7 @@ import org.springframework.beans.factory.ObjectProvider;
 class MealPageModelsTest {
 
   private static MealView meal(long id, String name) {
-    return new MealView(id, name, null, null, List.of(), List.of(), false, 0);
+    return new MealView(id, name, null, null, List.of(), List.of(), false, 0, List.of());
   }
 
   // ---- MealFilter ----
@@ -143,7 +143,8 @@ class MealPageModelsTest {
             List.of("a", "b"),
             List.of(OccasionType.PARTY),
             false,
-            3);
+            3,
+            List.of("egg"));
 
     MealForm form = MealForm.of(stored);
 
@@ -184,6 +185,8 @@ class MealPageModelsTest {
     assertThat(rejection(form, MealProblem.RECIPE_URL_INVALID).error("recipeUrl")).isNotNull();
     assertThat(rejection(form, MealProblem.TAG_INVALID).error("tags")).isNotNull();
     assertThat(rejection(form, MealProblem.TAG_INVALID).error("name")).isNull();
+    assertThat(rejection(form, MealProblem.INGREDIENT_INVALID).error("ingredients")).isNotNull();
+    assertThat(form.details().ingredients()).isEmpty();
     assertThat(MealFormPage.of(form).conflict()).isFalse();
     assertThat(MealFormPage.stale(form).conflict()).isTrue();
   }

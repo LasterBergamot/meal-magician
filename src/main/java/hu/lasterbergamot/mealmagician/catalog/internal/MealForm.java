@@ -116,6 +116,7 @@ public record MealForm(
   public MealDetails details() {
     List<String> tagNames =
         Arrays.stream(tags.split(",")).map(String::strip).filter(name -> !name.isEmpty()).toList();
-    return new MealDetails(name, notes, recipeUrl, tagNames, occasionTypes);
+    // The ingredient field arrives with the picker (#156); until then the form sends none.
+    return new MealDetails(name, notes, recipeUrl, tagNames, occasionTypes, List.of());
   }
 }

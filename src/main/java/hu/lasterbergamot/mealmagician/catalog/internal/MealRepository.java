@@ -39,6 +39,7 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
    * @param householdId the household to search
    * @param namePattern a {@code LIKE} pattern from {@code MealRules.namePattern}, or {@code null}
    * @param tagId the tag a meal must have, or {@code null} for any
+   * @param ingredientId the ingredient a meal must have, or {@code null} for any
    * @param includeArchived whether archived meals are returned too
    * @return the matching meals, by name then id so the order is stable
    */
@@ -49,8 +50,12 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
         and (:namePattern is null or lower(m.name) like :namePattern escape '!')
         and (:tagId is null or exists (
               select mt.id from MealTag mt where mt.id.mealId = m.id and mt.id.tagId = :tagId))
+        and (:ingredientId is null or exists (
+              select mi.id from MealIngredient mi
+              where mi.id.mealId = m.id and mi.id.ingredientId = :ingredientId))
         and (:includeArchived = true or m.archived = false)
       order by lower(m.name), m.id
       """)
-  List<Meal> search(long householdId, String namePattern, Long tagId, boolean includeArchived);
+  List<Meal> search(
+      long householdId, String namePattern, Long tagId, Long ingredientId, boolean includeArchived);
 }

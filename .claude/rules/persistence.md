@@ -22,6 +22,11 @@ paths:
   that. The database then refuses a link across households, whatever the code does.
   Repository methods take the household id explicitly (`findByIdAndHouseholdId`), and a missing
   row means 404 — never fetch by id alone and check afterwards.
+- `ingredient_seed` (V12, D31) is the one table **without** `household_id`: a global, read-only
+  starter list of ingredient names that the picker suggests from. Never write to it from code, and
+  never join household data through it. `tag` and `ingredient` rows are created with `NameWriter`
+  (`ON CONFLICT DO NOTHING`, then look up), not look-up-then-save, so two people adding the same
+  new name at once both succeed.
 - Aggregates that users edit concurrently (`meal`, `meal_slot`, `plan_template`, `occasion`,
   `occasion_template`, `household`) carry a `version` column (`@Version`).
 - Child rows of a template or menu (`plan_template_item`, `occasion_item`,

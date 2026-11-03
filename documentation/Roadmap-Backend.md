@@ -14,8 +14,8 @@ Planned backend work, by `PLAN.md` phase. Move items to [[Current State: Backend
   share links with the public page and the print view, are in [[Current State: Backend]]. What is
   left for Phase 5 is the owner's phone checks (#134), not code.
 - **Phase 6:** first the backup scripts and workflow (#62, #154, see [[Roadmap: Everything Else]]) and
-  ingredients in `catalog` (#155: `ingredient`, `meal_ingredient`, a read-only starter list, race-safe
-  creation that also fixes the tag race). Later: data export/delete, rate limits, audit fixes.
+  ingredients in `catalog` (#155, the backend is done and described in [[Current State: Backend]];
+  the picker UI is #156). Later: data export/delete, rate limits, audit fixes.
 - **Phase 7:** `assistant` module (#157 to #162). Spring AI with Gemini on Vertex AI, authenticated by
   the Cloud Run service account (no key); Vertex embeddings in a `meal_embedding` table that is brought
   up to date at the start of each request; read-only tools (recent weeks, meal search, preferences,

@@ -14,6 +14,10 @@ import lombok.NoArgsConstructor;
  * A label a household puts on its meals, such as "vegetarian" or "quick". Tags belong to one
  * household: the same word in two households is two rows. {@code nameKey} is the lower-case name
  * and is what makes "Vegan" and "vegan" the same tag.
+ *
+ * <p>The application never constructs a {@code Tag}: rows are inserted by {@link
+ * TagRepository#insertIfAbsent} (through {@link NameWriter}) so that two people adding the same new
+ * tag cannot fail each other, and are only read back as entities.
  */
 @Entity
 @Table(name = "tag")
@@ -33,17 +37,4 @@ public class Tag {
 
   @Column(name = "name_key", nullable = false, updatable = false)
   private String nameKey;
-
-  /**
-   * Creates a tag.
-   *
-   * @param householdId the household that owns it
-   * @param name the name as the household typed it, already cleaned
-   * @param nameKey the lower-case form of {@code name}
-   */
-  public Tag(long householdId, String name, String nameKey) {
-    this.householdId = householdId;
-    this.name = name;
-    this.nameKey = nameKey;
-  }
 }

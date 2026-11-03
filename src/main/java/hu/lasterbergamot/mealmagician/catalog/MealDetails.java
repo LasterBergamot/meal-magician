@@ -15,17 +15,22 @@ import java.util.List;
  *     letter case are the same tag, and the first spelling wins.
  * @param occasionTypes the occasion types the meal suits; {@code null} means none. Like the tags,
  *     this is the complete set on an edit: a type left out is removed from the meal.
+ * @param ingredients the ingredient names to put on the meal; {@code null} means none. Each is at
+ *     most 60 characters and a meal has at most 30. Names that differ only in case or accents
+ *     ("Tojás", "tojas") are the same ingredient, and the first spelling wins. Like the tags, this
+ *     is the complete set on an edit.
  */
 public record MealDetails(
     String name,
     String notes,
     String recipeUrl,
     List<String> tags,
-    Collection<OccasionType> occasionTypes) {
+    Collection<OccasionType> occasionTypes,
+    List<String> ingredients) {
 
   /**
-   * Details for a meal that suits no particular occasion: the form every caller used before
-   * occasion types existed, and what a quick add means.
+   * Details for a meal that suits no particular occasion and has no ingredients: the form every
+   * caller used before occasion types and ingredients existed, and what a quick add means.
    *
    * @param name the meal's name
    * @param notes the notes, may be {@code null}
@@ -33,6 +38,25 @@ public record MealDetails(
    * @param tags the tag names, may be {@code null}
    */
   public MealDetails(String name, String notes, String recipeUrl, List<String> tags) {
-    this(name, notes, recipeUrl, tags, null);
+    this(name, notes, recipeUrl, tags, null, List.of());
+  }
+
+  /**
+   * Details with occasion types but no ingredients: the shape callers used before ingredients
+   * existed.
+   *
+   * @param name the meal's name
+   * @param notes the notes, may be {@code null}
+   * @param recipeUrl the recipe link, may be {@code null}
+   * @param tags the tag names, may be {@code null}
+   * @param occasionTypes the occasion types, may be {@code null}
+   */
+  public MealDetails(
+      String name,
+      String notes,
+      String recipeUrl,
+      List<String> tags,
+      Collection<OccasionType> occasionTypes) {
+    this(name, notes, recipeUrl, tags, occasionTypes, List.of());
   }
 }
