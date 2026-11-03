@@ -70,5 +70,9 @@
     <path d="M4 20L15 9M15 9l2-2 3 3-2 2-3-3zM6 4v3M4.5 5.5h3M19 15v3M17.5 16.5h3"/>
   @elseif(name == IconName.SPARKLES)
     <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/>
+  @elseif(name == IconName.PRINTER)
+    <path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2M7 14h10v6H7v-6z"/>
+  @elseif(name == IconName.SHARE)
+    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>
   @endif
 </svg>

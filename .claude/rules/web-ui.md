@@ -72,6 +72,19 @@ paths:
   blocks (two columns from `md` and on paper), listing only the meal types that hold a meal and a
   dash for an empty day (D30); `sharing/not_found.jte` is the single refusal page (404 and 429).
   The page model (`SharedWeekPage`, `SharedDay`) is the only data a template sees.
+- **Print page and share sheet (#131, D28, D29):** `GET /plan/print` is `sharing/print.jte` on
+  `layout/bare.jte` (pass `showFooter = false`: the footer sentence is about share links) and the
+  same `sharing/_days.jte` as the public page; `showNotes = true` there, `false` on the public
+  page, whose model holds no notes. Its Print button and Back link are `print:hidden`. The share
+  sheet is the page-level `share-sheet` in `plan/week.jte`, opened by `#plan-share-week` in
+  `plan/_week.jte` (inside `#plan-week`, so the link follows the stepper). Its content
+  `sharing/_share.jte` swaps itself (`#share-panel`); the list `sharing/_share_list.jte` is
+  `#share-links`, and the Revoke `ui/_confirm` sits inside it, so the response swaps the whole
+  section and the dialog goes with it. The new link (`_share_created.jte`) is a read-only input
+  plus a Copy button, driven by the Alpine **`clipboard`** component in `app.js`
+  (`x-ref="field"` is the input, `x-ref="status"` carries `data-copied` for the live region; it
+  uses `navigator.clipboard` and falls back to selecting the input). It is shown once, so that
+  response is `Cache-Control: no-store`.
 - **Design-system components (`ui/`, R2a):** `ui/_icon.jte` draws the icons, and its names are
   the enum `shared.web.IconName` (a typo is a compile error; add an icon there and as an
   `@elseif` branch). `ui/_button.jte` takes `variant` (primary, secondary, ghost, danger),

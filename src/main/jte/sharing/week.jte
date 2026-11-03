@@ -20,5 +20,5 @@
     </div>
   </header>
 
-  @template.sharing._days(ctx = ctx, page = page)
+  @template.sharing._days(ctx = ctx, page = page, showNotes = false)
 `)

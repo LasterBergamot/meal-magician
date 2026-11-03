@@ -87,6 +87,17 @@ class ShareLinkServiceTest {
   }
 
   @Test
+  void theListedLinkNamesTheMemberWhoMadeIt() {
+    CreatedShareLink created = shares.create(bela, annas, MONDAY, ShareExpiry.DAYS_7);
+
+    assertThat(created.link().createdBy()).isEqualTo(bela);
+    assertThat(shares.list(anna, annas, MONDAY))
+        .singleElement()
+        .extracting(ShareLinkView::createdBy)
+        .isEqualTo(bela);
+  }
+
+  @Test
   void theRawTokenOpensTheWeek() {
     CreatedShareLink created = create();
 

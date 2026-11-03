@@ -4,13 +4,16 @@
 @param ViewContext ctx
 @param String title
 @param Content content
+@param boolean showFooter = true
 <%-- The frame of the public share page (PLAN.md D28), for a visitor who is not signed in and has no
      session. Everything the normal frame (layout/base) adds is left out on purpose: no manifest and
      no service-worker registration (the page is never installed or cached), no htmx, no CSRF meta
      tags and no language form (they would need a session or a cookie, and this page writes
      neither), no household or person. The page is read-only and has no form. Rules as everywhere:
      no inline <script>, no onclick= handlers, no style= attributes, no literal text. The theme is
-     fixed to light, because the theme cookie is not read here and a printed page should be light. --%>
+     fixed to light, because the theme cookie is not read here and a printed page should be light.
+     The footer says "anyone with the link can see this menu", which is true only of the public
+     page; the members' print page (#131) passes showFooter = false. --%>
 <!DOCTYPE html>
 <html lang="${ctx.language()}" data-theme="light" class="h-full">
 <head>
@@ -31,8 +34,10 @@
   <main id="main" class="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
     ${content}
   </main>
-  <footer class="mx-auto w-full max-w-5xl px-4 py-4 text-sm text-ink-muted">
-    <p>${ctx.t("share.public.footer")}</p>
-  </footer>
+  @if(showFooter)
+    <footer class="mx-auto w-full max-w-5xl px-4 py-4 text-sm text-ink-muted">
+      <p>${ctx.t("share.public.footer")}</p>
+    </footer>
+  @endif
 </body>
 </html>

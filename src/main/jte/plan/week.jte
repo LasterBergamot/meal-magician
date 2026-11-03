@@ -10,7 +10,7 @@
      (both are in the markup, CSS shows one).
 
      #plan-conflict is where a stale edit's 409 lands (HX-Retarget): empty it is hidden, and a plain
-     request that conflicted gets the same banner rendered in place. The two sheets are page-level:
+     request that conflicted gets the same banner rendered in place. The sheets are page-level:
      a week has dozens of slot controls, so they share one pick sheet and one slot sheet, which the
      controls open through the Alpine sheetOpener and fill with htmx. Both sit outside #plan-week,
      so a week swap never takes an open dialog away. --%>
@@ -33,4 +33,6 @@
     trigger = @``, body = @`<div id="slot-sheet-body"></div>`)
   @template.ui._sheet(id = "reuse-sheet", title = ctx.t("plan.reuse.title"), closeLabel = ctx.t("sheet.close"), role = "dialog", centred = false, closable = true,
     trigger = @``, body = @`<div id="reuse-sheet-body"></div>`)
+  @template.ui._sheet(id = "share-sheet", title = ctx.t("share.sheet.title"), closeLabel = ctx.t("sheet.close"), role = "dialog", centred = false, closable = true,
+    trigger = @``, body = @`<div id="share-sheet-body"></div>`)
 `)

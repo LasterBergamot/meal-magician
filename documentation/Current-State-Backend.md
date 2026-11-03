@@ -287,6 +287,9 @@ pages (#124, #128, #132); no other business modules yet.
     with Phase 6's invite and join limiter, which reuses the class.
   - **Page:** `layout/bare.jte` + `sharing/week.jte` show seven days, only the meal types that hold
     a meal (a dash for an empty day), the occasions, and a Print button. `SharedWeekPage` is the view model.
+  - **Members' side (#131):** `ShareController` (`/plan/share`) creates, lists and revokes links and
+    `PrintController` serves `GET /plan/print`; see "Print and share links" in `Current-State-Frontend.md`.
+    `ShareLinkView` now carries `createdBy` (the creator's user id) so the list can show a name.
   - **Logs:** the application never logs the token (a test captures the log around valid, unknown,
     expired, revoked and malformed requests). Cloud Run's own request log does contain the path
     `/share/<token>`; this is accepted (D28), because only the owner reads the logs and links expire

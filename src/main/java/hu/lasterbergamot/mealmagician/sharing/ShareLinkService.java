@@ -176,7 +176,8 @@ public class ShareLinkService {
         link.getWeekStart(),
         status(link, now),
         link.getCreatedAt(),
-        link.getExpiresAt());
+        link.getExpiresAt(),
+        link.getCreatedBy());
   }
 
   private static ShareLinkStatus status(ShareLink link, Instant now) {

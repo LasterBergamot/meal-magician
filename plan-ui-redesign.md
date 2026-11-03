@@ -178,7 +178,7 @@ serves all four: `.slot-lunch { --slot: var(--mm-slot-lunch); … }` in `@layer 
 
 ### 3.6 Icons
 
-One outline set on a 24 px grid, 2 px round stroke, `currentColor`, 30 icons (Appendix B). Sizes:
+One outline set on a 24 px grid, 2 px round stroke, `currentColor`, 32 icons (Appendix B). Sizes:
 20 px inline, 24 px in navigation, 32–36 px in slot dots and empty-state art. Always
 `aria-hidden="true"` with a text label next to it, or an `sr-only` label on icon-only buttons. The
 `sparkle` is the only filled icon.
@@ -203,6 +203,8 @@ states and success moments ("Ta-da! Week copied."), none in errors. Hungarian fi
 | Week | A list of days with a week strip; the arrows change the week | A 7 × 4 table from 1024 px (a day list below that) and one shared sheet or dialog for the meal picker |
 
 *(Amended 2026-11-02, owner accepted the planner's proposal in #97/#98; was: swipe changes the week, a 7 × 4 grid from 768 px and a side panel for the picker. Eight columns at 768 px are about 80 px wide; a swipe needs gesture code the arrows do not; one sheet reuses the R3 component. The week view's slot chips are the row headers instead of a separate legend, and removing a meal opens its confirm dialog over the slot sheet.)*
+
+*(Added 2026-11-03, #131: the week page also has a **Print** link and a **Share** button next to Reuse. Print opens `/plan/print`, a light page without the shell (`layout/bare`); Share opens the page-level `share-sheet`, where a link is made, copied (shown once) and revoked. Both sit inside `#plan-week`, so they follow the stepper. Appendix B gains `printer` and `share` (32 icons).)*
 
 Rules shared by both:
 
@@ -870,6 +872,8 @@ All on a `viewBox="0 0 24 24"`, `fill="none"`, `stroke="currentColor"`, `stroke-
 | `sparkle` | `<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2L12 2z"/>` |
 | `wand` | `<path d="M4 20L15 9M15 9l2-2 3 3-2 2-3-3zM6 4v3M4.5 5.5h3M19 15v3M17.5 16.5h3"/>` |
 | `sparkles` | `<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/>` |
+| `printer` | `<path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2M7 14h10v6H7v-6z"/>` |
+| `share` | `<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>` |
 
 `sparkle` is also used **filled** (`fill="currentColor"`, with a 1.5 px outline-coloured stroke).
 `up` rotated 180° is the thumbs-down.
