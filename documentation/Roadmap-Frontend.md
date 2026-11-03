@@ -19,4 +19,9 @@ Planned UI work (JTE + htmx + Alpine + Tailwind), by `PLAN.md` phase. Move items
 - **Phase 5:** done (#124 to #132), see [[Current State: Frontend]]: the rating prompt and form, the
   meal's "How it went" block, the print page and the share sheet, the public share page and the PWA
   install hint. What is left is the owner's Lighthouse check and install on a phone (#134).
-- **Phase 7:** "suggest my week" and chat-style refinement UI.
+- **Phase 6:** the ingredient picker on the meal form (#156): a dropdown with a search bar, where a
+  name that is not in the list can be typed and added. It is a new, reusable component (tags are still
+  a text field).
+- **Phase 7:** "Suggest my week" with follow-ups, accept and discard (#160), a one-slot helper, an
+  Assistant page for food questions and menu help on an occasion (#161). The plan page loads these as
+  small fragments, which are empty when the assistant is switched off.

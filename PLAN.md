@@ -61,7 +61,7 @@ after a server.
 | D16 | **Quality gates as in lineup:** Taskfile is the single entry point and CI calls the same tasks. **JaCoCo at 100 %** line and branch coverage, with every exclusion explained. **Javadoc is required** on public types and methods (Checkstyle), written for a junior developer. Spotless runs google-java-format. Also the docs gate, Dependabot targeting `main`, a Trivy image scan, base images pinned by digest, a non-root container, and third-party actions pinned to a SHA. | Decided |
 | D17 | **Runtime: JVM with an AppCDS / Spring AOT cache** to keep cold starts short (aim for about 2–4 s). After the first month, measure the bill and the cold starts, and **move to a GraalVM native image only if they hurt**. Stay native-friendly: precompiled JTE, no runtime classpath-scanning tricks. | Decided *(Amended 2026-11-01; the image uses the JDK 25 AOT cache, which builds on AppCDS and halves the start time, instead of a plain AppCDS archive)* |
 | D18 | **Lombok is allowed**, mainly for JPA entities and builders. `lombok.config` sets `lombok.addLombokGeneratedAnnotation = true` so JaCoCo skips the generated code. Use records for DTOs, commands and value objects. | Decided |
-| D19 | **The in-app AI provider is pluggable through Spring AI**, so it doesn't have to be Claude. The default is a cheap hosted model on a **paid tier**, so household data isn't used for training: Gemini Flash, a GPT mini model, Claude Haiku, or OpenRouter to switch freely. The model is chosen by config; the final pick comes from a small eval in Phase 7. **Embeddings run in-process** (Spring AI ONNX transformers, e.g. all-MiniLM-L6-v2), so they cost nothing per call. Ollama on Railway is rejected: it would cost far more and be slow on CPU. | Decided |
+| D19 | **The in-app AI provider is pluggable through Spring AI**, so it doesn't have to be Claude. The default is a cheap hosted model on a **paid tier**, so household data isn't used for training: Gemini Flash, a GPT mini model, Claude Haiku, or OpenRouter to switch freely. The model is chosen by config; the final pick comes from a small eval in Phase 7. **Embeddings run in-process** (Spring AI ONNX transformers, e.g. all-MiniLM-L6-v2), so they cost nothing per call. Ollama on Railway is rejected: it would cost far more and be slow on CPU. | Decided *(Amended 2026-11-03, D32; was: a key for a hosted model chosen by an eval, and in-process ONNX embeddings. The provider is now Gemini on Vertex AI with no key, and the embeddings come from Vertex too. The provider stays behind config.)* |
 | D20 | **Base package `hu.lasterbergamot.mealmagician`.** | Decided |
 | D22 | **Agents may merge their own PRs for planned work.** For an issue in this plan, an agent pushes its feature branch, opens the PR and merges it (merge commit) once every required check is green (before CI exists, #16: once `task lint` and `task test` pass locally). Repo settings, Railway, Google Cloud and anything outside the plan still need the owner's OK. Goal: the owner does one setup session and then only reviews results. | Decided (2026-10-31) |
 | D23 | **One Google OAuth client** (`meal-magician`) with two redirect URIs, `localhost:8080` and the Cloud Run URL, instead of separate dev and prod clients: this is a home project, and rotating the one secret takes a minute. | Decided (2026-10-31) *(Amended 2026-11-01; was the Railway domain)* |
@@ -73,6 +73,9 @@ after a server.
 | D28 | **Share-link rules (planned 2026-11-03).** *Token:* 256 bits from `SecureRandom`, base64url, 43 characters; only the SHA-256 hex is stored; the raw link is shown in exactly one response and is never stored or logged. *Scope and expiry:* one household and one ISO week per link; expiry 1, 7 (default) or 30 days, never unlimited; a link is active only while `revoked_at IS NULL AND expires_at > now`, checked in the lookup query itself; at most 10 active links per household; any member may create and revoke; expired rows older than 30 days are purged when a link is created (no scheduler, D11). *Route:* `GET /share/{token}` is the only unauthenticated business route. It matches the single-segment, GET-only pattern `/share/*` (never `/share/**`; `/share/x/`, `/share/x.json`, `/share/x/y` and any POST stay protected), writes nothing (no view counter, no session, no cookie, no CSRF token), and answers an unknown, malformed, expired or revoked token with one identical 404, a malformed one without touching the database. It sends `X-Robots-Tag: noindex, nofollow, noarchive`, `Referrer-Policy: no-referrer` and `Cache-Control: no-store`; `/robots.txt` disallows everything; the service worker never caches it. *Data:* the public read goes through `planning.SharedWeekReader`, an unchecked reader whose result type holds only dates, slot types, meal names and occasion names (no notes, ids, ratings, member or household names); an ArchUnit test limits who may call it. *Throttle:* one global in-memory fixed window (120 a minute, 429 with `Retry-After`), because the client IP is not reliable behind Cloud Run's proxy; **per-IP limiting comes with Phase 6's invite and join limiter**. *Logs:* Cloud Run's own request log contains the path, so `/share/<token>` appears in it; **accepted** (only the owner reads the logs, and links expire and can be revoked). A Cloud Logging exclusion for `/share/` is possible later but is a Google Cloud change and needs the owner's OK. The application never logs the token (a test checks it). | Decided (owner confirmed 2026-11-03; #125, #129, #131) |
 | D29 | **Print and release (planned 2026-11-03).** Print is a dedicated light-theme page (`/plan/print?week=`, with slot notes, members only) built from the same fragment as the share page, not a print stylesheet bolted onto the shell. Lighthouse on a phone, the PWA installed on a real phone and the share-link walk-through are owner-only (#134). **v1.0.0** is cut by a manual `release.yml` run (`version=1.0.0`) once #134 passes, because the last Phase 5 PR is docs-only and does not release itself; the coordinator needs the owner's OK to trigger it. | Decided (2026-11-03; #131, #134) |
 | D30 | **Lunch is the main slot (2026-11-03).** The week page shows **Lunch** every day by default. Breakfast, dinner and snack are optional: they show when they hold a meal, and otherwise sit behind an "Other meals" disclosure on the day card (phone) or a "Show all meals" checkbox (desktop table). The backend still has all four `SlotType`s, so copying, templates, occasions and ratings are unchanged. The print and share pages list only slot types that hold a meal. | Decided (owner chose design A 2026-11-03; #127) |
+| D31 | **Ingredients (planned 2026-11-03, owner interview).** Each household has its own list of ingredients, **names only** (no amounts, no categories), linked many-to-many to meals the way tags are (`ingredient`, `meal_ingredient`, Flyway V12). Names are trimmed, at most 60 characters, at most 30 per meal; the key folds case **and accents**, so "tojas" finds and equals "tojás". A name that is not in the list is created by typing it. A global read-only table `ingredient_seed` holds about 150 common Hungarian names (the only table without `household_id`); picking one copies it into the household on first use. The picker is a new searchable combobox (a dropdown with a search bar); tags stay a text field. Creating a tag or ingredient is race-safe (a `REQUIRES_NEW` writer that re-reads after a conflict), which also fixes the old tag race. A shopping list and amounts stay parked. | Decided (owner, 2026-11-03; #155, #156) |
+| D32 | **Assistant rules (planned 2026-11-03, owner interview).** *Provider:* Gemini on Vertex AI through Spring AI's Google GenAI starter, using the runtime service account, so there is no API key (the owner wants a dedicated client, not a personal subscription; Spring AI's Anthropic module cannot use Vertex). *Scope:* library meals first, plus up to 5 "ideas" per draft that become library meals only when a person adds them; never planned by themselves. *Surfaces:* week draft, one slot, a chat page limited to food and the plan (a prompt file, widenable later), occasion menus. *Data:* meal names, tags, ingredients, dates, slot types and ratings with comments, members as "member N"; no dietary rules or allergies stored (the UI says so). *Language:* the member's. *Memory:* the chat lives in the session only. *Seasons:* the model decides from the date and "Hungary". *Cap:* $5 a month per household in the app. *Index:* custom `meal_embedding` table, synced lazily per request by content hash (no events, no scheduler). *Off by default* (`mm.ai.enabled`). The model id, EU region and embedding size are fixed by #157's spike. | Decided (owner, 2026-11-03; #157 to #162) |
+| D33 | **Which Gemini model to use, and its prices.** Chosen from the eval report (#162) by the owner. | Pending (#162) |
 
 ---
 
@@ -284,54 +287,70 @@ tables), then three page issues side by side, then the occasion menus and the do
 
 ### Phase 6 — Hardening (`M2 – Hardening`, epic #7)
 *Order (amended 2026-11-03; was: backups first, then the rest in no fixed order, all before Phase 7):*
-**6a** backups (#62), **6b** the AI assistant (Phase 7 below), **6c** the repo audit, **6d** the rest
-(GDPR basics, security hardening, the cost review). Each stage lists the owner's manual steps. Agents
-write the code, tests and docs. Google Cloud and Neon changes need the owner's OK first (§9).
+**6a** backups (#62), **6b** ingredients (6b-0) and then the AI assistant (Phase 7 below), **6c** the
+repo audit, **6d** the rest (GDPR basics, security hardening, the cost review). Each stage lists the
+owner's manual steps. Agents write the code, tests and docs. Google Cloud and Neon changes need the
+owner's OK first (§9). *(Amended 2026-11-03, owner interview; 6b-0 added. Issues filed: backups #62 and
+#154; ingredients #155 and #156; assistant #157 to #162. Planned by a Sonnet session at the owner's
+request, not Opus (D25), the same exception as Phase 5; the briefs say what to do on a gap.)*
 
-- [ ] **6a #62 Backups** (owner, 2026-11-01: after the last regular feature and before the AI
-      assistant; Neon Free's own restore window is only ~6 hours, which is why this is needed; cost
-      under a cent a month. *Amended 2026-11-01; was: target "artifact or object storage", undecided.
-      GitHub artifacts are out: the repo is public.*) Design:
+- [ ] **6a Backups (#62 workflow and scripts; #154 setup script, restore and guide).** *(Owner, 2026-11-01:
+      after the last regular feature and before the AI assistant; Neon Free's own restore window is only
+      ~6 hours, which is why this is needed; cost under a cent a month. GitHub artifacts are out: the repo
+      is public. Amended 2026-11-03 after the owner interview; was: weekly tier, 12-month retention, an
+      in-workflow freshness check and a manual restore drill. The changes are marked below.)* Design:
   - **Read-only role.** A Neon role `mm_backup` with `CONNECT`, `USAGE` and `SELECT`, plus default
     privileges, so Flyway tables added later are readable too. Its password is in Secret Manager as
     `backup-db-password`.
   - **Dump.** `pg_dump --format=custom --no-owner --no-privileges`, with the PostgreSQL 17 client from
     a digest-pinned image, against Neon's direct endpoint. The custom format is compressed and lets
-    `pg_restore` pick single tables.
+    `pg_restore` pick single tables. *(Amended 2026-11-03: `--exclude-table-data='spring_session*'`;
+    sessions are throw-away and restoring them would sign old browsers back in.)*
   - **Test restore in the job.** Restore into a `pgvector/pgvector:pg17` service container, then check
-    that the Flyway history reaches the latest version and that row counts match the source. A failed
-    restore fails the job: a dump that cannot be restored is no backup.
+    that the Flyway history reaches the latest version and that row counts match the source (sessions
+    excluded). A failed restore fails the job: a dump that cannot be restored is no backup.
   - **Encryption.** `age`, to a public recipient key in the GitHub variable `BACKUP_AGE_RECIPIENT`. The
     private key stays in the owner's password manager, so CI can write backups but cannot read them.
+    *(Amended 2026-11-03: one key, no paper copy and no second recipient; losing it makes the backups
+    unreadable but never touches the live database. At key creation, `age-keygen -y` must print the
+    public key stored in the variable.)*
   - **Upload.** The existing WIF pool and provider, and a new service account `mm-backup-writer` with
-    `roles/storage.objectCreator` on the bucket only, so it cannot read or delete. Object names carry
-    the timestamp, so nothing is overwritten.
+    `roles/storage.objectCreator` on the bucket only, plus `secretAccessor` on `backup-db-password` only,
+    so it cannot read or delete backups. Object names carry the timestamp, so nothing is overwritten.
   - **Bucket.** `meal-magician-backups` in `europe-west3`, uniform access, public access prevention
-    enforced. Prefixes `daily/`, `weekly/` (copied on Sundays) and `monthly/` (copied on the 1st).
-    Lifecycle rules delete daily after 7 days, weekly after 5 weeks and monthly after 12 months. Google's
-    service agent runs the deletions, not the writer.
-  - **Schedule and release.** A nightly cron (UTC), and a call from `release.yml` before the deploy, so a
-    failed backup stops a release before its Flyway migrations run. The job also fails loudly if the
-    newest object is more than two days old.
-  - **Restore.** `task db:restore -- <file>` decrypts the file and runs `pg_restore` into a target chosen
-    by flag: local Postgres (compose), a new Neon branch or a new Neon project.
-  - **Drill.** Restore the latest backup into local Postgres, compare the counts and start the app on it.
-    Record the result on a new wiki page, added to `wiki-sync.yml` and `Home.md`.
+    enforced. *(Amended 2026-11-03; was `daily/`, `weekly/`, `monthly/` with 7 days, 5 weeks and 12
+    months.)* Prefixes `daily/` (deleted after 7 days), `monthly/` (a copy on the 1st, deleted after ~190
+    days) and `release/` (taken before each deploy, deleted after 14 days). Google's service agent runs
+    the deletions, not the writer.
+  - **Schedule and release.** A nightly cron (02:17 UTC), and a `workflow_call` from `release.yml` as a job
+    the release job `needs`, so a failed backup stops a release before its Flyway migrations run.
+  - **Failures.** *(Amended 2026-11-03.)* GitHub's email, plus the job opens, or comments on, one open issue
+    titled `Backup failed`, and closes it on the next green run, so a failure stays visible on the board.
+  - **Silent stop.** *(Amended 2026-11-03; was a "newest object older than two days" check inside the
+    workflow, which cannot run once GitHub disables the schedule.)* A Cloud Monitoring alert emails the
+    owner when no new object has landed in the bucket for two days. It lives outside GitHub. A Google Cloud
+    change, so the owner approves it.
+  - **Restore.** `task db:restore -- <file-or-gs://object>` decrypts the file and runs `pg_restore` into a
+    target chosen by flag: local Postgres (compose), a new Neon branch or a new Neon project. The wiki page
+    "Backup and Restore" is the guide. *(Amended 2026-11-03; was a restore drill by the owner, logged on a
+    wiki page. The owner declined a recurring manual task: the nightly test restore is the continuing
+    proof, and the guide has an optional 15-minute check. What the nightly check cannot prove is that the
+    owner's private key matches, hence the `age-keygen -y` check above.)*
   - **Pitfalls.** GitHub disables scheduled workflows in a public repo after 60 days without repo
-    activity, which the age check above would catch. Each nightly dump wakes Neon for a few minutes, so
-    check it against Neon's free compute hours (§6).
-  - **Owner's manual steps:**
-    1. Generate the `age` key pair on your own machine. Keep the private key in your password manager
-       and set the public key as `BACKUP_AGE_RECIPIENT`.
-    2. In Neon, create the read-only role `mm_backup` and store its password in Secret Manager as
-       `backup-db-password`.
-    3. Create the bucket and its lifecycle rules in `europe-west3` (or approve an agent doing it with
-       `gcloud`).
-    4. Create `mm-backup-writer` with only `objectCreator` on the bucket, and bind it to the WIF provider
-       for this repo's `main` branch.
-    5. Check that the budget alert covers the bucket (expect cents a month).
-    6. Run the restore drill yourself: only the owner holds the private key.
-- [ ] **6b AI assistant:** Phase 7 below, built after 6a.
+    activity, which the alert above catches. Each nightly dump wakes Neon for a few minutes; Neon Free
+    gives 100 CU-hours a month, so check the first month against it (§6).
+  - **Owner's manual steps** *(amended 2026-11-03)*:
+    1. Generate the `age` key pair on your own machine, keep the private key in your password manager, run
+       `age-keygen -y` to check the public key, and set it as `BACKUP_AGE_RECIPIENT`.
+    2. In Neon, create the read-only role `mm_backup` (the setup script prints the exact SQL) and store
+       its password in Secret Manager as `backup-db-password`.
+    3. Approve each step as an agent runs `scripts/backup-gcp-setup.sh` (bucket and lifecycle rules,
+       `mm-backup-writer`, its WIF binding, the Monitoring alert). Nothing else is created by hand.
+    4. Check that the budget alert covers the bucket (expect cents a month).
+- [ ] **6b-0 Ingredients on meals (#155 backend with Flyway V12; #156 picker)** *(added 2026-11-03, owner
+      request: the assistant should suggest seasonal meals and ingredients; was in "Later ideas")*. See D31.
+      Done before the assistant, because the assistant reads ingredients.
+- [ ] **6b AI assistant:** Phase 7 below (#157–#162), built after 6a and 6b-0.
 - [ ] **6c `repo-audit`:** run the skill on the whole repo and reconcile its findings with the issues and
       the board. Known gaps for it to check: the rating history limit (accepted by the owner, check it is
       documented), the `share.limit` message that hard-codes "10", the tag race in B2 (two people creating
@@ -340,7 +359,8 @@ write the code, tests and docs. Google Cloud and Neon changes need the owner's O
 - [ ] **6d GDPR basics:** export my data as a file, delete my account, and a privacy note page.
       **Decisions for the owner:** what deleting a member does to shared content (meals stay, while the
       person's name, email and ratings go, as they already do for former members). A deleted account
-      stays in the backups for up to 12 months, which the privacy note must say. **Owner:** approve the
+      stays in the backups for up to 6 months *(amended 2026-11-03; was 12: the monthly copies are kept
+      190 days)*, which the privacy note must say. **Owner:** approve the
       wording of the note.
 - [ ] **6d Security hardening:** review the security headers and the CSP; rate limit on invite and join,
       per IP, using the address Cloud Run appends rather than the first one the client sends (D28); a
@@ -351,62 +371,78 @@ write the code, tests and docs. Google Cloud and Neon changes need the owner's O
 
 ### Phase 7 — AI assistant (`M3 – Assistant`, epic #8)
 *Built as stage 6b, after the backups (#62) and before the repo audit (amended 2026-11-03).*
-- [ ] **Before any code:** check that the Spring AI release supports Boot 4.1.2 (§7). **Owner:** pick the
-      provider and tier (D19; a free tier means amending D19 and accepting its training terms).
-- [ ] `assistant` module: Spring AI `ChatClient`, with the provider chosen by config (D19);
-      monthly spend cap per household. Design:
-  - **Module shape.** A public API `AssistantService` (draft, refine, accept). `internal/` holds the
-    tools, the `ChatClient` setup and the vector store. It depends on `planning`, `feedback`, `catalog`
-    and `household` only.
-  - **Provider.** One Spring AI starter, chosen by `mm.ai.provider`; the key is `MM_AI_API_KEY` in Secret
-    Manager. With no key the assistant is hidden, not an error. Prompts and answers are never logged.
-  - **Embeddings.** In-process ONNX, all-MiniLM-L6-v2 (384 dimensions). The model file is about 90 MB, so
-    decide whether it is baked into the image or fetched at build time. The ONNX runtime needs more
-    memory, so Cloud Run's memory setting may rise (owner's OK, and check it against the D17 cold starts).
-  - **Vector store.** `PgVectorStore`, its table created by Flyway in `db/migration/postgresql/` (V12), and
-    `household_id` on every row. Every similarity search filters by household, and a test asserts it. H2
-    cannot run pgvector, so these tests run on Testcontainers.
-  - **Indexed documents.** One per meal (name, tags, notes, occasion types and a rating summary), re-indexed
-    on `MealChanged`, `RatingGiven` and `RatingWithdrawn`.
-  - **Tools.** `recentWeeks`, `searchMeals`, `householdPreferences`, `upcomingOccasions` and `draftWeek`.
-    The household comes from the server's request context, never from the model. The tools read through
-    the other modules' public APIs. Only `draftWeek` writes, and only a draft.
-  - **Drafts.** Stored in `assistant_draft` (V13): a list of date, slot type and meal id, validated against
-    the household's catalog (unknown ids are rejected). Accepting a draft copies it into the plan through
-    the D26 merge or replace. Nothing reaches `meal_slot` by itself.
-  - **Prompt injection.** Meal names and notes are typed by members and go into prompts. Treat them as
-    data, and keep the tools unable to write to the plan.
-  - **Privacy.** Prompts carry meal names, tags, slot types, dates and ratings. Members appear as "member 1",
-    "member 2", never by name or email. A paid tier (D19) keeps the prompts out of training.
-  - **Spend cap.** A table `assistant_usage` (V12, with the vector store) records tokens per call per month.
-    It is checked before every call, and over the cap the member gets a message and no call is made. Also
-    set a hard monthly limit in the provider's console, as a second layer.
-  - **UI.** "Suggest my week" on the plan page opens the week as a draft with Accept, Edit and Discard, and a
-    box for chat-style follow-ups ("less meat"). Built from the `ui/` components, with strings in both
-    message files.
+- [ ] **Before any code** *(amended 2026-11-03)*: Spring AI 2.0 GA (2026-06-12) targets Boot 4.0/4.1 per
+      its release notes; #157 proves it with a real call (the spike). **Owner:** provider and tier are
+      decided (D19, D32): Gemini on Vertex AI, no API key. Left for the owner: enable the Vertex AI API and
+      grant the runtime account `roles/aiplatform.user` (both Google Cloud changes, approved step by step).
+- [ ] `assistant` module (#157–#162, in this order; #157 also lists the owner's manual steps). Design:
+  - **Module shape.** A public API `AssistantService`. `internal/` holds the tools, the prompt builder,
+    the model gateway, the embedding index and the controllers. It depends on `planning`, `feedback`,
+    `catalog`, `household` and **`identity`** *(amended 2026-11-03: the member's language and user id come
+    from `SignedInUser`)* only. `planning` cannot depend on `assistant` (a cycle), so the plan page loads
+    the assistant's buttons as htmx fragments (`GET /assistant/entry`), which answer 204 when it is off.
+  - **Provider** *(amended 2026-11-03; was a key in Secret Manager as `MM_AI_API_KEY`)*. Gemini on Vertex
+    AI through Spring AI's Google GenAI starter, authenticated by the Cloud Run runtime service account
+    (Application Default Credentials). There is no API key and no `ai-api-key` secret. Spring AI's
+    Anthropic module cannot use Vertex, which is why Claude is not the default. The model id, the EU
+    region and the prices come from properties and are fixed by #157's spike. `mm.ai.enabled=false` is
+    the default: the assistant is hidden, not an error, and also off on H2. Prompts and answers are never
+    logged.
+  - **Embeddings** *(amended 2026-11-03; was in-process ONNX)*. Vertex embeddings, 768 dimensions, set in
+    the migration after the spike. No 90 MB model in the image, no extra memory and no longer cold start.
+  - **Index** *(amended 2026-11-03; was `PgVectorStore` re-indexed on `MealChanged`, `RatingGiven` and
+    `RatingWithdrawn`)*. A table `meal_embedding` (Flyway V14, `postgresql/`) with `household_id` on every
+    row and a composite foreign key to `meal`. The index is brought up to date lazily at the start of an
+    assistant request: a SHA-256 of each meal's document (name, tags, ingredients, notes, occasion types;
+    ratings are not embedded) is compared with the stored one, and only changed meals are embedded. Why:
+    Cloud Run throttles CPU after the response, so background re-indexing would not run, and no event
+    listener exists in the code. Every search filters by household, and a Testcontainers test asserts it.
+  - **Tools** *(amended 2026-11-03)*. `recentWeeks`, `searchMeals`, `mealDetails`, `householdPreferences`,
+    `upcomingOccasions`, `currentDate`. All read-only: no tool writes. The household and user are bound
+    when the tools object is built, never taken from the model. The model returns a structured draft that
+    the server validates against the catalog.
+  - **Drafts** *(V15)*. `assistant_draft` and `assistant_draft_item`: date, slot type and either a library
+    meal id or an "idea" (name, reason, tags, ingredients). Unknown ids are dropped, with one automatic
+    retry; at most 5 ideas. An idea reaches the plan only after "Add to library". Accepting copies the
+    library items into the plan through `PlanningService.applyDraft` (D26 merge or replace), which
+    publishes `SlotPlanned`. Drafts older than 7 days are purged when a new one is created.
+  - **Surfaces** *(owner, 2026-11-03)*. "Suggest my week" (draft, follow-ups, accept or discard), "suggest
+    one slot" in the meal-pick sheet, a free chat page limited to **food and the plan** (the limit is a
+    prompt file and the property `mm.ai.chat-scope`, so widening it later is not a code change) and menu
+    help on an occasion. Every member may use it.
+  - **Seasons.** The prompt carries today's date and "Hungary, Central Europe"; the model decides what is
+    in season. No seasonal table is shipped. The eval (#162) has a few checks.
+  - **Prompt injection.** Meal names, notes, ingredients and rating comments are typed by members. They
+    are quoted as data, the tools cannot write, and the server re-validates every id.
+  - **Privacy.** Prompts carry meal names, tags, ingredients, slot types, dates and ratings, **including
+    rating comments**; members appear as "member 1", "member 2", never by name or email. A comment can
+    still contain a name a member typed; the privacy note says so. Vertex does not train on customer data
+    by default (#157 quotes the current terms). **No dietary rules or allergies are stored** (owner's
+    choice); the UI says so and the prompt forbids claiming a meal is safe for an allergy. The chat is
+    kept in the session only and discarded afterwards. Drafts keep the request text until purged.
+  - **Spend cap** *(amended 2026-11-03; was a cap set by the owner later)*. $5 a month per household,
+    kept in `assistant_usage` (V13), checked before every call and added to atomically after it; over the
+    cap the member gets a message and no call is made. It equals the whole project's budget alert, so it
+    is a ceiling: real use should be cents. Vertex has no hard billing cap, so this check is the control.
   - **Owner's manual steps:**
-    1. Choose the provider and tier (free or paid, D19).
-    2. Create the provider account, on a paid tier if you chose one, and set a monthly limit in its console.
-    3. Create the API key, store it in Secret Manager as `ai-api-key`, and approve the `release.yml` change
-       that passes it to Cloud Run.
-    4. Approve the monthly cap per household.
-    5. Approve any Cloud Run memory increase.
-    6. Review the eval results and sign off the model choice.
-    7. Try the drafts on your phone and judge them, as with R9.
-- [ ] Preference profile per member, built from ratings and history. Computed on demand from the ratings, with
-      no table, which is enough at household scale; recomputed on `RatingGiven` and `RatingWithdrawn`.
-- [ ] In-process ONNX embeddings → `PgVectorStore`; re-index on `MealChanged`, `RatingGiven` and
-      `RatingWithdrawn` events (see the design above).
-- [ ] Agent tools: `recentWeeks`, `searchMeals` (semantic), `householdPreferences`,
-      `upcomingOccasions`, `draftWeek`. **Drafts only**: a person accepts or edits them.
-- [ ] "Suggest my week" with chat-style refinement ("less meat", "Thursday is busy").
-- [ ] A small eval set (10–20 prompts in `src/test/resources/eval/`) to pick the model. Checks: no meal twice
-      in a row, "less meat" respected, occasions respected, only real meal ids. It runs by hand through a
-      `task` target, since it costs money and varies from run to run, so not in CI. Record the choice as a
-      decision.
+    1. Enable the Vertex AI API and grant `mm-runtime` the role `roles/aiplatform.user` (an agent runs the
+       commands, you approve).
+    2. Set the GitHub variables the release workflow reads (`AI_ENABLED`, `AI_LOCATION`, `AI_CHAT_MODEL`,
+       `AI_EMBEDDING_MODEL`, `AI_PRICE_IN`, `AI_PRICE_OUT`) and approve the `release.yml` change.
+    3. Confirm the monthly cap per household (default $5).
+    4. Review the eval report (#162) and sign off the model (D33).
+    5. Try the drafts on your phone and judge them, as with R9.
+- [ ] Preference profile per member: computed on demand from `RatingService.recent`, with no table
+      (#159). *(Amended 2026-11-03; was recomputed on `RatingGiven` and `RatingWithdrawn`.)*
+- [ ] Embeddings and index (#158); tools and drafts (#159); week and slot UI (#160); chat page and
+      occasion help (#161).
+- [ ] A small eval set (12–16 cases in `src/test/resources/eval/`) to pick the model (#162). Checks: only
+      real meal ids, no meal twice in a row, "less meat" respected, occasions respected, language,
+      ideas capped, a few seasonal checks. It runs by hand through `task ai:eval`, since it costs money
+      and varies from run to run, so not in CI. Record the choice as D33.
 
 ### Later ideas (`Mx – Parked`)
-Ingredients and a generated shopping list, meal photos, leftovers and "eat again soon" hints,
+A generated shopping list (needs amounts on ingredients, which D31 leaves out), meal photos, leftovers and "eat again soon" hints,
 an ICS calendar feed, a custom domain, email notifications.
 
 ---
@@ -419,11 +455,11 @@ an ICS calendar feed, a custom domain, email notifications.
 |---|---|---|
 | `identity` | Google OIDC sign-in, `AllowedEmail`, `AppUser`, the instance-admin page, locale preference | publishes `UserSignedIn` |
 | `household` | `Household`, `Membership(role)`, `Invite`, the current-household resolver | listens for nothing; its API is used by every module below |
-| `catalog` | `Meal`, `Tag` | publishes `MealChanged` |
+| `catalog` | `Meal`, `Tag`, `Ingredient` *(Amended 2026-11-03, D31)* | publishes `MealChanged` |
 | `planning` | `MealSlot` (per date), `PlanTemplate(scope DAY|WEEK)`, `Occasion`, `OccasionTemplate` | publishes `SlotPlanned` |
 | `feedback` | `Rating` (member × slot) | publishes `RatingGiven` and `RatingWithdrawn` *(Amended 2026-11-03, D27; was `RatingGiven` only)* |
 | `sharing` | print view, `ShareLink` | uses `planning.SharedWeekReader` (an unchecked, minimal read) and `catalog.MealNameLookup` *(Amended 2026-11-03, D28; was `planning`'s API)* |
-| `assistant` *(Phase 7)* | embeddings, preference profile, agent tools | listens for `MealChanged`, `RatingGiven` and `RatingWithdrawn` *(Amended 2026-11-03; was `MealChanged` and `RatingGiven`: a withdrawn rating must leave the profile and the index too)* |
+| `assistant` *(Phase 7)* | tools, drafts, the embedding index, spend ledger, chat | no listeners *(Amended 2026-11-03, D32; was: listens for `MealChanged`, `RatingGiven` and `RatingWithdrawn`. The index is synced lazily per request, so no events are needed)*; uses `planning`, `feedback`, `catalog`, `household` and `identity` |
 | `shared` | base entity, auditing, errors, i18n `t()` helper, htmx helpers | a shared kernel, not a business module |
 
 Package layout inside a module: the module's root package is its **public API** (services,
@@ -450,7 +486,11 @@ support. Other modules may only use the root package; the Modulith test enforces
   *(Amended 2026-11-03, D27; was `rating(slot_id, user_id, score, comment, created_at)`)*
 - `share_link(id, household_id, token_hash, week_start, created_by, created_at, expires_at, revoked_at)`
   *(Amended 2026-11-03, D28; was `share_link(id, household_id, token_hash, scope, expires_at, revoked_at)`)*
-- Spring Session tables (`spring_session*`). Phase 7 adds `vector_store` (pgvector).
+- `ingredient(id, household_id, name, name_key)`, `meal_ingredient(meal_id, ingredient_id, household_id)`, global `ingredient_seed(id, name, name_key)` (V12, D31)
+- `assistant_usage(household_id, month, input_tokens, output_tokens, cost_micro_usd)` (V13)
+- `meal_embedding(meal_id, household_id, content_hash, model, dims, embedding vector(768), updated_at)` (V14, Postgres only)
+- `assistant_draft(id, household_id, created_by, week_start, status, request_text, conversation, summary, created_at, version)` and `assistant_draft_item(id, draft_id, household_id, day_date, slot_type, position, meal_id NULL, idea_*)` (V15)
+- Spring Session tables (`spring_session*`). *(Amended 2026-11-03, D32; was: Phase 7 adds `vector_store` (pgvector).)*
 
 ### 4.3 Request flow (for the Newcomer Guide)
 
@@ -514,6 +554,7 @@ meal-magician/
   - `GOOGLE_CLIENT_ID` (GitHub variable), `GOOGLE_CLIENT_SECRET` (Secret Manager
     `google-client-secret`)
   - `MM_ADMIN_EMAILS`
+  - `MM_AI_ENABLED` and the Vertex settings (project, location, models, prices) only when the assistant is on; no key (D32)
   - `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75 …`
 - **Scale to zero:** Cloud Run min instances 0, max 1; Neon autosuspend. Verify both really go
   idle; DB keepalives or outbound telemetry would keep Neon awake and burn its compute hours.
@@ -537,8 +578,10 @@ meal-magician/
   (`HX-Redirect`) instead of swapping a sign-in page into a fragment.
 - **100 % coverage:** plan the exclusions up front (generated JTE classes, Lombok-generated
   code, `main()`), each with a comment saying why.
-- **Spring AI and Boot 4:** check which Spring AI release supports the pinned Boot version
-  before Phase 7.
+- **Spring AI and Boot 4:** Spring AI 2.0 GA (2026-06-12) targets Boot 4.0 and 4.1 per its release
+  notes *(checked 2026-11-03 from the docs only)*; #157's spike confirms it with a real call and pins the
+  version. **Vertex data location:** whether Gemini runs in `europe-west3` or needs another EU region is
+  also fixed by that spike; if no EU region works, the owner decides.
 - **Local Java (D21):** the dev machine's default JDK is 27, and only Gradle itself runs on it.
   The toolchain downloads Temurin 25 for compiling and testing. If the pinned Gradle version
   can't run on JDK 27 yet, run the wrapper on a supported JDK (`JAVA_HOME` or mise).
@@ -560,7 +603,7 @@ meal-magician/
   one household and a third account that isn't a member (it must get 404s). **Phase 5 adds:** a
   revoked or expired share link gives an anonymous browser a 404, the rating and share-management
   URLs of another household give 404, Lighthouse on a phone, and the PWA installed on a real phone.
-- **Phase 7:** the eval set passes; suggestions are only drafts; the spend cap is enforced.
+- **Phase 7:** the eval report is read and the model signed off (D33); suggestions are only drafts; the spend cap is enforced; the assistant is hidden when off; another household's data never appears in a prompt.
 
 ---
 
@@ -654,11 +697,17 @@ meal-magician/
 
 10. **Next up (2026-11-03, Phase 6; the order is amended in §3).** Stages, with the owner's manual steps for
     each. Issues are filed when a stage starts, and each stage is planned by Opus (D25) when filed.
+    *(Amended 2026-11-03: the issues for 6a, 6b-0 and 6b are all filed already, #62 and #154 to #162, by a
+    Sonnet planner at the owner's request. Order of work: #62 and #154 beside #155 and #157; then #156 and
+    #158; then #159; then #160; then #161; then #162. Merge order follows the blocked-by links. Flyway:
+    V12 is #155, V13 is #157, V14 is #158, V15 is #159, and each must merge before the next, as in
+    Phase 5.)*
 
     | Stage | Items | Owner's manual steps |
     |---|---|---|
-    | 6a | #62 backups (no migration) | Steps 1–6 under 6a in §3: the `age` key, the Neon read-only role, the bucket, the writer account, the budget check, the restore drill |
-    | 6b | Phase 7 assistant (V12, V13) | Provider and tier, its API key and monthly limit, the spend cap, the memory setting, the model sign-off, the phone check of the drafts |
+    | 6a | #62 workflow and scripts, #154 setup, restore and guide (no migration) | Steps 1–4 under 6a in §3: the `age` key and its public-key check, the Neon read-only role, approving each `gcloud` step (bucket, writer, alert), the budget check |
+    | 6b-0 | #155 ingredients backend (V12), then #156 the picker | None; look at the picker on a phone |
+    | 6b | #157 foundation (V13), #158 embeddings (V14), #159 tools and drafts (V15), #160 week and slot UI, #161 chat and occasions, #162 eval | The Vertex API and role, the GitHub variables, the cap, the model sign-off (D33), the phone check of the drafts |
     | 6c | `repo-audit` | Approve filing issues outside this plan |
     | 6d | GDPR basics, security hardening, cost review | Privacy note wording, the deletion rules, reading the bill |
 
@@ -724,3 +773,4 @@ meal-magician/
 | 2026-11-03 | **Owner's checks passed; the cap race is fixed** (#134 part 1). The owner did the phone checks and said everything looks good. The owner accepted the rating history rule as it stands: the limit of 10 is applied before former members' ratings are dropped, so the history can show fewer than 10 (no change to #124). The share-link cap race is fixed (PR #150): `HouseholdService.requireForUpdate` takes the household row lock that the ownership changes already use, so the count and the insert of a new link run one after the other; a concurrency test with 40 rounds fails without the lock. Still open: the `share.limit` message hard-codes "10" (cosmetic). Then v1.0.0, once the owner gives the go-ahead (D29). Docs only. | #134, #150 |
 | 2026-11-03 | **v1.0.0 released** (D29, #134). The owner's go-ahead came after the phone checks. The first manual `release.yml` run (`version=1.0.0`) stopped at its CI gate, before any push or deploy: CI on the merge commit `491c7ef` was still running, and the gate needs `Lint & test`, `Migrations (Postgres)` and `E2E` green on the exact commit. The second run, after that CI passed, built the image, deployed it to Cloud Run, polled `/actuator/health`, smoke-tested the live service (all checks passed), and pushed tag `v1.0.0` and the GitHub release. Phase 5 is done. Next: backups (#62), then Phase 6 (hardening) and Phase 7 (the assistant). Docs only. | #134, #151 |
 | 2026-11-03 | **Phase 6 re-ordered, with the backup and assistant designs written up** (owner's request). Order: backups (#62), the AI assistant (Phase 7), the repo audit, then GDPR basics, security hardening and the cost review. Each stage lists the owner's manual steps. Amended §3 (Phase 6, Phase 7), §4.1 (`assistant` also listens for `RatingWithdrawn`) and §9 item 10. `Roadmap-Everything-Else.md` follows the new order. Docs only. | #7, #62 |
+| 2026-11-03 | **Backups and the assistant planned** (owner interview, then a Sonnet planner; the briefs are in the issues). *Backups* (#62, #154): retention daily 7 days and monthly ~190 days with a `release/` prefix (no weekly tier); session rows excluded; one `age` key; failures open a `Backup failed` issue; a Cloud Monitoring alert replaces the in-workflow freshness check; no recurring restore drill, a guide instead; an agent runs the `gcloud` setup script with the owner approving each step. *Ingredients* (#155, #156, D31): per household, names only, a ~150-name Hungarian starter list, a searchable type-to-add combobox, accent-folding keys, and a race-safe writer that also fixes the tag race. *Assistant* (#157 to #162, D32): Gemini on Vertex AI with no API key, Vertex embeddings, a lazily synced `meal_embedding` table, read-only tools and structured drafts, library meals plus ideas, week and slot suggestions, a food-and-plan chat, occasion help, a $5 monthly cap per household, no stored dietary rules. D19 amended; D31 to D33 added (D33, the model, is pending the eval); §4.1, §4.2, §6, §7, §8 and §9 item 10 amended. Open for the spike (#157): Gemini in an EU region, the embedding size, tool calling together with JSON output. Docs only. | #62, #154–#162 |
