@@ -25,7 +25,7 @@
   <meta name="theme-color" data-theme-color="light" media="${ctx.theme().themeColorMedia(Theme.LIGHT)}" content="#6d3fe0">
   <meta name="theme-color" data-theme-color="dark" media="${ctx.theme().themeColorMedia(Theme.DARK)}" content="#130c2e">
   <%-- The two fonts used above the fold (plan §6.2); the @font-face rules are in app.css. --%>
-  <link rel="preload" href="/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/baloo2-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
   <title>${title} · ${ctx.t("app.name")}</title>
   <link rel="manifest" href="/manifest.webmanifest">

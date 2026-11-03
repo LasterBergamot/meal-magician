@@ -31,9 +31,9 @@ paths:
   and `ContrastTokensTest` checks every Appendix C pair in both themes, so a new token pair
   needs a row there. Fonts are self-hosted in `static/fonts/` (see its `FONTS.md`); a new font
   file needs its licence text and hash there, and a `@font-face` in `app.css`. Headings use
-  `--font-display` = Fredoka, then Nunito (Fredoka lacks ő/ű, Nunito draws them), then the system
-  faces; never name a web font there that is not hosted (`FontFallbackTest` checks). Neither font
-  has `tnum`, so do not rely on `tabular-nums`. The old green `brand-50…800` scale is gone (R5d):
+  `--font-display` = Baloo 2 (it has ő/ű, so one family draws a heading), then Nunito as a
+  safety net, then the system faces; never name a web font there that is not hosted
+  (`FontFallbackTest` checks). Neither font has `tnum`, so do not rely on `tabular-nums`. The old green `brand-50…800` scale is gone (R5d):
   `UiGuardTest` fails on a `brand-<digit>` or `stone-` class, or a raw palette colour (`bg-white`,
   `text-red-600`), in any template or `app.js`, and on the old scale in `app.css`.
 - **CSP (`SecurityHeadersFilter`):** no inline `<script>`, no `onclick=`-style handlers, no

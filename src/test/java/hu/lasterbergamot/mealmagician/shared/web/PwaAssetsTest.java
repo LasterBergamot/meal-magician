@@ -110,7 +110,7 @@ class PwaAssetsTest {
   void servesTheFontsTheStylesheetLoads() throws Exception {
     for (String path :
         List.of(
-            "/fonts/fredoka-latin.woff2",
+            "/fonts/baloo2-latin.woff2",
             "/fonts/nunito-latin.woff2",
             "/fonts/nunito-latin-ext.woff2")) {
       mvc.perform(get(path))

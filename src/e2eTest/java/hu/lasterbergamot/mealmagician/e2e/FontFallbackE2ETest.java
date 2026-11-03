@@ -17,10 +17,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Proves in a real browser that a heading with Hungarian ő and ű is drawn by Fredoka for the rest
- * and by Nunito for those letters (UI-D4, #71). Fredoka has no Latin Extended-A glyphs, so the
- * browser must take them from the next family in {@code --font-display}, which means it has to
- * download Nunito's latin-ext file at the heading weight (600). The stylesheet-level check is
+ * Proves in a real browser that a heading with Hungarian ő and ű is drawn by Baloo 2 alone (UI-D4,
+ * #130). Baloo 2 has Latin Extended-A glyphs, so the browser must download its latin-ext file at
+ * the heading weight (700) and no other family may draw a letter. The stylesheet-level check is
  * {@code FontFallbackTest}; this one asks Chromium which fonts it really used.
  *
  * <p>The login page is public, so no sign-in is needed. The heading is added by a script run from
@@ -32,7 +31,10 @@ class FontFallbackE2ETest {
   private static final String BASE_URL =
       System.getProperty("e2e.baseUrl", "http://localhost:18080");
 
-  /** Seven letters Fredoka has (F é t e l h t) and three it lacks (ő ű ő). */
+  /**
+   * Eleven characters with the space: seven of Latin-1 (F é t e l h t) and three of Latin
+   * Extended-A (ő ű ő).
+   */
   private static final String HEADING = "Főétel hűtő";
 
   private static Playwright playwright;
@@ -51,7 +53,7 @@ class FontFallbackE2ETest {
   }
 
   @Test
-  void headingWithDoubleAcuteLettersUsesFredokaAndNunito() {
+  void headingWithDoubleAcuteLettersIsDrawnByBaloo2Only() {
     try (BrowserContext context = browser.newContext()) {
       Page page = context.newPage();
       List<String> served = new ArrayList<>();
@@ -65,7 +67,7 @@ class FontFallbackE2ETest {
             heading.id = 'font-probe';
             heading.textContent = text;
             heading.style.fontFamily = 'var(--font-display)';
-            heading.style.fontWeight = '600';
+            heading.style.fontWeight = '700';
             document.body.append(heading);
             await document.fonts.ready;
           }
@@ -74,16 +76,14 @@ class FontFallbackE2ETest {
 
       JsonArray fonts = platformFontsOf(context, page, "#font-probe");
 
-      assertThat(glyphsDrawnBy(fonts, "Fredoka"))
-          .as("glyphs drawn by Fredoka in %s", fonts)
-          .isGreaterThanOrEqualTo(7);
-      assertThat(glyphsDrawnBy(fonts, "Nunito"))
-          .as("glyphs drawn by Nunito in %s", fonts)
-          .isEqualTo(3);
+      assertThat(glyphsDrawnBy(fonts, "Baloo 2"))
+          .as("glyphs drawn by Baloo 2 in %s", fonts)
+          .isEqualTo(HEADING.length());
+      assertThat(glyphsDrawnBy(fonts, "Nunito")).as("glyphs drawn by Nunito in %s", fonts).isZero();
       assertThat(served)
           .as("the latin-ext file is downloaded from our own server")
           .anyMatch(
-              response -> response.equals("200 " + BASE_URL + "/fonts/nunito-latin-ext.woff2"));
+              response -> response.equals("200 " + BASE_URL + "/fonts/baloo2-latin-ext.woff2"));
     }
   }
 
