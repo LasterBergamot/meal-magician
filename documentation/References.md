@@ -30,7 +30,7 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | htmx npm package (vendored file source) | https://www.npmjs.com/package/htmx.org |
 | `@alpinejs/csp` npm package (vendored file source) | https://www.npmjs.com/package/@alpinejs/csp |
 | Tailwind CSS v4 (`@theme`, `@source`) | https://tailwindcss.com/docs/functions-and-directives |
-| Fredoka (display face, self-hosted `woff2`, OFL 1.1) | https://fonts.google.com/specimen/Fredoka · source: https://github.com/google/fonts/tree/main/ofl/fredoka |
+| Baloo 2 (display face, self-hosted `woff2`, OFL 1.1) | https://fonts.google.com/specimen/Baloo+2 · source: https://github.com/google/fonts/tree/main/ofl/baloo2 |
 | Nunito (body face, self-hosted `woff2`, OFL 1.1) | https://fonts.google.com/specimen/Nunito · source: https://github.com/google/fonts/tree/main/ofl/nunito |
 | SIL Open Font License 1.1 (licence of both faces; texts in `static/fonts/OFL-*.txt`) | https://openfontlicense.org/ · https://scripts.sil.org/OFL |
 | `@font-face`, `font-display`, `unicode-range` | https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face |

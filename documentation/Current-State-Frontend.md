@@ -485,11 +485,11 @@ template or `app.js`, and on the old scale in `app.css`.
 - Each theme's contrast is checked by `ContrastTokensTest`: every pair of Appendix C must meet
   its WCAG minimum in both themes, and the tests fail on a bad token. Change a colour and the
   test tells you which pair broke.
-- Fonts: Fredoka (headings) and Nunito (text) are self-hosted `woff2` in `static/fonts/` (SIL
+- Fonts: Baloo 2 (headings) and Nunito (text) are self-hosted `woff2` in `static/fonts/` (SIL
   OFL, see `FONTS.md` there). `app.css` declares them with `font-display: swap`, and
-  `base.jte` preloads the two above the fold. Fredoka has no Latin Extended-A glyphs, so a
-  Hungarian ő or ű in a heading is drawn by the next family in `--font-display`, **Nunito** (its
-  latin-ext file), then the system faces; Fredoka draws the rest (#71). `FontFallbackTest` and
+  `base.jte` preloads the two above the fold. Baloo 2 has Hungarian ő and ű in its own
+  latin-ext file (weights 600-800), so one family draws a whole heading; Nunito stays next in
+  `--font-display` only as a safety net, then the system faces (#130). `FontFallbackTest` and
   the E2E `FontFallbackE2ETest` prove the chain. Neither font has `tnum`, so digits are
   proportional.
 - The page background is `surface` with a faint dot pattern (one `radial-gradient` in `app.css`).

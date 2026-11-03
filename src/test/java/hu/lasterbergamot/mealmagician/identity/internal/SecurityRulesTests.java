@@ -73,7 +73,7 @@ class SecurityRulesTests {
               .toList();
     }
 
-    assertThat(paths).contains("/fonts/fredoka-latin.woff2", "/icons/favicon.svg", "/js/app.js");
+    assertThat(paths).contains("/fonts/baloo2-latin.woff2", "/icons/favicon.svg", "/js/app.js");
     for (String path : paths) {
       mvc.perform(get(path)).andExpect(status().isOk());
     }

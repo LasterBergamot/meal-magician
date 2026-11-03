@@ -48,7 +48,7 @@ changes no domain logic.
 | UI-D1 | **Style: storybook cartoon with a little magic.** A moonlit lilac stage, spell-violet actions, starlight-gold highlights, candy-bright meal colours; a 2 px twilight **outline** around everything touchable and **hard offset "sticker" shadows with no blur**; round shapes; four-point **sparkles** as the one decoration. No gradients (the faint star-dot page pattern is the only `radial-gradient`) and no soft blurred shadows. | Decided (owner, 2026-11-01) |
 | UI-D2 | **Two full themes:** *Moonlight* (light) and *Midnight* (dark), not an inversion: lighter fills carry dark `on-*` text. The theme is `light`, `dark` or `system` (default: follow `prefers-color-scheme`). | Decided |
 | UI-D3 | **Colour roles:** `brand` = spell violet (primary action, active navigation, links); `accent` = starlight gold, **a fill only, never text**, once per screen (add button, today, occasion); meal types own a trio each (sunrise yellow, mint, night sapphire, candy pink); `danger` is cherry red and never the accent. Meal type is always colour + icon + word. | Decided |
-| UI-D4 | **Type:** headings in **Fredoka** (rounded, cartoon), body in **Nunito** (rounded, quiet), both open-licensed (SIL OFL), **self-hosted** as `woff2` in `static/fonts/` (the CSP is `font-src 'self'`; no CDN). Hungarian needs the **latin-ext** subset (ő, ű): Nunito has it, **Fredoka has no Latin Extended-A glyphs at all**, so the browser takes ő and ű in headings from the next family, **Nunito** (same weights, already hosted). Display stack: `"Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif`. Neither font has the `tnum` feature, so there are no tabular numerals. Alternative faces the owner named as acceptable: Baloo 2, Sniglet (display), Fraunces (serif storybook); the owner chose *not* to switch to Baloo 2 (#71). *(Amended 2026-11-01; was Fredoka alone, with Baloo 2 named but not hosted)* | Decided (owner chose "other fonts could be good too"; Fredoka + Nunito proposed 2026-11-01; Nunito fallback for ő/ű decided by the owner 2026-11-01, #71) |
+| UI-D4 | **Type:** headings in **Baloo 2** (rounded, cartoon), body in **Nunito** (rounded, quiet), both open-licensed (SIL OFL), **self-hosted** as `woff2` in `static/fonts/` (the CSP is `font-src 'self'`; no CDN). Hungarian needs the **latin-ext** subset (ő, ű): both Nunito and Baloo 2 have it (Fredoka, the first choice, had **no Latin Extended-A glyphs**, so its ő and ű came from Nunito and looked thinner; #130). Display stack: `"Baloo 2", "Nunito", "Trebuchet MS", system-ui, sans-serif` (Nunito is a safety net only). Neither font has the `tnum` feature, so there are no tabular numerals. Alternative faces the owner named as acceptable: Baloo 2, Sniglet (display), Fraunces (serif storybook); *(Amended 2026-11-01; was Fredoka alone, with Baloo 2 named but not hosted)* *(Amended 2026-11-03; was Fredoka with a Nunito fallback for ő/ű. The owner chose Baloo 2 after a specimen comparison, #130)* | Decided (owner chose "other fonts could be good too"; Fredoka + Nunito proposed 2026-11-01; Nunito fallback for ő/ű decided by the owner 2026-11-01, #71) |
 | UI-D5 | **Navigation:** phone = top bar (household switcher pill, avatar) + **bottom tab bar** with four destinations (Plan, Meals, Occasions, Household) + a floating add button on Plan and Meals; desktop (≥ 768 px) = **left sidebar** (household switcher, the same four destinations, language, sign-out; collapsible to icons). The household switcher moves from `/households` into both shells. | Decided |
 | UI-D6 | **Editing in context:** a **bottom sheet** on phone and a **side panel or dialog** on desktop (one markup, CSS chooses by breakpoint, native `<dialog>` + an Alpine component). Destructive confirmations are always dialogs. | Decided |
 | UI-D7 | **Implementation on the existing stack:** Tailwind v4 `@theme` in `src/main/css/app.css` with the colours as CSS variables per theme; JTE fragments under `src/main/jte/ui/` and `layout/`; no new JS libraries (Alpine CSP build + htmx stay); icons are inline SVG in one JTE fragment. Everything stays inside the CSP (no inline `style=`, no inline script, no CDN). | Decided |
@@ -135,8 +135,8 @@ the design-system names; the CSS variables carry the prefix `--mm-` (Appendix A)
 | **Spacing** (4 px grid; equals Tailwind's default scale, so `p-4` = `space-4` = 16 px) | `space-1` 4 · `space-2` 8 · `space-3` 12 · `space-4` 16 · `space-5` 20 · `space-6` 24 · `space-8` 32 · `space-10` 40 · `space-12` 48 · `space-16` 64. Page gutter `space-4` on phone, `space-8` from `md`. Card padding `space-4` phone, `space-6` desktop. |
 | **Radius** (round and bouncy; nothing under 10 px) | `radius-sm` 10 (chips, small buttons) · `radius-md` 14 (buttons, inputs, rows) · `radius-lg` 20 (cards, week cells) · `radius-xl` 28 (sheets, dialogs) · pill = `rounded-full` (badges, chips, segmented control, add button). |
 | **Sticker shadow** (hard, offset, no blur; always with the 2 px `outline`) | `shadow-1` `0 2px 0` (buttons, chips, rows, slot rows) · `shadow-2` `3px 3px 0` (cards, week tiles) · `shadow-3` `5px 5px 0` (add button, sheets, dialogs). Colour `#24174d` in Moonlight, `#05020f` in Midnight. Pressed = no shadow and moved 1–2 px down. |
-| **Type families** | display `"Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif` (Nunito draws the ő/ű that Fredoka lacks, UI-D4) *(Amended 2026-11-01; was Fredoka alone, with Baloo 2 named but not hosted)* · sans `"Nunito", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif` |
-| **Type scale** | `display` Fredoka 700 40/44 (32/36 on phone; sign-in and empty-state hero only) · `h1` Fredoka 600 30/36 (one per page) · `h2` Fredoka 600 22/28 (sections, day names) · `h3` Nunito 800 18/24 (row titles, meal names) · `body` Nunito 500 16/24 (16 px stops iOS zooming into inputs) · `body-sm` 500 14/20 · `label` 800 14/20 (buttons, tabs, chips, field labels) · `caption` 700 12/16 +0.02em (timestamps, slot names, badges). No tabular numerals: neither font has the `tnum` feature, so digits are proportional *(Amended 2026-11-01; was "Tabular numerals for dates and counts")*. |
+| **Type families** | display `"Baloo 2", "Nunito", "Trebuchet MS", system-ui, sans-serif` (Baloo 2 has ő/ű, UI-D4) *(Amended 2026-11-03; was Fredoka with a Nunito fallback for ő/ű)* *(Amended 2026-11-01; was Fredoka alone, with Baloo 2 named but not hosted)* · sans `"Nunito", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif` |
+| **Type scale** | `display` Baloo 2 700 40/44 (32/36 on phone; sign-in and empty-state hero only) · `h1` Baloo 2 600 30/36 (one per page) · `h2` Baloo 2 600 22/28 (sections, day names) · `h3` Nunito 800 18/24 (row titles, meal names) · `body` Nunito 500 16/24 (16 px stops iOS zooming into inputs) · `body-sm` 500 14/20 · `label` 800 14/20 (buttons, tabs, chips, field labels) · `caption` 700 12/16 +0.02em (timestamps, slot names, badges). No tabular numerals: neither font has the `tnum` feature, so digits are proportional *(Amended 2026-11-01; was "Tabular numerals for dates and counts")*. |
 | **Layout** | `touch` 44 px (min size of anything tappable) · `layout-bottom-bar` 64 px (+ safe-area inset) · `layout-sidebar` 248 px · `layout-sidebar-collapsed` 72 px · `layout-content` 1200 px max · `layout-reading` 720 px max (forms, single-column pages). |
 | **Motion** | `duration-fast` 120 ms (hover, press) · `duration-base` 200 ms (sheet, dialog) · `duration-slow` 320 ms (week change). Under `prefers-reduced-motion: reduce` all are 0 and animations are off. A small star pop when a meal is saved is allowed, but not under reduced motion. |
 
@@ -270,8 +270,7 @@ design-system names. The behaviour column is the contract.
 
 ### 6.2 Fonts and PWA assets
 
-- Add `static/fonts/fredoka-*.woff2` and `nunito-*.woff2` (Nunito latin + latin-ext; Fredoka latin
-  only, it has no latin-ext glyphs; the weights used: Fredoka 600/700, Nunito 500/700/800), `@font-face` in `app.css` with `font-display: swap`, a
+- Add `static/fonts/baloo2-*.woff2` and `nunito-*.woff2` (both latin + latin-ext; the weights used: Baloo 2 600-800, Nunito 500/700/800), `@font-face` in `app.css` with `font-display: swap`, a
   `<link rel="preload" as="font" type="font/woff2" crossorigin>` for the two used above the fold.
   Record each file's source URL, licence (SIL OFL 1.1) and SHA-256 in `static/fonts/FONTS.md`
   (like `static/js/VENDORED.md`) and add the licence texts.
@@ -283,7 +282,7 @@ design-system names. The behaviour column is the contract.
   512, maskable 512, apple-touch 180), drawn by `scripts/generate-icons.py` (PR #61). *(Amended
   2026-11-01; was: the `wand` mark on a violet outlined tile.)* `/favicon.ico` lies outside
   `STATIC_PATHS`, which is fine: browsers cache it themselves.
-- `documentation/References.md`: add rows for Fredoka, Nunito and the OFL.
+- `documentation/References.md`: add rows for Baloo 2, Nunito and the OFL.
 
 ### 6.3 Templates, JS and CSP
 
@@ -348,7 +347,7 @@ R7's rest moved into R1, and each Alpine component and shared template has one o
       `manifest.webmanifest` colours (`theme_color` `#6d3fe0`, `background_color` `#f8f5ff`) and
       the matching `PwaAssetsTest` expectation (moved here from R7, the rest of which landed early).
       The
-      `References.md` rows for Fredoka, Nunito and the OFL. Add the contrast test (§6.4).
+      `References.md` rows for Baloo 2, Nunito and the OFL. Add the contrast test (§6.4).
       *Accept:* the app still renders; `task test` passes with the new test; both themes switch
       by editing `data-theme` in dev tools.
 - [x] **R2a Icons, button and the `/dev/ui` page** *(written beside R1, merged after it; PR #70).*
@@ -807,7 +806,7 @@ if you change a value, change the contrast test's expectations (Appendix C) with
 
 /* Not themed: fonts. `static` writes the variables out even when no utility uses them yet. */
 @theme static {
-  --font-display: "Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif;
+  --font-display: "Baloo 2", "Nunito", "Trebuchet MS", system-ui, sans-serif;
   --font-sans: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 

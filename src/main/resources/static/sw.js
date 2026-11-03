@@ -11,7 +11,8 @@
 // v3 (#126): a new name drops the v2 cache. Public share pages (/share/..., D28) and every HTML
 // response are deliberately never cached: STATIC_PATHS must stay an allowlist of static folders
 // (PwaAssetsTest fails if it could match /share/).
-const CACHE = 'mm-static-v3';
+// v4 (#130): the heading font changed to Baloo 2; a new name drops the v3 cache.
+const CACHE = 'mm-static-v4';
 const STATIC_PATHS = /^\/(css|js|icons|fonts)\/|^\/manifest\.webmanifest$/;
 
 self.addEventListener('install', () => self.skipWaiting());
