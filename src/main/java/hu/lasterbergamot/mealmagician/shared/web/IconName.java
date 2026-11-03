@@ -40,7 +40,9 @@ public enum IconName {
   TRASH,
   SPARKLE,
   WAND,
-  SPARKLES;
+  SPARKLES,
+  PRINTER,
+  SHARE;
 
   /**
    * The name used in templates and in the {@code data-icon} attribute: the constant in lower case,

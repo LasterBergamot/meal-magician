@@ -5,8 +5,10 @@
 
 @param ViewContext ctx
 @param SharedWeekPage page
+@param boolean showNotes
 <%-- The occasion strip and the seven day blocks of the public week. One column on a phone, two from
-     md and on paper (print:). Only the meal types that hold a meal are listed (D30); a day with
+     md and on paper (print:). showNotes is true only on the members' print page (D29), where each
+     meal may carry its slot note; the public page passes false and its model holds no notes. Only the meal types that hold a meal are listed (D30); a day with
      nothing planned shows a dash with a screen-reader sentence. The type chip always has its icon
      and its word. Names are printed escaped by JTE. Tokens only for colours. --%>
 @if(!page.occasions().isEmpty())
@@ -37,8 +39,8 @@
             <li class="flex flex-col items-start gap-1">
               @template.ui._slot_chip(slot = slot.type(), label = slot.label())
               <ul class="list-inside list-disc text-base leading-6 text-ink">
-                @for(String meal : slot.meals())
-                  <li>${meal}</li>
+                @for(int i = 0; i < slot.meals().size(); i++)
+                  <li>${slot.meals().get(i)}@if(showNotes && !slot.notes().get(i).isEmpty())<span class="block text-sm text-ink-muted">${slot.notes().get(i)}</span>@endif</li>
                 @endfor
               </ul>
             </li>

@@ -21,6 +21,9 @@ public record SharedDay(String isoDate, String dayName, String dateLabel, List<S
    *     which picks the chip colour and icon
    * @param label the translated word for the type
    * @param meals the meal names in plan order; never empty
+   * @param notes the slot notes for the printed page, one per meal and in the same order, with an
+   *     empty text for a meal that has no note; an empty list on the public page, which never shows
+   *     notes (PLAN.md D28)
    */
-  public record Slot(String type, String label, List<String> meals) {}
+  public record Slot(String type, String label, List<String> meals, List<String> notes) {}
 }

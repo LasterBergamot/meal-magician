@@ -180,6 +180,25 @@
       },
     }));
 
+    // The Copy button of a new share link (sharing/_share_created.jte, D28). The link is shown only
+    // once, so copying must work everywhere: navigator.clipboard where the page is a secure
+    // context, and otherwise (or when the browser refuses) the input is selected so a long press
+    // or Ctrl+C finishes the job. "message" feeds the live region beside the button.
+    window.Alpine.data('clipboard', () => ({
+      message: '',
+      async copy() {
+        const field = this.$refs.field;
+        try {
+          await navigator.clipboard.writeText(field.value);
+          this.message = this.$refs.status.dataset.copied;
+        } catch {
+          field.focus();
+          field.select();
+          this.message = '';
+        }
+      },
+    }));
+
     // The sheet and the confirm dialog (ui/_sheet.jte, plan section 5). The markup is a native
     // <dialog> opened with showModal(), which makes the rest of the page inert, puts the dialog in
     // the top layer and closes it on Escape. This component adds what is left: a Tab trap (native

@@ -320,3 +320,16 @@
     color: var(--mm-ink);
   }
 }
+
+/* Paper size for the print page and the public share page (D29): Tailwind has no utility for
+   @page, and the two-column day grid (print:grid-cols-2) fits an A4 landscape sheet. The dotted
+   page pattern is dropped on paper so the printout stays clean and saves ink. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+  body {
+    background-image: none;
+  }
+}

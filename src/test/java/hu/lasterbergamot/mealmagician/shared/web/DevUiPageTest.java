@@ -64,7 +64,9 @@ class DevUiPageTest {
             "trash",
             "sparkle",
             "wand",
-            "sparkles");
+            "sparkles",
+            "printer",
+            "share");
   }
 
   @Test

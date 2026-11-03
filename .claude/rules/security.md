@@ -50,6 +50,15 @@ paths:
     `catalog.MealNameLookup`, which skip the membership check on purpose (see `java-modules.md`).
     `SharedWeek` holds only dates, slot types, meal names and occasion names. A new field on it
     is a privacy decision: ask the owner first.
+  - **Management routes vs the public route (#131):** the members' side is `ShareController`
+    under `/plan/share` (GET, POST, POST `/{linkId}/revoke`) and `GET /plan/print`. They sit behind
+    the normal sign-in, take a `CurrentHousehold` and are registered in `TenantEndpoints`; any
+    member may use them. `GET /share/{token}` stays the only unauthenticated business route.
+  - **Show-once rule:** the raw token is in the body of the one response that creates the link,
+    which carries `Cache-Control: no-store`. It never goes into a redirect URL, a flash value, the
+    session, a header or a log line; the list and revoke responses hold neither the token nor its
+    hash. Print shows slot notes, so it uses the checked services and is members-only; the public
+    page has no notes.
 - **Tenancy (D8):** another household's data → 404; owner-only action by a member → 403.
   The current household comes from the session and is re-checked against membership on every request
   (`household.internal.CurrentHouseholdResolver`; controllers declare a `CurrentHousehold` parameter

@@ -110,4 +110,41 @@ class SharedWeekPageTest {
     assertThat(page.occasions())
         .containsExactly(new SharedWeekPage.OccasionLine("Anna's party", "Friday, Nov 6", "Party"));
   }
+
+  @Test
+  void thePublicPageHoldsNoNotes() {
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
+    SharedWeek week =
+        new SharedWeek(
+            MONDAY, List.of(new SharedMeal(MONDAY, SlotType.LUNCH, 0, "Stew")), List.of());
+
+    SharedWeekPage page = SharedWeekPage.of(week, messages);
+
+    assertThat(page.days().get(0).slots().get(0).notes()).isEmpty();
+  }
+
+  @Test
+  void thePrintPageKeepsOneNoteBesideEachMealWithAnEmptyTextForNone() {
+    LocaleContextHolder.setLocale(Locale.ENGLISH);
+    List<SharedWeekPage.PrintMeal> meals =
+        List.of(
+            new SharedWeekPage.PrintMeal(MONDAY, SlotType.LUNCH, "Stew", "Less salt"),
+            new SharedWeekPage.PrintMeal(MONDAY, SlotType.LUNCH, "Bread", null),
+            new SharedWeekPage.PrintMeal(MONDAY, SlotType.DINNER, "Soup", "Warm"));
+
+    SharedWeekPage page =
+        SharedWeekPage.forPrint(
+            MONDAY,
+            meals,
+            List.of(new SharedOccasion(MONDAY.plusDays(1), "Party", OccasionType.PARTY)),
+            messages);
+
+    List<SharedDay.Slot> slots = page.days().get(0).slots();
+    assertThat(slots).hasSize(2);
+    assertThat(slots.get(0).meals()).containsExactly("Stew", "Bread");
+    assertThat(slots.get(0).notes()).containsExactly("Less salt", "");
+    assertThat(slots.get(1).notes()).containsExactly("Warm");
+    assertThat(page.occasions()).hasSize(1);
+    assertThat(page.title()).isEqualTo("Week 45");
+  }
 }

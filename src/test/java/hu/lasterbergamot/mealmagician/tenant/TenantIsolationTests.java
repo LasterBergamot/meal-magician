@@ -20,6 +20,8 @@ import hu.lasterbergamot.mealmagician.planning.PlanTemplateService;
 import hu.lasterbergamot.mealmagician.planning.PlanningService;
 import hu.lasterbergamot.mealmagician.planning.SlotType;
 import hu.lasterbergamot.mealmagician.planning.TemplateScope;
+import hu.lasterbergamot.mealmagician.sharing.ShareExpiry;
+import hu.lasterbergamot.mealmagician.sharing.ShareLinkService;
 import hu.lasterbergamot.mealmagician.tenant.TenantWorld.Actor;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -72,6 +74,7 @@ class TenantIsolationTests {
   @Autowired private PlanTemplateService planTemplates;
   @Autowired private OccasionService occasions;
   @Autowired private OccasionTemplateService occasionTemplates;
+  @Autowired private ShareLinkService shareLinks;
   @Autowired private JdbcTemplate jdbc;
 
   static Stream<TenantEndpoint> registered() {
@@ -297,7 +300,7 @@ class TenantIsolationTests {
   }
 
   private static TenantWorld world() {
-    return new TenantWorld(1, 2, 10, 11, 20, 30, 40, 50, 60, 70, 80, 90, 100);
+    return new TenantWorld(1, 2, 10, 11, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110);
   }
 
   /** "METHOD /pattern" of every mapped handler that works on a household. */
@@ -385,6 +388,11 @@ class TenantIsolationTests {
         occasions.addItem(homeOwner, homeId, occasionId, mealId).menu().get(0).id();
     long occasionTemplateId =
         occasionTemplates.saveFromOccasion(homeOwner, homeId, occasionId, "Home party menu").id();
+    long shareLinkId =
+        shareLinks
+            .create(homeOwner, homeId, LocalDate.of(2026, 11, 2), ShareExpiry.DAYS_7)
+            .link()
+            .id();
     currentWorld =
         new TenantWorld(
             homeId,
@@ -399,7 +407,8 @@ class TenantIsolationTests {
             templateId,
             occasionId,
             occasionItemId,
-            occasionTemplateId);
+            occasionTemplateId,
+            shareLinkId);
     return currentWorld;
   }
 }

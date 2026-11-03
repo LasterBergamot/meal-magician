@@ -150,6 +150,12 @@ public final class TenantEndpoints {
               POST, "/feedback/slots/{slotId}", w -> Map.of("slotId", w.homeSlotId())),
           TenantEndpoint.forMembers(
               POST, "/feedback/slots/{slotId}/clear", w -> Map.of("slotId", w.homeSlotId())),
+          // print and share links (#131): every member may print, make and revoke links
+          TenantEndpoint.forMembers(GET, "/plan/print", w -> NONE),
+          TenantEndpoint.forMembers(GET, "/plan/share", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/plan/share", w -> NONE),
+          TenantEndpoint.forMembers(
+              POST, "/plan/share/{linkId}/revoke", w -> Map.of("linkId", w.homeShareLinkId())),
           // meals (catalog): every member may use the library, so none is owner-only
           TenantEndpoint.forMembers(GET, "/meals", w -> NONE),
           TenantEndpoint.forMembers(GET, "/meals/new", w -> NONE),

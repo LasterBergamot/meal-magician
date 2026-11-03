@@ -419,6 +419,47 @@ instead of calling them. All five routes are registered in `TenantEndpoints` and
   and clears a meal and presses "Not now" at phone and desktop size, with screenshots in
   `build/e2e-screenshots/`.
 
+## Print and share links (#131)
+
+Two things on the plan page work on the week that is shown. Their controllers are in
+`sharing/internal`: `PrintController`, and `ShareController` under `/plan/share`. All four routes
+are registered in `TenantEndpoints` and are open to every member (D28, D29).
+
+| Route | What it does |
+|---|---|
+| `GET /plan/print?week=2026-W45` | The print page: seven days of the household's week, with names, meal types, **slot notes** and occasions. A missing or bad `week` is the current week, as on the plan page. |
+| `GET /plan/share?week=` | The content of the share sheet (htmx) or a page of its own (no JavaScript): the create form and the week's links. |
+| `POST /plan/share` (`week`, `expiry`) | Makes a link. `expiry` is `1d`, `7d` or `30d`; anything else is 7 days. The answer is the sheet content with the **full address, shown once**, and `Cache-Control: no-store`. An 11th active link is **422** with the message and the same form. |
+| `POST /plan/share/{linkId}/revoke` (`week`) | Revokes a link; the answer is the refreshed `#share-links` section. Another household's link is 404. |
+
+- **Print page:** `sharing/print.jte` on `layout/bare.jte` (no shell, `data-theme="light"`, no
+  footer) and the same `sharing/_days.jte` as the public page, with `showNotes = true`.
+  `PrintPageFactory` reads through the checked services (`PlanningService`, `MealService`,
+  `OccasionService`), so a non-member gets 404; the public page uses the unchecked reader and
+  never has notes. Only the meal types that hold a meal are listed, and an empty day shows a dash
+  (D30). The Print button (Alpine `printPage`) and the "Back to the plan" link are `print:hidden`.
+  `app.css` has one small `@media print` block: `@page { size: A4 landscape }` and no dotted
+  background.
+- **Where the buttons are:** `plan/_week.jte` has a Print link (`#plan-print-week`) and a Share
+  link (`#plan-share-week`) next to Reuse. They sit **inside `#plan-week`**, so their addresses
+  follow the stepper. Share is a `sheetOpener` for the page-level `share-sheet`, which sits beside
+  the other sheets in `plan/week.jte`.
+- **The one-time link:** the raw token is in exactly one response, the one that creates the link,
+  and only in its body (`sharing/_share_created.jte`): not in a redirect, a flash, the session, a
+  header or a log. The address is built from the request (`ServletUriComponentsBuilder`), so Cloud
+  Run's forwarded scheme and host apply. The Copy button is the Alpine `clipboard` component
+  (`navigator.clipboard`, and a select-the-input fallback); a live region says "Copied". The list
+  after it (`sharing/_share_list.jte`) shows each link's status badge (active, expired, revoked),
+  its expiry, who made it and, for an active one, a Revoke `ui/_confirm`. It never holds a token or
+  a hash.
+- **Swap regions:** `#share-panel` (the whole sheet content, swapped by the create form) and
+  `#share-links` (the list, swapped by Revoke). The revoke confirm sits inside the list, so the
+  response that replaces the list also closes the dialog.
+- **Tests:** `PrintPagesTest`, `SharePagesTest` (MockMvc, both fragment and page), `ShareModelsTest`
+  (row mapping, the address, week codes), the four rows in `TenantEndpoints`, and
+  `ShareLinkE2ETest` (create, copy, open in a fresh signed-out context, revoke, the dead link, and
+  the print page with print media emulated, at phone and desktop size).
+
 ## App shell and navigation (R4, #79)
 
 Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` chooses it when
@@ -532,7 +573,7 @@ browser only; saving it per user in the database is not done yet.
 
 The first pieces of the design system in `src/main/jte/ui/` (plan-ui-redesign.md §5). They use the
 colour and shape utilities of the design tokens (R1).
-- `ui/_icon.jte`: the 30 icons of Appendix B as inline SVG, one `size` and a `filled` flag (only
+- `ui/_icon.jte`: the 32 icons of Appendix B as inline SVG, one `size` and a `filled` flag (only
   the sparkle is filled). The names are the enum `shared.web.IconName`. Icons are decorative
   (`aria-hidden`); the text next to them, or an `sr-only` label, says what they mean.
 - `ui/_button.jte`: `primary`, `secondary`, `ghost` and `danger`, in sizes `sm` (36 px), `md`
@@ -657,7 +698,7 @@ The standalone CLI (no Node) compiles `src/main/css/app.css` into
   SHA-256 are recorded in `VENDORED.md` next to them.
 - `app.js` (ours): registers the Alpine components: `menu` (the avatar menu), `shell` (the sidebar's
   collapsed state and the tab bar's keyboard hiding, R4), `segmented` (arrow keys for the segmented
-  control, R4), `weekKeys` (the week stepper's arrow keys, #97), `sheetOpener` (a control that opens a page-level sheet, #98), `theme` (the cookie and `data-theme`, R6) and `sheet` for the R3 dialogs, which
+  control, R4), `weekKeys` (the week stepper's arrow keys, #97), `clipboard` (the Copy button of a new share link, #131), `sheetOpener` (a control that opens a page-level sheet, #98), `theme` (the cookie and `data-theme`, R6) and `sheet` for the R3 dialogs, which
   keeps focus inside and restores it on close.
   It also adds the CSRF header to htmx
   requests from `<meta name="_csrf">` tags, and redirects to `/` on an htmx 401/403.
