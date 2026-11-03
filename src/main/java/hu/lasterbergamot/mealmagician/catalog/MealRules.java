@@ -1,6 +1,7 @@
 package hu.lasterbergamot.mealmagician.catalog;
 
 import java.net.URI;
+import java.text.Normalizer;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -8,6 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * The input rules for meals, recipe links and tags, in one place so the service, its tests and
@@ -27,6 +29,15 @@ final class MealRules {
 
   /** The longest tag name. */
   static final int TAG_MAX = 50;
+
+  /** The longest ingredient name. */
+  static final int INGREDIENT_MAX = 60;
+
+  /** The most ingredients one meal can have. */
+  static final int INGREDIENTS_PER_MEAL = 30;
+
+  /** The combining accent marks that {@link Normalizer} splits off a letter. */
+  private static final Pattern MARKS = Pattern.compile("\\p{M}+");
 
   private MealRules() {}
 
@@ -156,6 +167,88 @@ final class MealRules {
   }
 
   /**
+   * Cleans a list of ingredient names into the ingredients a meal should carry. Like {@link #tags}
+   * but the identity ignores accents too: "Tojás", "tojas" and " TOJÁS " are one ingredient and the
+   * first spelling is kept.
+   *
+   * @param raw the typed ingredient names, may be {@code null} or contain repeats
+   * @return the names keyed by their folded form (see {@link #ingredientKey}), in the order typed;
+   *     empty for {@code null}
+   * @throws InvalidMealException with {@code INGREDIENT_INVALID} if a name is blank or longer than
+   *     {@link #INGREDIENT_MAX}, or if there are more than {@link #INGREDIENTS_PER_MEAL} different
+   *     ones
+   */
+  static Map<String, String> ingredients(Collection<String> raw) {
+    Map<String, String> byKey = new LinkedHashMap<>();
+    if (raw == null) {
+      return byKey;
+    }
+    for (String item : raw) {
+      String display = ingredientName(item);
+      byKey.putIfAbsent(ingredientKey(display), display);
+    }
+    if (byKey.size() > INGREDIENTS_PER_MEAL) {
+      throw new InvalidMealException(MealProblem.INGREDIENT_INVALID);
+    }
+    return byKey;
+  }
+
+  /**
+   * Cleans one ingredient name for storing and showing it.
+   *
+   * @param raw the typed name, may be {@code null}
+   * @return the name with blanks trimmed and collapsed
+   * @throws InvalidMealException with {@code INGREDIENT_INVALID} if it is empty or too long
+   */
+  static String ingredientName(String raw) {
+    String cleaned = raw == null ? "" : raw.strip().replaceAll("\\s+", " ");
+    if (cleaned.isEmpty() || cleaned.length() > INGREDIENT_MAX) {
+      throw new InvalidMealException(MealProblem.INGREDIENT_INVALID);
+    }
+    return cleaned;
+  }
+
+  /**
+   * The key that identifies an ingredient regardless of spelling: the cleaned name with accents
+   * removed and in lower case, so "Őszibarack" is {@code oszibarack}. Search and the picker use it
+   * too, so typing "tojas" finds "tojás". It does not validate: a name that cannot exist simply
+   * finds nothing.
+   *
+   * @param name an ingredient name or search text, not {@code null}
+   * @return the accent-free, lower-case, cleaned name
+   */
+  static String ingredientKey(String name) {
+    String decomposed =
+        Normalizer.normalize(name.strip().replaceAll("\\s+", " "), Normalizer.Form.NFD);
+    return MARKS.matcher(decomposed).replaceAll("").toLowerCase(Locale.ROOT);
+  }
+
+  /**
+   * Turns a folded key into a SQL {@code LIKE} pattern that matches it anywhere in a key column,
+   * escaped with {@code !} like {@link #namePattern}.
+   *
+   * @param key a key from {@link #ingredientKey}
+   * @return {@code %key%}
+   */
+  static String keyPattern(String key) {
+    return "%" + escapeLike(key) + "%";
+  }
+
+  /**
+   * Like {@link #keyPattern}, but matching only at the start of a key column.
+   *
+   * @param key a key from {@link #ingredientKey}
+   * @return {@code key%}
+   */
+  static String keyPrefixPattern(String key) {
+    return escapeLike(key) + "%";
+  }
+
+  private static String escapeLike(String text) {
+    return text.replace("!", "!!").replace("%", "!%").replace("_", "!_");
+  }
+
+  /**
    * Turns the library search text into a SQL {@code LIKE} pattern. The text is escaped with {@code
    * !} (the escape character the query declares), so {@code %} and {@code _} in what the person
    * typed match only themselves.
@@ -168,13 +261,7 @@ final class MealRules {
     if (text == null || text.isBlank()) {
       return null;
     }
-    String escaped =
-        text.strip()
-            .toLowerCase(Locale.ROOT)
-            .replace("!", "!!")
-            .replace("%", "!%")
-            .replace("_", "!_");
-    return "%" + escaped + "%";
+    return keyPattern(text.strip().toLowerCase(Locale.ROOT));
   }
 
   private static boolean isWebAddress(String text) {

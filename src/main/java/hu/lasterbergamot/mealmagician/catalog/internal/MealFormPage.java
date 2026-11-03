@@ -38,6 +38,9 @@ public record MealFormPage(MealForm form, Map<String, String> errors, boolean co
       case NOTES_TOO_LONG -> with(form, "notes", "meal.error.notes.long");
       case RECIPE_URL_INVALID -> with(form, "recipeUrl", "meal.error.url.invalid");
       case TAG_INVALID -> with(form, "tags", "meal.error.tags.invalid");
+      // The message text is added with the ingredient picker (#156); the form cannot send
+      // ingredients before that, so this refusal is not reachable from the page yet.
+      case INGREDIENT_INVALID -> with(form, "ingredients", "meal.error.ingredients.invalid");
     };
   }
 

@@ -17,5 +17,10 @@ public enum MealProblem {
    */
   RECIPE_URL_INVALID,
   /** A tag name is empty or longer than 50 characters. */
-  TAG_INVALID
+  TAG_INVALID,
+  /**
+   * An ingredient name is empty or longer than 60 characters, or the meal has more than 30
+   * ingredients.
+   */
+  INGREDIENT_INVALID
 }

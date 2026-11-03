@@ -85,6 +85,54 @@ class PostgresMealTests extends AbstractPostgresIntegrationTest {
   }
 
   @Test
+  void theForeignKeysRefuseACrossHouseholdIngredientLinkOnPostgres() {
+    long anna = HouseholdTestSupport.insertUser(jdbc, "pg-ing-fk-anna");
+    long bela = HouseholdTestSupport.insertUser(jdbc, "pg-ing-fk-bela");
+    long annasHome = households.create(anna, "Ing fk anna").id();
+    long belasHome = households.create(bela, "Ing fk bela").id();
+    long annasStew = meals.quickAdd(anna, annasHome, "Stew").id();
+    meals.create(bela, belasHome, new MealDetails("Pie", null, null, null, null, List.of("alma")));
+    long belasIngredient =
+        jdbc.queryForObject(
+            "select id from ingredient where household_id = ? and name_key = 'alma'",
+            Long.class,
+            belasHome);
+
+    assertThatThrownBy(() ->
+            jdbc.update(
+                "insert into meal_ingredient (meal_id, ingredient_id, household_id) values (?, ?, ?)",
+                annasStew,
+                belasIngredient,
+                annasHome))
+        .isInstanceOf(DataIntegrityViolationException.class);
+  }
+
+  @Test
+  void ingredientsAreSavedSearchedAndSuggestedOnPostgres() {
+    long anna = HouseholdTestSupport.insertUser(jdbc, "pg-ing-anna");
+    long home = households.create(anna, "Ing anna").id();
+    meals.create(
+        anna, home, new MealDetails("Omelette", null, null, null, null, List.of("Tojás", "tojas")));
+    meals.quickAdd(anna, home, "Toast");
+
+    assertThat(
+            meals
+                .find(
+                    anna,
+                    home,
+                    meals.search(anna, home, new MealSearch("omel", null, false)).get(0).id())
+                .ingredients())
+        .containsExactly("Tojás");
+    assertThat(names(meals.search(anna, home, new MealSearch(null, null, "TOJAS", false))))
+        .containsExactly("Omelette");
+    assertThat(meals.ingredientSuggestions(anna, home, "tojas", 5))
+        .containsExactly(new IngredientSuggestion("Tojás", true));
+    assertThat(meals.ingredientSuggestions(anna, home, "lisz", 5))
+        .contains(new IngredientSuggestion("liszt", false));
+    assertThat(meals.ingredientSuggestions(anna, home, "", 5)).hasSize(5);
+  }
+
+  @Test
   void occasionTypesAreStoredOnPostgres() {
     long anna = HouseholdTestSupport.insertUser(jdbc, "pg-occ-anna");
     long annasHome = households.create(anna, "Occ anna").id();

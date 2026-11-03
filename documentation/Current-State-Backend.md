@@ -87,7 +87,8 @@ come.
     other household).
 - **Meal library (#66), module `catalog`:** `MealService` is the public entry point: `create`,
   `quickAdd` (name only, for a phone), `edit`, `archive` and `restore`, `find`, `search` (part of
-  the name and/or a tag, ignoring case, archived meals left out unless asked for) and `tagNames`.
+  the name, a tag and/or an ingredient, ignoring case, archived meals left out unless asked for),
+  `tagNames` and `ingredientSuggestions`.
   Every method takes the asking person's id and the household id, and first checks membership
   through `HouseholdService.require`, so a stranger gets 404. A meal of another household is 404 as
   well, because every meal lookup is scoped by household. Every member may use the library, so
@@ -139,8 +140,33 @@ come.
   - **Events:** each create, edit, archive and restore publishes `MealChanged(householdId,
     mealId)` in the same transaction. Reads publish nothing. Nothing listens yet; the assistant
     (Phase 7) will re-index on it.
-  - **Known gaps:** two people creating the same new tag name at the same moment can make one of
-    their saves fail with a database constraint error (a rare race, not yet retried).
+  - **Ingredients (V12, #155, D31):** a meal has a list of ingredient names, no amounts.
+    `ingredient` is per household like `tag`, but its `name_key` also drops accents (and lower-cases),
+    so "Tojás", "tojas" and " TOJÁS " are one row and the first spelling typed is the one shown.
+    `meal_ingredient` links them, with `household_id` and the same two composite foreign keys as
+    `meal_tag`. `MealDetails` and `MealView` carry `ingredients` (a name is 1 to 60 characters and
+    a meal has at most 30; otherwise `InvalidMealException` with `INGREDIENT_INVALID`); on an edit
+    the list is the complete set, and a dropped ingredient only loses its link, it stays in the
+    household's list. `MealSearch` has an `ingredient` filter (case and accents ignored). The
+    four-argument `MealDetails` and three-argument `MealSearch` constructors still mean "no
+    ingredients" and "no ingredient filter".
+  - **Ingredient suggestions:** `MealService.ingredientSuggestions(userId, householdId, query,
+    limit)` feeds the picker (#156). It returns the household's own ingredients that match first
+    (names starting with the text, then the more used, then alphabetical), then entries of the
+    starter list that the household does not have yet, at most `limit` (1 to 50). The text is
+    folded with the same key, so "tojas" finds "tojás". `IngredientSuggestion(name, known)` says
+    which kind each line is. The starter list is the table `ingredient_seed` (about 160 common
+    Hungarian ingredient names loaded by V12): global, read-only reference data and the only table
+    without a `household_id`. A test recomputes every seed key with `MealRules.ingredientKey`.
+  - **Race-safe creation:** `NameWriter` finds or creates a tag or ingredient. The old way (look up,
+    then save) failed when two people created the same new name at once: the second insert broke the
+    unique key, and on Postgres that aborts the whole transaction, so the person got a server error.
+    `NameWriter` inserts with `ON CONFLICT DO NOTHING` and looks the row up afterwards, so the
+    loser waits for the winner and then simply finds its row. It stays in the caller's
+    transaction, so a refused meal leaves no stray tag or ingredient. `PostgresNameRaceTests` forces the
+    overlap and fails without the fix.
+  - **Known gaps:** none at the moment. Until the picker (#156) the meal form sends no ingredients,
+    so saving a meal through the form clears its ingredients.
 - **Weekly plan (#80), module `planning`:** `PlanningService` is the public entry point. `week`
   returns the ISO week (Monday to Sunday) that holds any given date, with its slots ordered by date,
   slot type (breakfast, lunch, dinner, snack) and place. `add` puts a library meal on a date and slot
@@ -329,8 +355,9 @@ come.
     see the weekly plan below), `V8__meal_occasion_type.sql` (`meal_occasion_type`, see the meal
     library below) and `V9__reuse_and_occasions.sql` (plan templates, occasions and occasion
     templates with their items, see the copy, occasion and template bullets above),
-    `V10__rating.sql` (`rating`, see the ratings bullet above) and `V11__share_link.sql`
-    (`share_link`, see the share links bullet above).
+    `V10__rating.sql` (`rating`, see the ratings bullet above), `V11__share_link.sql`
+    (`share_link`, see the share links bullet above) and `V12__ingredient.sql` (`ingredient`,
+    `meal_ingredient` and the starter list `ingredient_seed`, see the meal library above).
   - **Profiles:** `dev` points at in-memory H2 in PostgreSQL mode; `postgres` points at the
     compose Postgres (override with `SPRING_DATASOURCE_URL`/`_USERNAME`/`_PASSWORD`) and adds the
     `postgresql/` folder. Use them together as `dev,postgres`. With no profile there is no

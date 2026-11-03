@@ -188,4 +188,94 @@ class MealRulesTest {
   void noOccasionTypesMeansAnEmptySet() {
     assertThat(MealRules.occasionTypes(null)).isEmpty();
   }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"Tojás", "tojas", " TOJÁS ", "TOJAS"})
+  void spellingsOfOneIngredientShareAKey(String typed) {
+    assertThat(MealRules.ingredientKey(typed)).isEqualTo("tojas");
+  }
+
+  @Test
+  void theIngredientKeyFoldsHungarianLettersAndSpacing() {
+    assertThat(MealRules.ingredientKey("Őszibarack")).isEqualTo("oszibarack");
+    assertThat(MealRules.ingredientKey("  Fejes   KÁPOSZTA ")).isEqualTo("fejes kaposzta");
+    assertThat(MealRules.ingredientKey("űÜöÖ")).isEqualTo("uuoo");
+  }
+
+  @Test
+  void aNullIngredientListMeansNoIngredients() {
+    assertThat(MealRules.ingredients(null)).isEmpty();
+  }
+
+  @Test
+  void ingredientsAreCleanedAndRepeatsIgnoringCaseAndAccentsAreOne() {
+    var ingredients =
+        MealRules.ingredients(List.of("  Tojás ", "tojas", "  vörös   lencse", "liszt"));
+
+    assertThat(ingredients)
+        .containsExactly(
+            java.util.Map.entry("tojas", "Tojás"),
+            java.util.Map.entry("voros lencse", "vörös lencse"),
+            java.util.Map.entry("liszt", "liszt"));
+  }
+
+  @Test
+  void anIngredientNameOfExactlyTheMaximumLengthIsAccepted() {
+    String longest = "x".repeat(MealRules.INGREDIENT_MAX);
+
+    assertThat(MealRules.ingredientName(longest)).isEqualTo(longest);
+  }
+
+  @Test
+  void anIngredientNameOneCharacterTooLongIsRefused() {
+    assertIngredientInvalid(
+        () -> MealRules.ingredientName("x".repeat(MealRules.INGREDIENT_MAX + 1)));
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"   ", "\t"})
+  void aBlankIngredientNameIsRefused(String name) {
+    assertIngredientInvalid(() -> MealRules.ingredientName(name));
+  }
+
+  @Test
+  void aListWithABlankIngredientIsRefused() {
+    assertIngredientInvalid(() -> MealRules.ingredients(Arrays.asList("liszt", null)));
+  }
+
+  @Test
+  void thirtyIngredientsAreAcceptedAndThirtyOneAreRefused() {
+    List<String> thirty =
+        java.util.stream.IntStream.rangeClosed(1, 30).mapToObj(i -> "i" + i).toList();
+    List<String> thirtyOne =
+        java.util.stream.IntStream.rangeClosed(1, 31).mapToObj(i -> "i" + i).toList();
+
+    assertThat(MealRules.ingredients(thirty)).hasSize(30);
+    assertIngredientInvalid(() -> MealRules.ingredients(thirtyOne));
+  }
+
+  @Test
+  void repeatsDoNotCountTowardsTheMostIngredientsPerMeal() {
+    List<String> repeated = new java.util.ArrayList<>();
+    for (int i = 0; i < 40; i++) {
+      repeated.add(i % 2 == 0 ? "Tojás" : "tojas");
+    }
+
+    assertThat(MealRules.ingredients(repeated)).hasSize(1);
+  }
+
+  @Test
+  void keyPatternsEscapeWildcardsAndAnchorTheEnd() {
+    assertThat(MealRules.keyPattern("50%_!")).isEqualTo("%50!%!_!!%");
+    assertThat(MealRules.keyPrefixPattern("tojas")).isEqualTo("tojas%");
+  }
+
+  private static void assertIngredientInvalid(
+      org.assertj.core.api.ThrowableAssert.ThrowingCallable call) {
+    assertThatThrownBy(call)
+        .isInstanceOf(InvalidMealException.class)
+        .extracting(e -> ((InvalidMealException) e).problem())
+        .isEqualTo(MealProblem.INGREDIENT_INVALID);
+  }
 }

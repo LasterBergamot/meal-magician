@@ -1,12 +1,20 @@
 package hu.lasterbergamot.mealmagician.catalog;
 
+import hu.lasterbergamot.mealmagician.catalog.internal.Ingredient;
+import hu.lasterbergamot.mealmagician.catalog.internal.IngredientRepository;
+import hu.lasterbergamot.mealmagician.catalog.internal.IngredientSeed;
+import hu.lasterbergamot.mealmagician.catalog.internal.IngredientSeedRepository;
 import hu.lasterbergamot.mealmagician.catalog.internal.Meal;
+import hu.lasterbergamot.mealmagician.catalog.internal.MealIngredient;
+import hu.lasterbergamot.mealmagician.catalog.internal.MealIngredientName;
+import hu.lasterbergamot.mealmagician.catalog.internal.MealIngredientRepository;
 import hu.lasterbergamot.mealmagician.catalog.internal.MealOccasionType;
 import hu.lasterbergamot.mealmagician.catalog.internal.MealOccasionTypeRepository;
 import hu.lasterbergamot.mealmagician.catalog.internal.MealRepository;
 import hu.lasterbergamot.mealmagician.catalog.internal.MealTag;
 import hu.lasterbergamot.mealmagician.catalog.internal.MealTagName;
 import hu.lasterbergamot.mealmagician.catalog.internal.MealTagRepository;
+import hu.lasterbergamot.mealmagician.catalog.internal.NameWriter;
 import hu.lasterbergamot.mealmagician.catalog.internal.Tag;
 import hu.lasterbergamot.mealmagician.catalog.internal.TagRepository;
 import hu.lasterbergamot.mealmagician.household.HouseholdService;
@@ -14,21 +22,23 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The meal library's public entry point: creating, quick-adding, editing, archiving and restoring
- * meals, and searching them by name and tag. The catalog module's controllers and the planner call
- * only this class.
+ * meals, searching them by name, tag and ingredient, and suggesting ingredients. The catalog
+ * module's controllers and the planner call only this class.
  *
  * <p>Every method takes the asking person's id and the household id, and first checks that the
  * person belongs to the household through {@link HouseholdService#require}. A stranger therefore
@@ -43,9 +53,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class MealService {
 
+  /** The most ingredient suggestions one call returns. */
+  private static final int SUGGESTIONS_MAX = 50;
+
   private final MealRepository meals;
   private final TagRepository tags;
   private final MealTagRepository mealTags;
+  private final IngredientRepository ingredients;
+  private final MealIngredientRepository mealIngredients;
+  private final IngredientSeedRepository ingredientSeeds;
+  private final NameWriter names;
   private final MealOccasionTypeRepository occasionTypes;
   private final HouseholdService households;
   private final ApplicationEventPublisher events;
@@ -57,6 +74,10 @@ public class MealService {
    * @param meals persistence for meals
    * @param tags persistence for tags
    * @param mealTags persistence for the meal-tag links
+   * @param ingredients persistence for ingredients
+   * @param mealIngredients persistence for the meal-ingredient links
+   * @param ingredientSeeds read access to the starter ingredient list
+   * @param names the race-safe find-or-create for tags and ingredients
    * @param occasionTypes persistence for the occasion types a meal suits
    * @param households the household service, which does the membership check
    * @param events publishes {@link MealChanged}
@@ -66,6 +87,10 @@ public class MealService {
       MealRepository meals,
       TagRepository tags,
       MealTagRepository mealTags,
+      IngredientRepository ingredients,
+      MealIngredientRepository mealIngredients,
+      IngredientSeedRepository ingredientSeeds,
+      NameWriter names,
       MealOccasionTypeRepository occasionTypes,
       HouseholdService households,
       ApplicationEventPublisher events,
@@ -73,6 +98,10 @@ public class MealService {
     this.meals = meals;
     this.tags = tags;
     this.mealTags = mealTags;
+    this.ingredients = ingredients;
+    this.mealIngredients = mealIngredients;
+    this.ingredientSeeds = ingredientSeeds;
+    this.names = names;
     this.occasionTypes = occasionTypes;
     this.households = households;
     this.events = events;
@@ -84,8 +113,8 @@ public class MealService {
    *
    * @param userId the {@code app_user} id of the person adding it
    * @param householdId the household the meal joins
-   * @param details the name, notes, recipe link and tags; {@code details} itself must not be {@code
-   *     null}, but its fields may be
+   * @param details the name, notes, recipe link, tags and ingredients; {@code details} itself must
+   *     not be {@code null}, but its fields may be
    * @return the new meal as the library shows it
    * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
    *     not a member of the household
@@ -98,10 +127,11 @@ public class MealService {
         meals.save(
             new Meal(
                 householdId, clean.name(), clean.notes(), clean.recipeUrl(), Instant.now(clock)));
-    List<String> names = attachTags(householdId, meal, clean.tags());
+    List<String> tagNames = attachTags(householdId, meal, clean.tags());
+    List<String> ingredientNames = attachIngredients(householdId, meal, clean.ingredients());
     List<OccasionType> types = attachOccasionTypes(householdId, meal, clean.occasionTypes());
     publish(meal);
-    return view(meal, names, types);
+    return view(meal, tagNames, types, ingredientNames);
   }
 
   /**
@@ -121,9 +151,10 @@ public class MealService {
   }
 
   /**
-   * Replaces a meal's details, its tag set and its occasion types. The tags are the new complete
-   * set: a tag not in the list is removed from the meal, and a new one is created for the household
-   * if it does not exist. The occasion types work the same way.
+   * Replaces a meal's details, its tag set, its ingredients and its occasion types. The tags are
+   * the new complete set: a tag not in the list is removed from the meal, and a new one is created
+   * for the household if it does not exist. The ingredients and the occasion types work the same
+   * way (a removed ingredient stays in the household's list, only its link to the meal goes).
    *
    * <p>A concurrent edit of the same meal fails with JPA's optimistic-lock exception when the
    * change is written, because the meal's {@code version} has moved on. The page turns that into a
@@ -133,7 +164,7 @@ public class MealService {
    * @param userId the {@code app_user} id of the person editing
    * @param householdId the household the meal belongs to
    * @param mealId the meal to edit
-   * @param details the new name, notes, recipe link, tags and occasion types
+   * @param details the new name, notes, recipe link, tags, occasion types and ingredients
    * @return the meal after the change
    * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
    *     not a member of the household
@@ -155,7 +186,7 @@ public class MealService {
    * @param userId the {@code app_user} id of the person editing
    * @param householdId the household the meal belongs to
    * @param mealId the meal to edit
-   * @param details the new name, notes, recipe link, tags and occasion types
+   * @param details the new name, notes, recipe link, tags, occasion types and ingredients
    * @param expectedVersion the {@link MealView#version()} the form was built from
    * @return the meal after the change
    * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
@@ -183,11 +214,12 @@ public class MealService {
     }
     Normalized clean = normalize(details);
     meal.change(clean.name(), clean.notes(), clean.recipeUrl());
-    List<String> names = attachTags(householdId, meal, clean.tags());
+    List<String> tagNames = attachTags(householdId, meal, clean.tags());
+    List<String> ingredientNames = attachIngredients(householdId, meal, clean.ingredients());
     List<OccasionType> types = attachOccasionTypes(householdId, meal, clean.occasionTypes());
     meals.saveAndFlush(meal);
     publish(meal);
-    return view(meal, names, types);
+    return view(meal, tagNames, types, ingredientNames);
   }
 
   /**
@@ -237,18 +269,19 @@ public class MealService {
   public MealView find(long userId, long householdId, long mealId) {
     households.require(householdId, userId);
     Meal meal = findOwned(householdId, mealId);
-    return view(meal, mealTags.findTagNames(householdId, mealId), occasionTypesOf(meal));
+    return viewOf(meal);
   }
 
   /**
-   * Searches the library by name and tag, in name order. Archived meals are left out unless the
-   * search asks for them.
+   * Searches the library by name, tag and ingredient, in name order. Archived meals are left out
+   * unless the search asks for them.
    *
    * @param userId the {@code app_user} id of the person searching
    * @param householdId the household to search
-   * @param search the name text, tag and archive flag; {@code search} itself must not be {@code
-   *     null}
-   * @return the matching meals; empty if nothing matches, or if the tag does not exist
+   * @param search the name text, tag, ingredient and archive flag; {@code search} itself must not
+   *     be {@code null}
+   * @return the matching meals; empty if nothing matches, or if the tag or ingredient does not
+   *     exist in the household
    * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
    *     not a member of the household
    */
@@ -258,22 +291,83 @@ public class MealService {
     String pattern = MealRules.namePattern(search.text());
     Long tagId = null;
     if (search.tag() != null && !search.tag().isBlank()) {
-      Optional<Tag> tag =
-          tags.findByHouseholdIdAndNameKey(householdId, MealRules.tagKey(search.tag()));
+      var tag = tags.findByHouseholdIdAndNameKey(householdId, MealRules.tagKey(search.tag()));
       if (tag.isEmpty()) {
         return List.of();
       }
       tagId = tag.get().getId();
     }
+    Long ingredientId = null;
+    if (search.ingredient() != null && !search.ingredient().isBlank()) {
+      var ingredient =
+          ingredients.findByHouseholdIdAndNameKey(
+              householdId, MealRules.ingredientKey(search.ingredient()));
+      if (ingredient.isEmpty()) {
+        return List.of();
+      }
+      ingredientId = ingredient.get().getId();
+    }
     Map<Long, List<String>> namesByMeal = tagNamesByMeal(householdId);
+    Map<Long, List<String>> ingredientsByMeal = ingredientNamesByMeal(householdId);
     Map<Long, List<OccasionType>> typesByMeal = occasionTypesByMeal(householdId);
-    return meals.search(householdId, pattern, tagId, search.includeArchived()).stream()
+    return meals
+        .search(householdId, pattern, tagId, ingredientId, search.includeArchived())
+        .stream()
         .map(meal ->
             view(
                 meal,
                 namesByMeal.getOrDefault(meal.getId(), List.of()),
-                typesByMeal.getOrDefault(meal.getId(), List.of())))
+                typesByMeal.getOrDefault(meal.getId(), List.of()),
+                ingredientsByMeal.getOrDefault(meal.getId(), List.of())))
         .toList();
+  }
+
+  /**
+   * Suggestions for the ingredient picker: the household's own ingredients that match what was
+   * typed, then entries of the starter list the household does not have yet. Matching ignores case
+   * and accents, so "tojas" finds "tojás", and also finds a name that merely contains the text.
+   * Names that start with the text come first. With nothing typed, the household's most used
+   * ingredients come first and the starter list fills the rest.
+   *
+   * <p>Only the household's own ingredients are ever returned as {@code known}; another household's
+   * list is never read. The starter list is global reference data.
+   *
+   * @param userId the {@code app_user} id of the person asking
+   * @param householdId the household
+   * @param query the text typed so far; {@code null} or blank means nothing typed
+   * @param limit the most suggestions to return; values below 1 count as 1 and above 50 as 50
+   * @return at most {@code limit} suggestions, the household's first; each ingredient appears once
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member of the household
+   */
+  @Transactional(readOnly = true)
+  public List<IngredientSuggestion> ingredientSuggestions(
+      long userId, long householdId, String query, int limit) {
+    households.require(householdId, userId);
+    int max = Math.max(1, Math.min(limit, SUGGESTIONS_MAX));
+    String key = query == null ? "" : MealRules.ingredientKey(query);
+    String pattern = MealRules.keyPattern(key);
+    String prefix = MealRules.keyPrefixPattern(key);
+    List<Ingredient> own =
+        ingredients.suggest(householdId, pattern, prefix, PageRequest.of(0, max));
+    List<IngredientSuggestion> result = new ArrayList<>();
+    Set<String> ownKeys = new HashSet<>();
+    for (Ingredient ingredient : own) {
+      ownKeys.add(ingredient.getNameKey());
+      result.add(new IngredientSuggestion(ingredient.getName(), true));
+    }
+    int room = max - result.size();
+    if (room > 0) {
+      // Fewer than max own matches means the list above is complete, so skipping its keys hides
+      // every seed entry the household already has. Ask for extra rows to survive that skipping.
+      List<IngredientSeed> seeds =
+          ingredientSeeds.search(pattern, prefix, PageRequest.of(0, room + ownKeys.size()));
+      seeds.stream()
+          .filter(seed -> !ownKeys.contains(seed.getNameKey()))
+          .limit(room)
+          .forEach(seed -> result.add(new IngredientSuggestion(seed.getName(), false)));
+    }
+    return result;
   }
 
   /**
@@ -302,7 +396,7 @@ public class MealService {
     }
     meals.saveAndFlush(meal);
     publish(meal);
-    return view(meal, mealTags.findTagNames(householdId, mealId), occasionTypesOf(meal));
+    return viewOf(meal);
   }
 
   /** The tenant-scoped lookup every change and read goes through. */
@@ -322,7 +416,8 @@ public class MealService {
         MealRules.notes(details.notes()),
         MealRules.recipeUrl(details.recipeUrl()),
         MealRules.tags(details.tags()),
-        MealRules.occasionTypes(details.occasionTypes()));
+        MealRules.occasionTypes(details.occasionTypes()),
+        MealRules.ingredients(details.ingredients()));
   }
 
   /**
@@ -335,10 +430,7 @@ public class MealService {
   private List<String> attachTags(long householdId, Meal meal, Map<String, String> wanted) {
     List<Tag> wantedTags = new ArrayList<>();
     for (Map.Entry<String, String> entry : wanted.entrySet()) {
-      Tag tag =
-          tags.findByHouseholdIdAndNameKey(householdId, entry.getKey())
-              .orElseGet(() -> tags.save(new Tag(householdId, entry.getValue(), entry.getKey())));
-      wantedTags.add(tag);
+      wantedTags.add(names.tag(householdId, entry.getKey(), entry.getValue()));
     }
     Set<Long> wantedIds = wantedTags.stream().map(Tag::getId).collect(Collectors.toSet());
     List<MealTag> current = mealTags.findLinks(householdId, meal.getId());
@@ -352,6 +444,39 @@ public class MealService {
             .map(tag -> new MealTag(householdId, meal.getId(), tag.getId()))
             .toList());
     return wantedTags.stream().map(Tag::getName).sorted(String.CASE_INSENSITIVE_ORDER).toList();
+  }
+
+  /**
+   * Makes the meal carry exactly the wanted ingredients, the same way as {@link #attachTags}:
+   * ingredients are created for the household when they do not exist yet (race-safe, through the
+   * {@link NameWriter}) and only the links that were added or dropped are written. A dropped
+   * ingredient stays in the household's list.
+   *
+   * @return the ingredient names now on the meal, ordered by their folded key
+   */
+  private List<String> attachIngredients(long householdId, Meal meal, Map<String, String> wanted) {
+    List<Ingredient> wantedIngredients = new ArrayList<>();
+    for (Map.Entry<String, String> entry : wanted.entrySet()) {
+      wantedIngredients.add(names.ingredient(householdId, entry.getKey(), entry.getValue()));
+    }
+    Set<Long> wantedIds =
+        wantedIngredients.stream().map(Ingredient::getId).collect(Collectors.toSet());
+    List<MealIngredient> current = mealIngredients.findLinks(householdId, meal.getId());
+    Set<Long> currentIds =
+        current.stream().map(link -> link.getId().getIngredientId()).collect(Collectors.toSet());
+    mealIngredients.deleteAll(
+        current.stream()
+            .filter(link -> !wantedIds.contains(link.getId().getIngredientId()))
+            .toList());
+    mealIngredients.saveAll(
+        wantedIngredients.stream()
+            .filter(ingredient -> !currentIds.contains(ingredient.getId()))
+            .map(ingredient -> new MealIngredient(householdId, meal.getId(), ingredient.getId()))
+            .toList());
+    return wantedIngredients.stream()
+        .sorted(Comparator.comparing(Ingredient::getNameKey))
+        .map(Ingredient::getName)
+        .toList();
   }
 
   /**
@@ -404,11 +529,33 @@ public class MealService {
     return byMeal;
   }
 
+  /** Every meal's ingredient names in the household, grouped by meal, for the search results. */
+  private Map<Long, List<String>> ingredientNamesByMeal(long householdId) {
+    Map<Long, List<String>> byMeal = new HashMap<>();
+    for (MealIngredientName row : mealIngredients.findIngredientNamesOfHousehold(householdId)) {
+      byMeal.computeIfAbsent(row.mealId(), id -> new ArrayList<>()).add(row.name());
+    }
+    return byMeal;
+  }
+
   private void publish(Meal meal) {
     events.publishEvent(new MealChanged(meal.getHouseholdId(), meal.getId()));
   }
 
-  private static MealView view(Meal meal, List<String> tagNames, List<OccasionType> occasionTypes) {
+  /** The view of a stored meal, reading its tags, occasion types and ingredients. */
+  private MealView viewOf(Meal meal) {
+    return view(
+        meal,
+        mealTags.findTagNames(meal.getHouseholdId(), meal.getId()),
+        occasionTypesOf(meal),
+        mealIngredients.findIngredientNames(meal.getHouseholdId(), meal.getId()));
+  }
+
+  private static MealView view(
+      Meal meal,
+      List<String> tagNames,
+      List<OccasionType> occasionTypes,
+      List<String> ingredientNames) {
     return new MealView(
         meal.getId(),
         meal.getName(),
@@ -417,7 +564,8 @@ public class MealService {
         tagNames,
         occasionTypes,
         meal.isArchived(),
-        meal.getVersion());
+        meal.getVersion(),
+        ingredientNames);
   }
 
   /** The cleaned input of one create or edit. */
@@ -426,5 +574,6 @@ public class MealService {
       String notes,
       String recipeUrl,
       Map<String, String> tags,
-      Set<OccasionType> occasionTypes) {}
+      Set<OccasionType> occasionTypes,
+      Map<String, String> ingredients) {}
 }
