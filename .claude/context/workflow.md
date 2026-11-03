@@ -159,6 +159,11 @@ passes silently.
 
 ## Scheduled workflows
 
-`db-backup.yml` (Phase 6): scheduled `pg_dump` → `age`-encrypted artifact. Nothing periodic runs
-inside the app, so Cloud Run and Neon can scale to zero. GitHub disables scheduled workflows after
-60 days without repo activity; check the Actions tab after a long break.
+`db-backup.yml` (Phase 6, #62): a nightly `pg_dump` (02:17 UTC) that is test-restored in the job,
+`age`-encrypted and uploaded as an object to a Cloud Storage bucket (`daily/`, `monthly/` on the 1st,
+`release/`). `release.yml` calls it as the `backup` job (`kind: release`) that the `release` job
+`needs`, so a failed backup stops a release before the deploy. Nothing periodic runs inside the app,
+so Cloud Run and Neon can scale to zero. GitHub disables scheduled workflows after 60 days without
+repo activity, and a disabled schedule cannot report itself: the Cloud Monitoring alert on the
+bucket (no new object for two days, #154) is what notices. A failed run opens or comments on the
+issue `Backup failed`; the next green run closes it. Details: [[Current State: Everything Else]].

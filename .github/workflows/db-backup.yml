@@ -1,0 +1,280 @@
+# The database backup (PLAN.md §3 stage 6a, #62): dump -> test-restore -> encrypt -> upload.
+#
+# Runs every night, by hand ("Run workflow"), and is called by release.yml before each deploy
+# (`kind: release`), because the Flyway migration that runs when the new revision starts is the most
+# likely way to lose data. Nothing periodic runs inside the app (D11); this is the periodic part.
+#
+#   1. pg_dump (custom format, PostgreSQL 17 client from a digest-pinned image) as the read-only
+#      Neon role `mm_backup`; session rows are not dumped. The dump runs in an exported snapshot and
+#      the Flyway version and row counts are read in that same snapshot.
+#   2. The dump is restored into a throw-away pgvector Postgres and compared with those recorded
+#      values. A dump that does not restore fails the run.
+#   3. Encrypted with `age` to the public key in the variable BACKUP_AGE_RECIPIENT. The private key
+#      is the owner's and never reaches CI.
+#   4. Uploaded to the Cloud Storage bucket by a service account that can only create objects, so a
+#      broken or hijacked workflow cannot read, overwrite or delete earlier backups.
+#   A failed run opens (or comments on) one issue titled "Backup failed"; the next green run closes it.
+#
+# THE REPOSITORY IS PUBLIC, so every log line is public. Nothing from the dump, no host name and no
+# password is printed: the password is masked and handed over through the environment only, and the
+# scripts print counts of bytes and table names, never rows. Dynamic values reach `run:` only through
+# `env:` (container.md).
+#
+# Setup it needs (done once by the owner, #154, runbook: documentation/Backup-and-Restore.md): the
+# variables BACKUP_BUCKET and BACKUP_AGE_RECIPIENT next to the ones release.yml uses (DB_URL is read
+# for the host and database name: it must be the direct endpoint, no `-pooler`), the service account
+# `mm-backup-writer` with the Workload Identity Federation binding (pool `github`, provider
+# `github-repo`), its `objectCreator` role on the bucket, `secretAccessor` on the secret
+# `backup-db-password` only, and the Neon role `mm_backup`.
+name: Database backup
+
+on:
+  schedule:
+    # 02:17 UTC, off the hour on purpose (the top of the hour is when GitHub's queue is longest).
+    # GitHub switches scheduled workflows off after 60 days without repository activity; the
+    # Cloud Monitoring alert from #154 (no new object for two days) is what notices that.
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: "daily (default) or release (kept 14 days instead of 7)"
+        required: false
+        type: choice
+        options: [daily, release]
+        default: daily
+  workflow_call:
+    inputs:
+      kind:
+        description: "daily or release; release.yml passes release"
+        required: false
+        type: string
+        default: daily
+
+# Two backups never run at once (a manual run during the nightly one waits). A caller's
+# `permissions:` can only be narrowed here, never widened: release.yml's `backup` job grants these.
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  backup:
+    name: Dump, test-restore, encrypt, upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # postgres:17 pinned by digest (looked up with `docker buildx imagetools inspect postgres:17`
+      # on 2026-11-03). It supplies pg_dump, pg_restore and psql in version 17, the server's major
+      # version, so the runner's own (older) client is not used. Bump it like the images in
+      # compose.yml: pull the new tag and copy the digest.
+      POSTGRES_CLIENT_IMAGE: postgres:17@sha256:3b0cda93be7c8dba2ed484d19393d93845dc3dafb88973e248ba8e6d99d784e1
+    # The throw-away database the dump is test-restored into: the same image as compose.yml
+    # (pgvector, because the schema creates the `vector` extension). The login is public on purpose:
+    # the container lives for this job on a runner that is destroyed afterwards and holds no data
+    # until the test restore.
+    services:
+      restore:
+        image: pgvector/pgvector:pg17@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d
+        env:
+          POSTGRES_DB: restore
+          POSTGRES_USER: restore
+          POSTGRES_PASSWORD: restore
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U restore -d restore"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install age
+        run: |
+          set -euo pipefail
+          bash scripts/install-age.sh
+          echo "$HOME/.local/bin" >>"$GITHUB_PATH"
+
+      - name: Sign in to Google Cloud (Workload Identity Federation, no key)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: projects/${{ vars.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github/providers/github-repo
+          service_account: mm-backup-writer@${{ vars.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      # Decides where this backup goes and what it is called, and works out the connection
+      # details from the DB_URL the app already uses (jdbc:postgresql://<host>[:port]/<db>?...).
+      # The host is masked so it cannot show up in a log by accident. `inputs.kind` is empty on the
+      # schedule, which means daily.
+      - name: Plan the backup
+        env:
+          KIND: ${{ inputs.kind }}
+          DB_URL: ${{ vars.DB_URL }}
+          BUCKET: ${{ vars.BACKUP_BUCKET }}
+          RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          kind="${KIND:-daily}"
+          case "$kind" in
+            daily | release) ;;
+            *)
+              echo "::error::kind must be daily or release"
+              exit 1
+              ;;
+          esac
+          for name in BUCKET RECIPIENT DB_URL; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::The repository variable for $name is not set (see the backup setup in documentation/Backup-and-Restore.md)"
+              exit 1
+            fi
+          done
+          if [[ ! "$DB_URL" =~ ^jdbc:postgresql://([^/:?]+)(:([0-9]+))?/([^?]+) ]]; then
+            echo "::error::DB_URL does not look like jdbc:postgresql://<host>/<database>"
+            exit 1
+          fi
+          host="${BASH_REMATCH[1]}"
+          port="${BASH_REMATCH[3]:-5432}"
+          database="${BASH_REMATCH[4]}"
+          echo "::add-mask::$host"
+
+          name="mealmagician-$(date -u +%Y%m%dT%H%M%SZ)"
+          if [[ "$kind" == release ]]; then
+            name="$name-${GITHUB_SHA::7}"
+          fi
+          {
+            # Where the dump and its encrypted copy live on the runner; removed at the end.
+            echo "WORK_DIR=$RUNNER_TEMP/backup"
+            echo "BACKUP_KIND=$kind"
+            echo "BACKUP_OBJECT=$name.dump.age"
+            echo "BACKUP_DB_HOST=$host"
+            echo "BACKUP_DB_PORT=$port"
+            echo "BACKUP_DB_NAME=$database"
+          } >>"$GITHUB_ENV"
+          echo "Backup kind: $kind, object: $kind/$name.dump.age"
+
+      # The password stays in Secret Manager; it is masked before it is stored anywhere.
+      - name: Read the backup role's password
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          password=$(gcloud secrets versions access latest --secret=backup-db-password --project "$PROJECT_ID")
+          if [[ -z "$password" || "$password" == *$'\n'* ]]; then
+            echo "::error::The secret backup-db-password is empty or has several lines"
+            exit 1
+          fi
+          echo "::add-mask::$password"
+          echo "BACKUP_DB_PASSWORD=$password" >>"$GITHUB_ENV"
+
+      # One approach for both database steps: the client tools come from the digest-pinned
+      # postgres:17 image, the scripts are mounted read-only, and every value is handed over by
+      # name (`-e NAME`), so no value is on a command line. The container runs as the runner's user
+      # so the files it writes can be read by the next steps.
+      - name: Dump the database
+        env:
+          PGHOST: ${{ env.BACKUP_DB_HOST }}
+          PGPORT: ${{ env.BACKUP_DB_PORT }}
+          PGDATABASE: ${{ env.BACKUP_DB_NAME }}
+          PGUSER: mm_backup
+          PGPASSWORD: ${{ env.BACKUP_DB_PASSWORD }}
+          PGSSLMODE: require
+          OUT_FILE: /backup/mealmagician.dump
+        run: |
+          set -euo pipefail
+          mkdir -p "$WORK_DIR"
+          docker run --rm --user "$(id -u):$(id -g)" --entrypoint bash \
+            -v "$WORK_DIR:/backup" -v "$PWD/scripts:/scripts:ro" \
+            -e PGHOST -e PGPORT -e PGDATABASE -e PGUSER -e PGPASSWORD -e PGSSLMODE -e OUT_FILE \
+            "$POSTGRES_CLIENT_IMAGE" /scripts/backup_dump.sh
+
+      # On the host network the container reaches the service container on 127.0.0.1:5432. It does
+      # not touch Neon: the expected Flyway version and row counts were read in the dump's own
+      # snapshot and sit in mealmagician.dump.counts, so a write to the live database while the job
+      # runs cannot make the comparison fail. Nothing is uploaded unless this passes.
+      - name: Test-restore the dump and compare it with what the database held at dump time
+        env:
+          DUMP_FILE: /backup/mealmagician.dump
+          TGT_HOST: 127.0.0.1
+          TGT_PORT: "5432"
+          TGT_DB: restore
+          TGT_USER: restore
+          TGT_PASSWORD: restore
+          TGT_SSLMODE: disable
+        run: |
+          set -euo pipefail
+          docker run --rm --network host --user "$(id -u):$(id -g)" --entrypoint bash \
+            -v "$WORK_DIR:/backup:ro" -v "$PWD/scripts:/scripts:ro" \
+            -e DUMP_FILE \
+            -e TGT_HOST -e TGT_PORT -e TGT_DB -e TGT_USER -e TGT_PASSWORD -e TGT_SSLMODE \
+            "$POSTGRES_CLIENT_IMAGE" /scripts/backup_verify.sh
+
+      - name: Encrypt with age
+        env:
+          RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          age --recipient "$RECIPIENT" --output "$WORK_DIR/$BACKUP_OBJECT" "$WORK_DIR/mealmagician.dump"
+          # An age file starts with this line; anything else must never be uploaded.
+          head -n 1 "$WORK_DIR/$BACKUP_OBJECT" | grep --quiet --line-regexp 'age-encryption.org/v1'
+          rm -f "$WORK_DIR/mealmagician.dump" "$WORK_DIR/mealmagician.dump.counts"
+          echo "Encrypted: $(wc -c <"$WORK_DIR/$BACKUP_OBJECT") bytes"
+
+      # The service account may only create objects (no read, list, overwrite or delete), so this
+      # is the one call it makes. On the 1st of the month a nightly run also writes the monthly copy.
+      - name: Upload to Cloud Storage
+        env:
+          BUCKET: ${{ vars.BACKUP_BUCKET }}
+        run: |
+          set -euo pipefail
+          gcloud storage cp "$WORK_DIR/$BACKUP_OBJECT" "gs://$BUCKET/$BACKUP_KIND/$BACKUP_OBJECT"
+          if [[ "$BACKUP_KIND" == daily && "$(date -u +%d)" == "01" ]]; then
+            gcloud storage cp "$WORK_DIR/$BACKUP_OBJECT" "gs://$BUCKET/monthly/$BACKUP_OBJECT"
+          fi
+          echo "Uploaded $BACKUP_KIND/$BACKUP_OBJECT"
+
+      - name: Remove the files from the runner
+        if: always()
+        run: rm -rf "$WORK_DIR"
+
+      # A failure is also visible on the board, not only in GitHub's email: one open issue titled
+      # "Backup failed" collects the runs that failed until a green run closes it.
+      - name: Open or update the "Backup failed" issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          existing=$(gh issue list --state open --search 'Backup failed in:title' --json number,title \
+            --jq '[.[] | select(.title == "Backup failed")][0].number // empty')
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --body "The backup failed again: $RUN_URL"
+          else
+            gh issue create --title "Backup failed" \
+              --label "type:bug,area:infra,priority:p1" \
+              --body "The nightly or pre-release backup failed: $RUN_URL
+
+          The first thing to check is the step that is red. The guide to restoring and to the backup setup is documentation/Backup-and-Restore.md (the wiki page \"Backup and Restore\"). The next green run closes this issue."
+          fi
+
+      - name: Close the "Backup failed" issue
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          existing=$(gh issue list --state open --search 'Backup failed in:title' --json number,title \
+            --jq '[.[] | select(.title == "Backup failed")][0].number // empty')
+          if [[ -n "$existing" ]]; then
+            gh issue close "$existing" --comment "A backup succeeded again: $RUN_URL"
+          fi
