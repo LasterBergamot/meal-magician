@@ -29,14 +29,36 @@ class PlanPageModelsTest {
         Arrays.stream(SlotType.values()).map(type -> empty(date, type)).toList());
   }
 
+  private static DayPlan dayWith(LocalDate date, SlotType... planned) {
+    List<SlotType> filled = List.of(planned);
+    return new DayPlan(
+        date,
+        "name",
+        "label",
+        "n",
+        "full",
+        false,
+        Arrays.stream(SlotType.values())
+            .map(type ->
+                filled.contains(type)
+                    ? new SlotGroup(
+                        date, type, List.of(new PlannedMeal(1, 2, "Alma", false, null, 0, 0)))
+                    : empty(date, type))
+            .toList());
+  }
+
   private static WeekPage week() {
+    return week(day(MONDAY));
+  }
+
+  private static WeekPage week(DayPlan first) {
     IsoWeek week = new IsoWeek(MONDAY);
     return new WeekPage(
         week,
         "45. hét",
         "range",
         true,
-        week.days().stream().map(PlanPageModelsTest::day).toList(),
+        week.days().stream().map(date -> date.equals(first.date()) ? first : day(date)).toList(),
         false,
         List.of(),
         null);
@@ -72,6 +94,52 @@ class PlanPageModelsTest {
     assertThat(day.id()).isEqualTo("day-2026-11-02");
     assertThat(day.dayOfMonth()).isEqualTo(2);
     assertThat(day.group(SlotType.LUNCH).type()).isEqualTo(SlotType.LUNCH);
+  }
+
+  @Test
+  void anEmptyDayShowsOnlyLunchUpFront() {
+    DayPlan day = day(MONDAY);
+    assertThat(day.shownGroups()).extracting(SlotGroup::type).containsExactly(SlotType.LUNCH);
+    assertThat(day.hiddenGroups())
+        .extracting(SlotGroup::type)
+        .containsExactly(SlotType.BREAKFAST, SlotType.DINNER, SlotType.SNACK);
+  }
+
+  @Test
+  void aSlotWithAMealIsShownUpFrontInSlotTypeOrder() {
+    DayPlan day = dayWith(MONDAY, SlotType.BREAKFAST);
+    assertThat(day.shownGroups())
+        .extracting(SlotGroup::type)
+        .containsExactly(SlotType.BREAKFAST, SlotType.LUNCH);
+    assertThat(day.hiddenGroups())
+        .extracting(SlotGroup::type)
+        .containsExactly(SlotType.DINNER, SlotType.SNACK);
+  }
+
+  @Test
+  void aFullDayHasNothingHidden() {
+    DayPlan day = dayWith(MONDAY, SlotType.values());
+    assertThat(day.shownGroups()).isEqualTo(day.groups());
+    assertThat(day.hiddenGroups()).isEmpty();
+  }
+
+  @Test
+  void aLunchWithNoMealIsStillShown() {
+    DayPlan day = dayWith(MONDAY, SlotType.DINNER);
+    assertThat(day.shownGroups())
+        .extracting(SlotGroup::type)
+        .containsExactly(SlotType.LUNCH, SlotType.DINNER);
+  }
+
+  @Test
+  void anEmptyWeekShowsOnlyTheLunchRow() {
+    assertThat(week().shownTypes()).containsExactly(SlotType.LUNCH);
+  }
+
+  @Test
+  void aWeekShowsTheRowOfEveryTypeThatHoldsAMealOnAnyDay() {
+    assertThat(week(dayWith(MONDAY.plusDays(1), SlotType.DINNER)).shownTypes())
+        .containsExactlyInAnyOrder(SlotType.LUNCH, SlotType.DINNER);
   }
 
   @Test

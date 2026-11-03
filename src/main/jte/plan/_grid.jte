@@ -10,7 +10,23 @@
 <%-- The desktop week table (plan-ui-redesign.md section 5), shown from 1024 px: one column per day,
      one row per slot type. At 768 px eight columns would be about 80 px each, too narrow for a meal
      name, so a tablet gets the day list instead. Today's column header is gold and carries a Today
-     badge and aria-current="date". --%>
+     badge and aria-current="date". Lunch is the main meal (D30): the row of any other slot type that
+     holds no meal in the whole week is in the markup but hidden, until the "Show all meals" box above
+     the table is ticked. CSS only: the wrapper is group/grid, and group-has-[:checked]/grid shows the
+     hidden rows again. The box is the only checkbox in the wrapper. --%>
+<div class="group/grid">
+<div class="mb-2 flex justify-end">
+  <input type="checkbox" id="plan-show-all" class="peer sr-only">
+  <label for="plan-show-all"
+         class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md border-2 border-outline bg-surface-raised px-4 font-extrabold text-ink shadow-sticker-1 hover:bg-surface-sunken peer-focus-visible:outline-3 peer-focus-visible:outline-solid peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus-ring">
+    <span class="inline-flex size-5 items-center justify-center rounded-sm border-2 border-outline bg-surface">
+      <span class="invisible inline-flex group-has-[:checked]/grid:visible">
+        @template.ui._icon(name = IconName.CHECK, size = 16, filled = false)
+      </span>
+    </span>
+    <span>${ctx.t("plan.grid.showall")}</span>
+  </label>
+</div>
 <table class="w-full table-fixed border-separate border-spacing-1.5">
   <caption class="sr-only">${page.title()} · ${page.range()}</caption>
   <thead>
@@ -35,7 +51,7 @@
   </thead>
   <tbody>
     @for(SlotRow row : page.rows())
-      <tr>
+      <tr data-row="${row.slotName()}" class="@if(!page.shownTypes().contains(row.type()))hidden group-has-[:checked]/grid:table-row @endif">
         <th scope="row" class="text-left align-top">
           @template.ui._slot_chip(slot = row.slotName(), label = ctx.t(row.labelKey()))
         </th>
@@ -48,3 +64,4 @@
     @endfor
   </tbody>
 </table>
+</div>

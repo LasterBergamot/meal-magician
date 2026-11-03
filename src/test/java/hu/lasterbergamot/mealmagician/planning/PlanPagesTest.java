@@ -160,6 +160,92 @@ class PlanPagesTest {
     assertThat(page.substring(lunch, nextGroup)).contains("Gulyásleves");
   }
 
+  private String weekPage() throws Exception {
+    return asAnna(get("/plan").param("week", WEEK))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+  }
+
+  /** The phone's day section split at its disclosure: what is up front, then what is behind it. */
+  private static String[] phoneDay(String page, LocalDate day) {
+    int start = page.indexOf("<section id=\"day-" + day + "\"");
+    int more = page.indexOf("<details data-more=\"day-" + day + "\"", start);
+    int end = page.indexOf("</section>", start);
+    assertThat(more).as("the disclosure of %s", day).isPositive().isLessThan(end);
+    return new String[] {page.substring(start, more), page.substring(more, end)};
+  }
+
+  @Test
+  void anEmptyDayShowsOnlyLunchUpFrontAndTheOtherMealsBehindTheDisclosure() throws Exception {
+    String[] parts = phoneDay(weekPage(), MONDAY);
+    assertThat(parts[0]).contains("<li data-group=\"2020-05-11/LUNCH\"");
+    assertThat(parts[0]).doesNotContain("<li data-group=\"2020-05-11/BREAKFAST\"");
+    assertThat(parts[0]).doesNotContain("<li data-group=\"2020-05-11/DINNER\"");
+    assertThat(parts[0]).doesNotContain("<li data-group=\"2020-05-11/SNACK\"");
+    assertThat(parts[1]).contains("Más étkezések");
+    assertThat(parts[1]).contains("<li data-group=\"2020-05-11/BREAKFAST\"");
+    assertThat(parts[1]).contains("<li data-group=\"2020-05-11/DINNER\"");
+    assertThat(parts[1]).contains("<li data-group=\"2020-05-11/SNACK\"");
+    assertThat(parts[1]).contains("data-add=\"2020-05-11/DINNER\"");
+    assertThat(parts[1]).doesNotContain("<li data-group=\"2020-05-11/LUNCH\"");
+  }
+
+  @Test
+  void aDayWithABreakfastShowsLunchAndBreakfastUpFront() throws Exception {
+    planning.add(anna, annasHome, MONDAY, SlotType.BREAKFAST, annasMeal("Rántotta").id(), null);
+
+    String[] parts = phoneDay(weekPage(), MONDAY);
+    assertThat(parts[0]).contains("<li data-group=\"2020-05-11/LUNCH\"");
+    assertThat(parts[0]).contains("<li data-group=\"2020-05-11/BREAKFAST\"");
+    assertThat(parts[1]).doesNotContain("<li data-group=\"2020-05-11/BREAKFAST\"");
+    assertThat(parts[1]).contains("<li data-group=\"2020-05-11/DINNER\"");
+    assertThat(parts[1]).contains("<li data-group=\"2020-05-11/SNACK\"");
+  }
+
+  @Test
+  void aFullDayDrawsNoDisclosure() throws Exception {
+    MealView meal = annasMeal("Mindenes");
+    for (SlotType type : SlotType.values()) {
+      planning.add(anna, annasHome, MONDAY, type, meal.id(), null);
+    }
+
+    String page = weekPage();
+    assertThat(page).doesNotContain("<details data-more=\"day-2020-05-11\"");
+    assertThat(page).contains("<details data-more=\"day-2020-05-12\"");
+  }
+
+  @Test
+  void theTableShowsOnlyTheLunchRowOfAnEmptyWeekAndOffersShowAll() throws Exception {
+    String page = weekPage();
+    assertThat(page).contains("<tr data-row=\"LUNCH\" class=\"\">");
+    for (String type : List.of("BREAKFAST", "DINNER", "SNACK")) {
+      assertThat(page).contains("<tr data-row=\"" + type + "\" class=\"hidden ");
+    }
+    assertThat(page).contains("id=\"plan-show-all\"").contains("Minden étkezés");
+  }
+
+  @Test
+  void theTableShowsTheRowOfATypeThatHoldsAMealWithoutTickingAnything() throws Exception {
+    planning.add(
+        anna, annasHome, MONDAY.plusDays(3), SlotType.DINNER, annasMeal("Pörkölt").id(), null);
+
+    String page = weekPage();
+    assertThat(page).contains("<tr data-row=\"DINNER\" class=\"\">");
+    assertThat(page).contains("<tr data-row=\"SNACK\" class=\"hidden ");
+  }
+
+  @Test
+  void theEnglishWeekNamesTheDisclosureAndTheCheckbox() throws Exception {
+    String page =
+        asAnna(get("/plan").param("week", WEEK).cookie(new Cookie("mm_lang", "en")))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    assertThat(page).contains("Other meals").contains("Show all meals");
+  }
+
   @Test
   void anotherHouseholdsPlanNeverShows() throws Exception {
     MealView secret =

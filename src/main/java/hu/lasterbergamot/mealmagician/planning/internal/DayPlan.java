@@ -13,7 +13,8 @@ import java.util.List;
  * @param shortName the abbreviated weekday name
  * @param fullLabel the long date, for the week strip's accessible name
  * @param today whether this is the current day, which gets the gold treatment
- * @param groups the day's four slot groups, always in {@link SlotType} order
+ * @param groups the day's four slot groups, always in {@link SlotType} order (the phone shows only
+ *     {@link #shownGroups()} up front and keeps {@link #hiddenGroups()} behind a disclosure)
  */
 public record DayPlan(
     LocalDate date,
@@ -69,5 +70,30 @@ public record DayPlan(
    */
   public SlotGroup group(SlotType type) {
     return groups.get(type.ordinal());
+  }
+
+  /**
+   * The groups the phone's day card draws up front: Lunch (the household's main meal, D30) and any
+   * other slot that already holds a meal, so a planned breakfast never hides.
+   *
+   * @return the shown groups in {@link SlotType} order; never empty, because Lunch is always in it
+   */
+  public List<SlotGroup> shownGroups() {
+    return groups.stream().filter(DayPlan::isShown).toList();
+  }
+
+  /**
+   * The empty optional groups, which the phone's day card keeps behind the "Other meals"
+   * disclosure. Together with {@link #shownGroups()} they are all of {@link #groups()}.
+   *
+   * @return the groups that are not Lunch and hold no meal, in {@link SlotType} order; possibly
+   *     empty (then the card draws no disclosure)
+   */
+  public List<SlotGroup> hiddenGroups() {
+    return groups.stream().filter(group -> !isShown(group)).toList();
+  }
+
+  private static boolean isShown(SlotGroup group) {
+    return group.type() == SlotType.LUNCH || !group.empty();
   }
 }

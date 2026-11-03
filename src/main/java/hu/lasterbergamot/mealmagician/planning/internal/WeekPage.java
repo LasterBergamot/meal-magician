@@ -2,7 +2,9 @@ package hu.lasterbergamot.mealmagician.planning.internal;
 
 import hu.lasterbergamot.mealmagician.planning.SlotType;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Everything the week page prints: the week, its heading texts and its seven days. The phone's day
@@ -104,5 +106,21 @@ public record WeekPage(
     return Arrays.stream(SlotType.values())
         .map(type -> new SlotRow(type, days.stream().map(day -> day.group(type)).toList()))
         .toList();
+  }
+
+  /**
+   * The slot types whose row the desktop table draws without the "Show all meals" box ticked: Lunch
+   * (the main meal, D30) and every type that holds a meal on any day of the week. The other rows
+   * are in the markup too, hidden by CSS, so ticking the box needs no request.
+   *
+   * @return the shown types as a set; always contains {@link SlotType#LUNCH}
+   */
+  public Set<SlotType> shownTypes() {
+    Set<SlotType> shown = EnumSet.of(SlotType.LUNCH);
+    days.forEach(day ->
+        day.groups().stream()
+            .filter(group -> !group.empty())
+            .forEach(group -> shown.add(group.type())));
+    return shown;
   }
 }
