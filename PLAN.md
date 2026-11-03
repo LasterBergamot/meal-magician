@@ -260,19 +260,21 @@ tables), then three page issues side by side, then the occasion menus and the do
       the Occasions tab, PR #117: done; #110 the strip on the week, PR #118: done; #113 the menu and occasion templates, PR #119: done)*
 
 ### Phase 5 — Feedback, sharing, PWA polish (`M1`, epic #6) → **v1.0.0**
-- [ ] Rate an eaten meal: each member gives a thumbs up/down or 1–5, with an optional comment;
-      a "how did it go" prompt on past slots. *(Planned 2026-11-03, D27: #124 backend and Flyway V10
-      landed in PR #139; #128 the rating form and the prompt, #132 the history on the meal page, still open.)*
-- [ ] Print-friendly week view; read-only share link (hashed token, expires, can be revoked).
-      *(Planned 2026-11-03, D28, D29: #125 backend and Flyway V11 landed in PR #138; #129 the public
-      route, #131 the print view and link management, still open.)*
+- [x] Rate an eaten meal: each member gives a thumbs up/down or 1–5, with an optional comment;
+      a "how did it go" prompt on past slots. *(D27: #124 backend and Flyway V10, PR #139; #128 the
+      rating form and the prompt, PR #142; #132 the history on the meal page, PR #144. Known gap, in
+      the #124 service: the list's limit of 10 is applied before former members' ratings are dropped.)*
+- [x] Print-friendly week view; read-only share link (hashed token, expires, can be revoked).
+      *(D28, D29: #125 backend and Flyway V11, PR #138; #129 the public route, PR #143; #131 the print
+      view and link management, PR #145.)*
 - [ ] PWA polish: icons, theme colour, install hint. Lighthouse check on a phone. *(Icons and the
       theme colour landed with #61 and R1; #126 adds the install hint, manifest shortcuts, iOS metas
       and a service-worker guard. Lighthouse and the real-phone install are #134, the owner's.
       The code landed in PR #136.)*
 - [x] Lunch first: the week shows Lunch by default, other meals on request (#127, D30; PR #137).
-- [ ] Heading font: Baloo 2 replaces Fredoka, so ő and ű are drawn in one family (#130; the owner
-      chose it on 2026-11-03 after a specimen comparison).
+- [x] Heading font: Baloo 2 replaces Fredoka, so ő and ű are drawn in one family (#130, PR #141; the
+      owner chose it on 2026-11-03 after a specimen comparison). Open for the owner's walk-through: whether
+      the largest headings go to weight 800 (the build uses 600–800 and the headings use 600 and 700).
 - [ ] #133 Phase 5 docs close-out; #134 the owner's checks, then **v1.0.0** (D29).
 
 ### Phase 6 — Hardening (`M2 – Hardening`, epic #7)
@@ -539,8 +541,9 @@ meal-magician/
    subagents run at once. Workers do not edit `PLAN.md`; the coordinator ticks the Phase 5 items and
    adds the log rows. The per-IP rate limit is deferred to Phase 6 (D28).
 
-   *Status (2026-11-03):* wave 7a is merged (#126 PR #136, #127 PR #137, #124 PR #139, #125 PR #138,
-   in that order). Wave 7b (#128, #129, #130) is running. Waves 7c and 7d follow.
+   *Status (2026-11-03):* waves 7a, 7b and 7c are merged (7a: #126 PR #136, #127 PR #137, #124 PR #139,
+   #125 PR #138; 7b: #128 PR #142, #130 PR #141, #129 PR #143; 7c: #131 PR #145, #132 PR #144). Wave 7d
+   (#133 the docs close-out, then #134 the owner's checks) is next.
 
 ---
 
@@ -599,3 +602,4 @@ meal-magician/
 | 2026-11-03 | **Phase 5 planned** (D25 says Opus; its budget was used up, so a Sonnet planner wrote the briefs). The owner confirmed the defaults and the security design, and filed as #124–#134 under epic #6 with blockers and board fields: ratings backend V10 (#124), sharing backend V11 (#125), PWA polish (#126), lunch first (#127), rating pages (#128), public share route (#129), Baloo 2 (#130), print view and link management (#131), meal history (#132), docs close-out (#133), the owner's checks and v1.0.0 (#134). Decided D27 (ratings), D28 (share links; per-IP limiting deferred to Phase 6; the share URL in Cloud Run's request log is accepted), D29 (print and release) and D30 (lunch first, design A with a desktop checkbox). Amended §4.1, §4.2, §4.4, §8 and §9. The slot-sheet E2E flake mentioned in the #113 row was fixed by #120 and #121 (PRs #122, #123). Docs only. | #6, #124–#134 |
 | 2026-11-03 | **The owner chose Baloo 2 for headings** after comparing Fredoka + Nunito, Baloo 2, Quicksand, Varela Round, Comfortaa and Nunito 800 on a specimen page: Fredoka has no ő or ű (Google's own latin-ext file for it has 22 glyphs and none of them), and Baloo 2 covers them in two hosted files like Nunito. Filed as #130, which amends UI-D4 in `plan-ui-redesign.md` when it lands. Docs only. | #130, #71 |
 | 2026-11-03 | **Phase 5 wave 7a landed** (D24, D25): four `sonnet` subagents in their own worktrees. Merged in this order: PWA polish #126 (PR #136, `base.jte`, `sw.js`, install hint), lunch first #127 (PR #137, D30, `DayPlan`/`WeekPage` and the week templates), ratings backend #124 (PR #139, Flyway V10, `feedback` module, `RatingService`, `RatingGiven`/`RatingWithdrawn`), sharing backend #125 (PR #138, Flyway V11, `share_link`, `SharedWeekReader`, `TokenCodes`). V10 merged and released before V11, as D27/D28 require. #124 replaces the duplicate-rating insert with an upsert and one retry, because a failed Postgres insert aborts the transaction. #125 has a known gap: the 10-link cap per household counts and then inserts without a lock, so two simultaneous creates can briefly exceed it (D28 says "at most 10"; the owner decides whether a lock is worth it). Docs only in this row. | #124, #125, #126, #127, #136, #137, #138, #139 |
+| 2026-11-03 | **Phase 5 waves 7b and 7c landed** (D24, D25; `sonnet` and `haiku` subagents, one worktree each, merged by the coordinator after a rebase on `main` when `main` had moved). 7b: rating pages #128 (PR #142: the how-did-it-go prompt, the rating form on the plan's past slots, `RatingE2ETest`), Baloo 2 #130 (PR #141: heading font, latin and latin-ext woff2, `sw.js` cache v4; squashed to one commit on the rebase), public share route #129 (PR #143: `GET /share/{token}` as a single-segment GET matcher, one identical 404, the D28 headers, the global throttle, `robots.txt`; the rebase combined its `WebSliceTest` exclusions with #128's). 7c: print view and share-link management #131 (PR #145: `/plan/print`, a `ShareLinkE2ETest`; the share-link creator is shown in the list; the Print and Share links sit inside `#plan-week`), meal history #132 (PR #144: the history on the meal page, `MealHistoryPagesTest`). **Known gaps for the owner:** `RatingService.forMeal` applies its limit of 10 before it drops former members' ratings, so the history can show fewer than 10 (a fix belongs in #124's service); `share.limit` hard-codes "10" in its message; the share-link cap race from wave 7a (see above). Docs only in this row. | #128, #129, #130, #131, #132, #141, #142, #143, #144, #145 |
