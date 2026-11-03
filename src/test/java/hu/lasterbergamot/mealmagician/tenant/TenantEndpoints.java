@@ -156,6 +156,9 @@ public final class TenantEndpoints {
           TenantEndpoint.forMembers(POST, "/plan/share", w -> NONE),
           TenantEndpoint.forMembers(
               POST, "/plan/share/{linkId}/revoke", w -> Map.of("linkId", w.homeShareLinkId())),
+          // meal history (#132): the lazy "How it went" block of a meal's page
+          TenantEndpoint.forMembers(
+              GET, "/feedback/meals/{mealId}", w -> Map.of("mealId", w.homeMealId())),
           // meals (catalog): every member may use the library, so none is owner-only
           TenantEndpoint.forMembers(GET, "/meals", w -> NONE),
           TenantEndpoint.forMembers(GET, "/meals/new", w -> NONE),

@@ -3,8 +3,8 @@
 What exists in `main` today: the build skeleton, the database, the `identity` module (sign-in), the
 first part of the `household` module (create, rename, switch), the `catalog` module (the meal
 library, services and pages, #88) and the `planning` module (the weekly plan's services and the
-week page, `planning/internal/PlanController`) and the `feedback` module's ratings service (#124, no
-pages yet); no other business modules yet.
+week page, `planning/internal/PlanController`) and the `feedback` module's ratings service and its
+pages (#124, #128, #132); no other business modules yet.
 
 - **Application class** `MealMagicianApplication` starts Spring Boot; everything lives below its
   package `hu.lasterbergamot.mealmagician`.
@@ -219,8 +219,8 @@ pages yet); no other business modules yet.
   `version` column is there for a later rename); occasions made from a template stay when it is
   deleted. Data: `occasion_template` and `occasion_template_item` (V9). Every member may do
   everything (D26), and the composite keys guard the tenant as above.
-- **Ratings (#124), module `feedback`:** `RatingService` is the public entry point; there are no
-  pages yet (#128). A member rates a planned slot with a **thumb** (UP or DOWN, required), optional
+- **Ratings (#124), module `feedback`:** `RatingService` is the public entry point; the pages that
+  use it are in #128 and the meal page's block in #132. A member rates a planned slot with a **thumb** (UP or DOWN, required), optional
   **stars** (1 to 5) and an optional **comment** of at most 500 characters (`RatingRules.check`
   trims it, and a blank comment is stored as `null`). Methods:
   - `give(userId, householdId, slotId, input)` rates a slot dated today or earlier (a later one is
@@ -248,6 +248,15 @@ pages yet); no other business modules yet.
     `(slot_id, user_id)`. A rated meal can no longer be deleted (the library only archives).
   - **Module direction (D27):** `feedback` depends on `planning`, `catalog` and `household`, never
     the reverse; the plan pages will load its fragments over htmx.
+- **Meal history (#132), `feedback/internal/MealHistoryController`:** `GET /feedback/meals/{mealId}`
+  answers the "How it went" block of a meal's page: the thumbs up and down counts, the mean of the
+  stars (one decimal, omitted when nobody gave stars) and the newest 10 ratings by display name. The
+  meal page (`meal/detail.jte`) does not render it itself: it holds an empty container that loads
+  this fragment on `load` with htmx, so the meal page stays fast and `catalog` never imports
+  `feedback`. The route first asks `RatingService.forMeal`, which looks the meal up inside the
+  household, so another household's meal is a 404 before any rating is read. Ratings of a slot
+  that was removed still count and show, because a rating keeps its own date and meal. The block
+  holds no e-mail address; it is registered in `TenantEndpoints` as a member's GET.
 - **Share links (#125, #129), module `sharing`:** a member makes a read-only link to one ISO week of
   the household's plan and sends it by any messenger; whoever opens it sees the week without
   signing in (PLAN.md D28). Table `share_link` (V11) stores only the SHA-256 hash of the token.
