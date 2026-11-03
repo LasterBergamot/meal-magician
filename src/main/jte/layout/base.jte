@@ -32,6 +32,10 @@
   <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="description" content="${ctx.t("footer.tagline")}">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="${ctx.t("app.name")}">
   <%-- htmx under a strict CSP: no eval, no inline <script> in swapped content, no injected <style>
        for the indicator (our CSS covers it). Error responses are swapped too, so that the error
        fragment (see AppErrorController) can show up; app.js handles 401/403 itself. History
@@ -46,6 +50,7 @@
   <%-- Order matters: app.js must register its listeners before Alpine starts. --%>
   <script src="/js/htmx.min.js" defer></script>
   <script src="/js/app.js" defer></script>
+  <script src="/js/install-hint.js" defer></script>
   <script src="/js/alpine-csp.min.js" defer></script>
   <script src="/js/sw-register.js" defer></script>
 </head>
