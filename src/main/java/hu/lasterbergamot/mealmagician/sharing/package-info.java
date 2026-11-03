@@ -4,8 +4,8 @@
  *
  * <p>{@link hu.lasterbergamot.mealmagician.sharing.ShareLinkService} creates, lists and revokes
  * links for household members, and {@code open} turns a token into the shared week for the public
- * page without a signed-in person (PLAN.md D28). The public route and the management pages come
- * later (#129, #131); this package is the backend they call.
+ * page without a signed-in person (PLAN.md D28). The public route (#129) and the management pages
+ * (#131) call this package; both are merged.
  */
 @ApplicationModule(displayName = "Sharing")
 package hu.lasterbergamot.mealmagician.sharing;
