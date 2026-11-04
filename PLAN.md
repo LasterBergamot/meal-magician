@@ -457,10 +457,10 @@ owner: the backups come after the assistant, not before it).*
     5. Try the drafts on your phone and judge them, as with R9. *(Amended 2026-11-04: also judge the
        chat page, which shows two gold marks on a phone, Appendix D.1. Appendix D says R9 judges it,
        but R9 may be closed by the time the page exists, so the check is in this step too.)*
-- [ ] Preference profile per member: computed on demand from `RatingService.recent`, with no table
+- [x] Preference profile per member: computed on demand from `RatingService.recent`, with no table
       (#159). *(Amended 2026-11-03; was recomputed on `RatingGiven` and `RatingWithdrawn`.)*
-- [ ] Embeddings and index (#158); tools and drafts (#159); week and slot UI (#160); chat page and
-      occasion help (#161).
+- [x] Embeddings and index (#158); tools and drafts (#159).
+- [ ] Week and slot UI (#160); chat page and occasion help (#161).
 - [ ] A small eval set (12–16 cases in `src/test/resources/eval/`) to pick the model (#162). Checks: only
       real meal ids, no meal twice in a row, "less meat" respected, occasions respected, language,
       ideas capped, a few seasonal checks. It runs by hand through `task ai:eval`, since it costs money
@@ -810,3 +810,4 @@ meal-magician/
 | 2026-11-04 | **Ingredients on meals done** (6b-0). The picker (#156, PR #171): a searchable combobox on the meal form with an "Add" row for a new name, ingredient badges on cards and detail, and an ingredient filter. Its first CI run failed: the keyboard step read a stale "Add" row left from the previous search, so Enter picked a name already chosen. Fixed by clearing the highlight on typing, refreshing the list after a pick, and waiting for the matching row in the test. | #155, #156, #164, #171 |
 | 2026-11-04 | **Assistant foundation** (#157, Part A and the live spike). The owner enabled the Vertex AI API and granted `mm-runtime` `roles/aiplatform.user`. The module `assistant` has the on/off switch (`mm.ai.enabled=false`, Spring AI's auto-configuration is off, so no credentials are needed to start), the spend cap (`UsageLedger`, Flyway V13) and `ModelGateway` (the only class that calls the model). The spike made real calls: Spring AI 2.0.2 works with Boot 4.1.2; tool calling and JSON output work together; the usage fields are read. The startup cost with the assistant off is about 1.3 s on the plain JVM (owner accepted it). D32 amended with the chosen region and prices. | #157 |
 | 2026-11-04 | **Assistant embeddings index** (#158, Flyway V14 `meal_embedding`, Postgres only). Each meal's document is hashed and only changed meals are embedded, lazily at the start of an assistant request (no events: Cloud Run throttles the CPU after a response). Every row and every search is scoped to one household, and a Testcontainers test checks that another household's meals never come back. | #158 |
+| 2026-11-04 | **Assistant tools and drafts** (#159, PR #175, one `sonnet` high subagent, Flyway V15 `assistant_draft` and `assistant_draft_item`). `AssistantTools` has six read-only tools; their ids are bound in the constructor, so no tool takes a household or user. Member text goes into the prompt as quoted data. The model's answer is JSON in text (the fallback the brief allows) and is checked by `DraftValidator`: unknown or archived meal ids are dropped, one retry names what was wrong, ideas are capped at 5. `planning.applyDraft` writes through the shared `SlotWriter`, with one `SlotPlanned` per slot. Known gap, for the owner: the 7-day purge of old drafts deletes by age across all households, which departs from the household-scope rule; a per-household purge needs a decision. No live Vertex call yet (#162). | #159, #175 |
