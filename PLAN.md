@@ -309,11 +309,15 @@ request, not Opus (D25), the same exception as Phase 5; the briefs say what to d
   - **Test restore in the job.** Restore into a `pgvector/pgvector:pg17` service container, then check
     that the Flyway history reaches the latest version and that row counts match the source (sessions
     excluded). A failed restore fails the job: a dump that cannot be restored is no backup.
-  - **Encryption.** `age`, to a public recipient key in the GitHub variable `BACKUP_AGE_RECIPIENT`. The
-    private key stays in the owner's password manager, so CI can write backups but cannot read them.
-    *(Amended 2026-11-03: one key, no paper copy and no second recipient; losing it makes the backups
-    unreadable but never touches the live database. At key creation, `age-keygen -y` must print the
-    public key stored in the variable.)*
+  - **No encryption.** *(Amended 2026-11-04, owner; was: encrypted with `age` to a public key in the
+    variable `BACKUP_AGE_RECIPIENT`, with the private key in the owner's password manager.)* The dump is
+    stored as a plain `*.dump` file. The data is household emails, display names, meals and rating
+    comments; the bucket is private with public access prevention, the CI writer can only create
+    objects, and Google encrypts at rest. The owner did not want a key to store or lose, which would
+    have made the backups useless in exactly the disaster they are for. The trade-off: whoever can
+    read the bucket (the owner's Google account, project owners) can read a dump, and a dump
+    downloaded for a restore is plain text on that machine. Encryption can be added back later if the
+    data becomes more sensitive.
   - **Upload.** The existing WIF pool and provider, and a new service account `mm-backup-writer` with
     `roles/storage.objectCreator` on the bucket only, plus `secretAccessor` on `backup-db-password` only,
     so it cannot read or delete backups. Object names carry the timestamp, so nothing is overwritten.
@@ -330,23 +334,24 @@ request, not Opus (D25), the same exception as Phase 5; the briefs say what to d
     workflow, which cannot run once GitHub disables the schedule.)* A Cloud Monitoring alert emails the
     owner when no new object has landed in the bucket for two days. It lives outside GitHub. A Google Cloud
     change, so the owner approves it.
-  - **Restore.** `task db:restore -- <file-or-gs://object>` decrypts the file and runs `pg_restore` into a
-    target chosen by flag: local Postgres (compose), a new Neon branch or a new Neon project. The wiki page
-    "Backup and Restore" is the guide. *(Amended 2026-11-03; was a restore drill by the owner, logged on a
-    wiki page. The owner declined a recurring manual task: the nightly test restore is the continuing
-    proof, and the guide has an optional 15-minute check. What the nightly check cannot prove is that the
-    owner's private key matches, hence the `age-keygen -y` check above.)*
+  - **Restore.** `task db:restore -- <file-or-gs://object>` runs `pg_restore` into a target chosen by
+    flag: local Postgres (compose), a new Neon branch or a new Neon project. It is started by a person, never
+    by CI: it overwrites a database, and the CI writer is deliberately unable to read backups. It needs only
+    the owner's own Google login to fetch a `gs://` object. The wiki page "Backup and Restore" is the
+    guide. *(Amended 2026-11-03; was a restore drill by the owner, logged on a wiki page. The owner
+    declined a recurring manual task: the nightly test restore is the continuing proof, and the guide has
+    an optional 15-minute check. Amended 2026-11-04: with no encryption there is no key that could fail to
+    match, so the nightly check now covers what a restore needs, except that the app boots on the data.)*
   - **Pitfalls.** GitHub disables scheduled workflows in a public repo after 60 days without repo
     activity, which the alert above catches. Each nightly dump wakes Neon for a few minutes; Neon Free
     gives 100 CU-hours a month, so check the first month against it (§6).
-  - **Owner's manual steps** *(amended 2026-11-03)*:
-    1. Generate the `age` key pair on your own machine, keep the private key in your password manager, run
-       `age-keygen -y` to check the public key, and set it as `BACKUP_AGE_RECIPIENT`.
-    2. In Neon, create the read-only role `mm_backup` (the setup script prints the exact SQL) and store
+  - **Owner's manual steps** *(amended 2026-11-03; amended 2026-11-04: the `age` key step is gone)*:
+    1. In Neon, create the read-only role `mm_backup` (the setup script prints the exact SQL) and store
        its password in Secret Manager as `backup-db-password`.
-    3. Approve each step as an agent runs `scripts/backup-gcp-setup.sh` (bucket and lifecycle rules,
-       `mm-backup-writer`, its WIF binding, the Monitoring alert). Nothing else is created by hand.
-    4. Check that the budget alert covers the bucket (expect cents a month).
+    2. Approve each step as an agent runs `scripts/backup-gcp-setup.sh` (bucket and lifecycle rules,
+       `mm-backup-writer`, its WIF binding, the Monitoring alert), and set the GitHub variable
+       `BACKUP_BUCKET` to `meal-magician-backups`. Nothing else is created by hand.
+    3. Check that the budget alert covers the bucket (expect cents a month).
 - [ ] **6b-0 Ingredients on meals (#155 backend with Flyway V12; #156 picker)** *(added 2026-11-03, owner
       request: the assistant should suggest seasonal meals and ingredients; was in "Later ideas")*. See D31.
       Done before the assistant, because the assistant reads ingredients.
@@ -360,7 +365,8 @@ request, not Opus (D25), the same exception as Phase 5; the briefs say what to d
       **Decisions for the owner:** what deleting a member does to shared content (meals stay, while the
       person's name, email and ratings go, as they already do for former members). A deleted account
       stays in the backups for up to 6 months *(amended 2026-11-03; was 12: the monthly copies are kept
-      190 days)*, which the privacy note must say. **Owner:** approve the
+      190 days)*, which the privacy note must say, together with the fact that the dumps are stored
+      unencrypted in a private bucket *(added 2026-11-04)*. **Owner:** approve the
       wording of the note.
 - [ ] **6d Security hardening:** review the security headers and the CSP; rate limit on invite and join,
       per IP, using the address Cloud Run appends rather than the first one the client sends (D28); a
@@ -411,7 +417,14 @@ request, not Opus (D25), the same exception as Phase 5; the briefs say what to d
     prompt file and the property `mm.ai.chat-scope`, so widening it later is not a code change) and menu
     help on an occasion. Every member may use it. *(Amended 2026-11-03: the look of these surfaces is
     `plan-ui-redesign.md` UI-D12 and Appendix D. The assistant is called "Varázsló / Wizard" in the
-    UI, the `wand` icon marks it, and the nav item uses `IconName.WAND`.)*
+    UI, the `wand` icon marks it, and the nav item uses `IconName.WAND`.)* *(Amended 2026-11-04,
+    Appendix D: a week request is at most 1 000 characters and may carry up to four quick-request
+    hints, which the controller expands into translated text (so the stored request is up to 1 200
+    characters); a chat message is also at most 1 000
+    characters; Cancel while a draft is being made only aborts the browser's request, the server call
+    may finish and its draft is purged with the others; and the Plan page's entry fragment also says
+    whether the week is empty, so the page can show a hint. Where the briefs of #160 and #161 differ
+    from Appendix D, Appendix D wins.)*
   - **Seasons.** The prompt carries today's date and "Hungary, Central Europe"; the model decides what is
     in season. No seasonal table is shipped. The eval (#162) has a few checks.
   - **Prompt injection.** Meal names, notes, ingredients and rating comments are typed by members. They
@@ -433,7 +446,9 @@ request, not Opus (D25), the same exception as Phase 5; the briefs say what to d
        `AI_EMBEDDING_MODEL`, `AI_PRICE_IN`, `AI_PRICE_OUT`) and approve the `release.yml` change.
     3. Confirm the monthly cap per household (default $5).
     4. Review the eval report (#162) and sign off the model (D33).
-    5. Try the drafts on your phone and judge them, as with R9.
+    5. Try the drafts on your phone and judge them, as with R9. *(Amended 2026-11-04: also judge the
+       chat page, which shows two gold marks on a phone, Appendix D.1. Appendix D says R9 judges it,
+       but R9 may be closed by the time the page exists, so the check is in this step too.)*
 - [ ] Preference profile per member: computed on demand from `RatingService.recent`, with no table
       (#159). *(Amended 2026-11-03; was recomputed on `RatingGiven` and `RatingWithdrawn`.)*
 - [ ] Embeddings and index (#158); tools and drafts (#159); week and slot UI (#160); chat page and
@@ -707,7 +722,7 @@ meal-magician/
 
     | Stage | Items | Owner's manual steps |
     |---|---|---|
-    | 6a | #62 workflow and scripts, #154 setup, restore and guide (no migration) | Steps 1–4 under 6a in §3: the `age` key and its public-key check, the Neon read-only role, approving each `gcloud` step (bucket, writer, alert), the budget check |
+    | 6a | #62 workflow and scripts, #154 setup, restore and guide (no migration) | Steps 1–3 under 6a in §3: the Neon read-only role and its secret, approving each `gcloud` step (bucket, writer, alert) and setting `BACKUP_BUCKET`, the budget check *(amended 2026-11-04; the `age` key step is gone)* |
     | 6b-0 | #155 ingredients backend (V12), then #156 the picker | None; look at the picker on a phone |
     | 6b | #157 foundation (V13), #158 embeddings (V14), #159 tools and drafts (V15), #160 week and slot UI, #161 chat and occasions, #162 eval | The Vertex API and role, the GitHub variables, the cap, the model sign-off (D33), the phone check of the drafts |
     | 6c | `repo-audit` | Approve filing issues outside this plan |
@@ -779,3 +794,5 @@ meal-magician/
 | 2026-11-03 | **Ingredients backend** (#155, PR #164): ingredients on meals with Flyway V12, a Hungarian seed list, accent-free keys, `ingredientSuggestions`, and the `NameWriter` that fixes the tag race (`ON CONFLICT DO NOTHING`). No pages yet (#156). | #155, #164 |
 | 2026-11-03 | **Backup setup and restore** (#154, PR #165): the owner-approved GCP setup script, `task db:restore`, and the "Backup and Restore" guide. Nothing has run against Google Cloud yet. | #154, #165 |
 | 2026-11-03 | **Assistant UI designed** (owner): `plan-ui-redesign.md` UI-D12 and Appendix D give #160 and #161 their look, states and copy. The assistant is "Varázsló / Wizard" in the UI, marked by the `wand` icon, never gold; ideas are dashed cards; the chat page is a plain-text thread. Phase 7's Surfaces item points there. Docs only. | #160, #161 |
+| 2026-11-04 | **Assistant design brought into the plan** (the owner's design, PR #167). Phase 7's Surfaces item now carries the rules from Appendix D that change the backend (the 1 000-character limits, the quick-request hints, what Cancel does, the empty-week hint), and the owner's phone check in step 5 includes the chat page's two gold marks. The briefs of #159 to #161 were checked against Appendix D and amended: #160 now says where the quick-request hints are expanded (the controller, four known values only), adds the empty-week hint and a delay setting for the fake model; #159 widens `assistant_draft.request_text` to 1 200 characters (typed text 1 000 plus up to four hint phrases) and refuses longer requests; #161's brief had the `SPARKLES` nav icon and lacked `app.js` for the chat composer. One open design question for the owner: Appendix D.1 says every place a member types a request shows the allergy and Gemini notice, but the refine form (D.3) has neither. Docs only. | #159, #160, #161, #167 |
+| 2026-11-04 | **Backups are no longer encrypted** (owner). The `age` layer is dropped from the design: the data is low-sensitivity, the bucket is private with a create-only writer, and the owner does not want a key to store or lose. Dumps are plain `*.dump` files; a restore needs only the owner's Google login. Amended §3 (6a: the Encryption, Restore and owner-steps items; 6d: the privacy note says the dumps are unencrypted) and §9 item 10. The setup list loses its first step (the key pair and `BACKUP_AGE_RECIPIENT`). Code and docs follow in PRs: the restore script, test and guide on `main`, and the workflow on #166. | #62, #154, #166 |
