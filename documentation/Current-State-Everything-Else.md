@@ -136,3 +136,46 @@ What exists in `main` today:
   answers on its `run.app` URL (health 200, `/` redirects to the login page, Flyway applied the migrations on Neon).
 
 Not yet confirmed: sign-in on a phone and scale to zero — see [[Roadmap: Everything Else]].
+
+## Backups (#62)
+
+The household's data lives only in Neon, whose Free plan restores just the last ~6 hours, so
+`db-backup.yml` takes a backup every night. The setup it needs (bucket, service account, Neon role)
+and the restore guide are issue #154.
+
+- **What runs when.** A nightly cron (02:17 UTC), "Run workflow" by hand, and `release.yml`, whose
+  `backup` job (`kind: release`) must pass before the `release` job starts, so a migration that
+  runs at the new revision's start always has a fresh backup behind it.
+- **The steps.** (1) `scripts/backup_dump.sh` opens one `psql` session on the direct Neon endpoint as
+  the read-only role `mm_backup`, starts a `REPEATABLE READ` transaction and exports its snapshot;
+  from inside that session `pg_dump --format=custom --snapshot=<id>` runs (inside a digest-pinned
+  `postgres:17` container; rows of `spring_session*` are not dumped), and in the same transaction the
+  script reads the Flyway version and the row count of every `public` table into
+  `mealmagician.dump.counts`. Dump and counts so describe the same instant even if a member writes
+  while the job runs. The counts file stays on the runner and is deleted after the test restore. The
+  script retries for a minute, because Neon wakes on the first connection. (2)
+  `scripts/backup_verify.sh` restores the dump into a throw-away `pgvector/pgvector:pg17` service
+  container and compares the restore with the recorded Flyway version and counts; it never contacts
+  Neon. A dump that does not restore, or differs, fails the run. (3) `gcloud storage cp` uploads the
+  plain dump to `BACKUP_BUCKET` through Workload Identity Federation as `mm-backup-writer`, which can
+  only create objects. The data is protected by the private bucket (public access prevented, Google
+  encrypts at rest) and by who may read it, not by a second encryption layer: the owner decided
+  (2026-11-04) not to keep an `age` key, so reading a backup needs only the owner's own Google login.
+  A pooled Neon endpoint cannot share a snapshot, so `DB_URL` must be the direct one (it already must
+  be, for Flyway). Caveat until the first live run: `gcloud storage cp` may need `storage.objects.get`
+  on the destination, which a create-only role lacks; if the run fails with permission denied, the
+  fallback is a `curl` JSON-API upload with `ifGenerationMatch=0`.
+- **Names and retention.** `<prefix>/mealmagician-<UTC timestamp>[-<sha7>].dump`: `daily/` kept
+  7 days, `monthly/` (a second copy of the run on the 1st) ~190 days, `release/` (with the commit)
+  14 days. The deletion is a bucket lifecycle rule, not part of the workflow. A deleted account stays
+  in the backups for up to 6 months.
+- **Public logs.** The repository is public. The password is masked and passed only through the
+  environment; the scripts print byte counts and table names, never rows, counts, host names or
+  `pg_restore` messages (a failed `COPY` quotes data). `BackupScriptsTest` runs both scripts against
+  fake `pg_dump`, `pg_restore` and `psql` and checks that none of this leaks.
+- **Failure.** GitHub emails the owner, and the job opens (or comments on) one open issue titled
+  `Backup failed`; the next green run closes it.
+- **Not covered.** If GitHub disables the schedule (60 days without repo activity) the workflow cannot
+  say so; the Cloud Monitoring alert on the bucket (#154) does. The nightly test restore proves the
+  dump restores, not that the app boots on restored data. The first live run waits for the
+  setup of #154.

@@ -105,9 +105,26 @@ jobs:
           BUMP_INPUT: ${{ inputs.bump }}
         run: bash scripts/next_release.sh
 
+  # A backup before every deploy (#62): the Flyway migration that runs when the new revision starts
+  # is the most likely way to lose data. The `release` job needs this one, so a failed backup stops
+  # the release before the deploy and before any tag. Same condition as `release`, so a docs-only
+  # merge takes no backup. The called workflow can only narrow these permissions, so they are
+  # granted here: Google sign-in (`id-token`) and the "Backup failed" issue (`issues`).
+  backup:
+    name: Back up the database
+    needs: plan
+    if: needs.plan.outputs.release == 'true'
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+    uses: ./.github/workflows/db-backup.yml
+    with:
+      kind: release
+
   release:
     name: Build, deploy and tag
-    needs: plan
+    needs: [plan, backup]
     if: needs.plan.outputs.release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
