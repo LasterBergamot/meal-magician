@@ -27,6 +27,9 @@ paths:
   never join household data through it. `tag` and `ingredient` rows are created with `NameWriter`
   (`ON CONFLICT DO NOTHING`, then look up), not look-up-then-save, so two people adding the same
   new name at once both succeed.
+- Postgres-only assistant tables (`meal_embedding`, V14, #158) live in `db/migration/postgresql/`
+  and are read and written only through `assistant.internal.EmbeddingStore`, always filtered by
+  `household_id`; the table is derived data, rebuilt lazily from the meals.
 - Aggregates that users edit concurrently (`meal`, `meal_slot`, `plan_template`, `occasion`,
   `occasion_template`, `household`) carry a `version` column (`@Version`).
 - Child rows of a template or menu (`plan_template_item`, `occasion_item`,
