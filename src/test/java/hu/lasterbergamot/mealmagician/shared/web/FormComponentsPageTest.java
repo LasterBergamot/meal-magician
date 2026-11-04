@@ -134,6 +134,60 @@ class FormComponentsPageTest {
   }
 
   @Test
+  void rendersTheComboboxWithItsAriaWiringAndAnInertChipTemplate() throws Exception {
+    String html = page();
+    String input = elementWithId(html, "demo-combobox-default");
+
+    assertThat(input)
+        .contains("role=\"combobox\"")
+        .contains("aria-controls=\"demo-combobox-default-listbox\"")
+        .contains("aria-autocomplete=\"list\"")
+        .contains("aria-expanded=\"false\"")
+        .contains("aria-invalid=\"false\"")
+        .contains("aria-describedby=\"demo-combobox-default-hint\"")
+        .contains("hx-get=\"/meals/ingredients\"")
+        .contains("hx-target=\"#demo-combobox-default-listbox\"");
+    assertThat(elementWithId(html, "demo-combobox-default-listbox"))
+        .contains("role=\"listbox\"")
+        .contains("x-on:click=\"choose\"");
+    // Every combobox carries the template the script clones for a chip added in the browser.
+    assertThat(count(html, "<template x-ref=\"chip\">")).isEqualTo(3);
+  }
+
+  @Test
+  void rendersTheChosenChipsAsHiddenInputsWithARemoveButtonEach() throws Exception {
+    assertThat(page())
+        .contains("name=\"ingredients-chips\" value=\"Tojás\"")
+        .contains("name=\"ingredients-chips\" value=\"Tej\"")
+        .contains("aria-label=\"Tojás eltávolítása\"")
+        .contains("data-remove-label=\"{0} eltávolítása\"");
+  }
+
+  @Test
+  void rendersTheComboboxIn422ErrorState() throws Exception {
+    String html = page();
+
+    assertThat(elementWithId(html, "demo-combobox-error"))
+        .contains("aria-invalid=\"true\"")
+        .contains("aria-describedby=\"demo-combobox-error-error\"")
+        .contains("border-danger");
+    assertThat(elementWithId(html, "demo-combobox-error-error"))
+        .contains("Egy hozzávaló 1–60 karakter lehet.");
+  }
+
+  @Test
+  void theComboboxFragmentsUseNoOldPaletteClass() throws IOException {
+    for (Path fragment :
+        new Path[] {
+          Path.of("src/main/jte/ui/_combobox.jte"), Path.of("src/main/jte/ui/_combobox_chip.jte")
+        }) {
+      String source = Files.readString(fragment, StandardCharsets.UTF_8);
+
+      assertThat(source).as(fragment.toString()).doesNotContainPattern("brand-\\d|stone-");
+    }
+  }
+
+  @Test
   void rendersTheSegmentedControlWithOneActiveSegmentPerGroup() throws Exception {
     String html = page();
 

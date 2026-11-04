@@ -52,6 +52,11 @@
     error = page.error("tags") == null ? null : ctx.t(page.error("tags")), required = false, disabled = false,
     attrs = Map.of("autocomplete", "off"))
 
+  @template.ui._combobox(id = "meal-ingredients", name = "ingredients", label = ctx.t("meal.form.ingredients"), hint = ctx.t("meal.form.ingredients.hint"),
+    placeholder = ctx.t("meal.form.ingredients.search"), chosenLabel = ctx.t("meal.form.ingredients.chosen"),
+    removeLabel = ctx.t("meal.form.ingredients.remove", "{0}"), searchUrl = "/meals/ingredients", selected = page.form().ingredients(),
+    error = page.error("ingredients") == null ? null : ctx.t(page.error("ingredients")))
+
   <fieldset class="flex flex-col gap-2">
     <legend class="text-sm font-extrabold leading-5 text-ink">${ctx.t("meal.form.occasions")}</legend>
     <div class="grid gap-2 sm:grid-cols-2">

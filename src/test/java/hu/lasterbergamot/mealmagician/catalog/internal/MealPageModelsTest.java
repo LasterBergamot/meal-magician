@@ -1,10 +1,15 @@
 package hu.lasterbergamot.mealmagician.catalog.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import hu.lasterbergamot.mealmagician.catalog.IngredientSuggestion;
 import hu.lasterbergamot.mealmagician.catalog.InvalidMealException;
 import hu.lasterbergamot.mealmagician.catalog.MealProblem;
 import hu.lasterbergamot.mealmagician.catalog.MealSearch;
@@ -71,9 +76,11 @@ class MealPageModelsTest {
     MealFilter none = MealFilter.of(null, null, false, null);
     MealFilter searched = MealFilter.of("x", null, false, null);
 
-    assertThat(new MealsPage(none, List.of(), List.of(), "").libraryEmpty()).isTrue();
-    assertThat(new MealsPage(searched, List.of(), List.of(), "").libraryEmpty()).isFalse();
-    assertThat(new MealsPage(none, List.of(meal(1, "a")), List.of(), "").libraryEmpty()).isFalse();
+    assertThat(new MealsPage(none, List.of(), List.of(), List.of(), "").libraryEmpty()).isTrue();
+    assertThat(new MealsPage(searched, List.of(), List.of(), List.of(), "").libraryEmpty())
+        .isFalse();
+    assertThat(new MealsPage(none, List.of(meal(1, "a")), List.of(), List.of(), "").libraryEmpty())
+        .isFalse();
   }
 
   // ---- MealsPageFactory ----
@@ -88,7 +95,7 @@ class MealPageModelsTest {
   @Test
   void withoutAPlannerTheRecentSortListsTheNewestFirst() {
     MealService meals = mock(MealService.class);
-    when(meals.search(1, 2, new MealSearch("", "", false)))
+    when(meals.search(1, 2, new MealSearch("", "", "", false)))
         .thenReturn(List.of(meal(1, "a"), meal(3, "c"), meal(2, "b")));
     when(meals.tagNames(1, 2)).thenReturn(List.of("vegan"));
 
@@ -103,7 +110,7 @@ class MealPageModelsTest {
   @Test
   void recentlyPlannedMealsComeFirstInPlannedOrderAndAMealPlannedTwiceCountsOnce() {
     MealService meals = mock(MealService.class);
-    when(meals.search(1, 2, new MealSearch("", "", false)))
+    when(meals.search(1, 2, new MealSearch("", "", "", false)))
         .thenReturn(List.of(meal(1, "a"), meal(2, "b"), meal(3, "c")));
     RecentMealsProvider recent = mock(RecentMealsProvider.class);
     when(recent.recentMealIds(1, 2, MealsPageFactory.RECENT_LIMIT)).thenReturn(List.of(1L, 2L, 1L));
@@ -118,7 +125,7 @@ class MealPageModelsTest {
   @Test
   void theNameSortKeepsTheServicesOrderAndNeverAsksThePlanner() {
     MealService meals = mock(MealService.class);
-    when(meals.search(1, 2, new MealSearch("", "", false)))
+    when(meals.search(1, 2, new MealSearch("", "", "", false)))
         .thenReturn(List.of(meal(1, "a"), meal(3, "c")));
     RecentMealsProvider recent = mock(RecentMealsProvider.class);
 
@@ -128,6 +135,83 @@ class MealPageModelsTest {
 
     assertThat(page.meals()).extracting(MealView::id).containsExactly(1L, 3L);
     verifyNoInteractions(recent);
+  }
+
+  @Test
+  void theIngredientChipsAreReadOffTheLibraryAndNarrowedListsStillShowThemAll() {
+    MealService meals = mock(MealService.class);
+    MealView soup = withIngredients(1, "Sör", "Őszibarack");
+    MealView cake = withIngredients(2, "Tojás", "Őszibarack");
+    when(meals.search(1, 2, new MealSearch("", "", "Tojás", false))).thenReturn(List.of(cake));
+    when(meals.search(1, 2, new MealSearch(null, null, null, false)))
+        .thenReturn(List.of(soup, cake));
+
+    MealsPage narrowed =
+        new MealsPageFactory(meals, provider(null))
+            .page(1, 2, MealFilter.of(null, null, "Tojás", false, null), "");
+
+    assertThat(narrowed.meals()).extracting(MealView::id).containsExactly(2L);
+    assertThat(narrowed.ingredients()).containsExactly("Őszibarack", "Sör", "Tojás");
+  }
+
+  @Test
+  void anUnfilteredListTakesTheIngredientChipsFromTheListedMealsWithoutAnotherSearch() {
+    MealService meals = mock(MealService.class);
+    when(meals.search(1, 2, new MealSearch("", "", "", false)))
+        .thenReturn(List.of(withIngredients(1, "Tej"), meal(2, "plain")));
+
+    MealsPage page =
+        new MealsPageFactory(meals, provider(null))
+            .page(1, 2, MealFilter.of(null, null, false, null), "");
+
+    assertThat(page.ingredients()).containsExactly("Tej");
+    verify(meals, times(1)).search(anyLong(), anyLong(), any());
+  }
+
+  private static MealView withIngredients(long id, String... ingredients) {
+    return new MealView(
+        id, "m" + id, null, null, List.of(), List.of(), false, 0, List.of(ingredients));
+  }
+
+  // ---- MealFilter and ingredients ----
+
+  @Test
+  void anIngredientNarrowsTheListAndPressingItAgainClearsIt() {
+    MealFilter filter = MealFilter.of("sop", "vegan", " Tojás ", false, null);
+
+    assertThat(filter.ingredient()).isEqualTo("Tojás");
+    assertThat(MealFilter.of(null, null, "x", false, null).active()).isTrue();
+    assertThat(MealFilter.of(null, null, "x", false, null).narrows()).isTrue();
+    assertThat(MealFilter.of(null, null, null, true, null).narrows()).isFalse();
+    assertThat(MealFilter.of(null, null, null, false, null).ingredient()).isEmpty();
+    assertThat(filter.hrefToggleIngredient("tojás")).isEqualTo("/meals?q=sop&tag=vegan");
+    assertThat(filter.hrefToggleIngredient("Tej"))
+        .isEqualTo("/meals?q=sop&tag=vegan&ingredient=Tej");
+    assertThat(filter.href()).isEqualTo("/meals?q=sop&tag=vegan&ingredient=Toj%C3%A1s");
+    assertThat(filter.hrefToggleTag("vegan")).contains("ingredient=");
+    assertThat(filter.hrefSort(MealFilter.NAME)).contains("ingredient=").endsWith("&sort=name");
+    assertThat(filter.hrefToggleArchived()).contains("ingredient=").endsWith("&archived=true");
+  }
+
+  // ---- IngredientOptions ----
+
+  @Test
+  void anAddRowIsOfferedOnlyForATypedNameThatNoSuggestionHas() {
+    List<IngredientSuggestion> listed = List.of(new IngredientSuggestion("Tojás", true));
+
+    assertThat(IngredientOptions.of("zzzz", listed).addName()).isEqualTo("zzzz");
+    assertThat(IngredientOptions.of("  két   szó ", listed).addName()).isEqualTo("két szó");
+    assertThat(IngredientOptions.of("TOJAS", listed).addName()).isNull();
+    assertThat(IngredientOptions.of("  ", listed).addName()).isNull();
+    assertThat(IngredientOptions.of(null, listed).addName()).isNull();
+  }
+
+  @Test
+  void theOptionsAreEmptyOnlyWithoutSuggestionsAndWithoutAnAddRow() {
+    assertThat(IngredientOptions.of(null, List.of()).empty()).isTrue();
+    assertThat(IngredientOptions.of("x", List.of()).empty()).isFalse();
+    assertThat(IngredientOptions.of(null, List.of(new IngredientSuggestion("a", false))).empty())
+        .isFalse();
   }
 
   // ---- MealForm ----
@@ -151,6 +235,7 @@ class MealPageModelsTest {
     assertThat(form.editing()).isTrue();
     assertThat(form.version()).isEqualTo(3);
     assertThat(form.tags()).isEqualTo("a, b");
+    assertThat(form.ingredients()).containsExactly("egg");
     assertThat(form.has(OccasionType.PARTY)).isTrue();
     assertThat(form.has(OccasionType.OTHER)).isFalse();
   }
@@ -165,12 +250,22 @@ class MealPageModelsTest {
 
   @Test
   void theTypedTagsAreSplitAtCommasAndBlankPiecesDropped() {
-    MealForm form = new MealForm(null, 0, "x", "", "", " a , ,b,, ", java.util.Set.of());
+    MealForm form = new MealForm(null, 0, "x", "", "", " a , ,b,, ", java.util.Set.of(), List.of());
 
     assertThat(form.details().tags()).containsExactly("a", "b");
     assertThat(MealForm.blank().editing()).isFalse();
     assertThat(MealForm.named("Soup").name()).isEqualTo("Soup");
     assertThat(MealForm.blank().details().tags()).isEmpty();
+  }
+
+  @Test
+  void ingredientNamesKeepTheirCommasAndOrderAndNoneMeansEmpty() {
+    assertThat(MealForm.namesOf(new String[] {"Salt, coarse", "Egg"}))
+        .containsExactly("Salt, coarse", "Egg");
+    assertThat(MealForm.namesOf(null)).isEmpty();
+    MealForm form =
+        new MealForm(null, 0, "x", "", "", "", java.util.Set.of(), List.of("Salt, coarse"));
+    assertThat(form.details().ingredients()).containsExactly("Salt, coarse");
   }
 
   // ---- MealFormPage and QuickAdd ----

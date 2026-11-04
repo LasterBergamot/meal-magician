@@ -50,6 +50,7 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | `prefers-reduced-motion` (skeleton and sheet animations) | https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion |
 | WAI-ARIA tabs pattern (the segmented control) | https://www.w3.org/WAI/ARIA/apg/patterns/tabs/ |
 | WAI-ARIA modal dialog pattern (sheets and their focus trap) | https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/ |
+| WAI-ARIA combobox pattern, "Combobox with listbox popup" (the ingredient picker) | https://www.w3.org/WAI/ARIA/apg/patterns/combobox/ |
 | htmx `hx-select` and `hx-push-url` | https://htmx.org/attributes/hx-select/ · https://htmx.org/attributes/hx-push-url/ |
 | Clipboard API (`navigator.clipboard.writeText`, the Copy button of a new share link) | https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API |
 | `beforeinstallprompt` event and `display-mode` (the PWA install hint) | https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeinstallprompt_event · https://developer.mozilla.org/en-US/docs/Web/CSS/@media/display-mode |

@@ -9,7 +9,8 @@ import java.util.Map;
  *
  * @param form what the person typed or the stored values
  * @param errors the message key to show under a field, keyed by field name ({@code name}, {@code
- *     notes}, {@code recipeUrl}, {@code tags}); empty for a form without errors
+ *     notes}, {@code recipeUrl}, {@code tags}, {@code ingredients}); empty for a form without
+ *     errors
  * @param conflict whether someone else changed the meal after this form was opened (HTTP 409)
  */
 public record MealFormPage(MealForm form, Map<String, String> errors, boolean conflict) {
@@ -38,8 +39,6 @@ public record MealFormPage(MealForm form, Map<String, String> errors, boolean co
       case NOTES_TOO_LONG -> with(form, "notes", "meal.error.notes.long");
       case RECIPE_URL_INVALID -> with(form, "recipeUrl", "meal.error.url.invalid");
       case TAG_INVALID -> with(form, "tags", "meal.error.tags.invalid");
-      // The message text is added with the ingredient picker (#156); the form cannot send
-      // ingredients before that, so this refusal is not reachable from the page yet.
       case INGREDIENT_INVALID -> with(form, "ingredients", "meal.error.ingredients.invalid");
     };
   }
@@ -57,7 +56,8 @@ public record MealFormPage(MealForm form, Map<String, String> errors, boolean co
   /**
    * The message key for a field.
    *
-   * @param field {@code name}, {@code notes}, {@code recipeUrl} or {@code tags}
+   * @param field {@code name}, {@code notes}, {@code recipeUrl}, {@code tags} or {@code
+   *     ingredients}
    * @return the key to pass to {@code ctx.t}, or {@code null} if the field has no error
    */
   public String error(String field) {

@@ -22,7 +22,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * The create and edit form of a meal: name, notes, recipe link, tags and occasion types.
+ * The create and edit form of a meal: name, notes, recipe link, tags, ingredients and occasion
+ * types.
  *
  * <p>A rejected form answers {@code 422} (or {@code 409} when someone else saved the meal while the
  * form was open) with the form fragment for htmx, or the whole page otherwise, and keeps what was
@@ -35,6 +36,9 @@ class MealFormController {
 
   private static final String FRAGMENT = "meal/_form";
   private static final String PAGE = "meal/form";
+
+  /** The name of the repeated request parameter and hidden input that carries one chip each. */
+  private static final String INGREDIENTS = "ingredients";
 
   private final MealService meals;
 
@@ -72,7 +76,8 @@ class MealFormController {
    * @param recipeUrl the typed recipe link
    * @param tags the typed tags, separated by commas
    * @param occasion the ticked occasion types
-   * @param request the current request
+   * @param request the current request, whose repeated {@code ingredients} parameter holds the
+   *     picker's chips
    * @param response the response
    * @param model receives the form model when a field is rejected
    * @return a redirect to the list, or the form with {@code 422} and the message under the field
@@ -89,7 +94,16 @@ class MealFormController {
       HttpServletRequest request,
       HttpServletResponse response,
       Model model) {
-    MealForm form = new MealForm(null, 0, name, notes, recipeUrl, tags, types(occasion));
+    MealForm form =
+        new MealForm(
+            null,
+            0,
+            name,
+            notes,
+            recipeUrl,
+            tags,
+            types(occasion),
+            MealForm.namesOf(request.getParameterValues(INGREDIENTS)));
     try {
       meals.create(user.userId(), household.id(), form.details());
       return Htmx.redirect(request, response, "/meals");
@@ -138,7 +152,8 @@ class MealFormController {
    * @param recipeUrl the typed recipe link
    * @param tags the typed tags, separated by commas
    * @param occasion the ticked occasion types
-   * @param request the current request
+   * @param request the current request, whose repeated {@code ingredients} parameter holds the
+   *     picker's chips
    * @param response the response
    * @param model receives the form model when the change is rejected
    * @return a redirect to the meal's page, or the form with {@code 422} (a field is wrong) or
@@ -160,7 +175,16 @@ class MealFormController {
       HttpServletRequest request,
       HttpServletResponse response,
       Model model) {
-    MealForm form = new MealForm(mealId, version, name, notes, recipeUrl, tags, types(occasion));
+    MealForm form =
+        new MealForm(
+            mealId,
+            version,
+            name,
+            notes,
+            recipeUrl,
+            tags,
+            types(occasion),
+            MealForm.namesOf(request.getParameterValues(INGREDIENTS)));
     try {
       meals.edit(user.userId(), household.id(), mealId, form.details(), version);
       return Htmx.redirect(request, response, "/meals/" + mealId);

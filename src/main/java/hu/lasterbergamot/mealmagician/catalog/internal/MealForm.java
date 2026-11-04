@@ -11,7 +11,8 @@ import java.util.Set;
 /**
  * The values of the create/edit form exactly as the person typed them, so a rejected form (422) is
  * drawn again with nothing lost. Tags are one comma-separated text in the form and become a list
- * only when the form is submitted.
+ * only when the form is submitted. Ingredients are a list from the start: the picker posts one
+ * {@code ingredients} parameter per chip, because an ingredient name may contain a comma.
  *
  * @param id the meal being edited, or {@code null} for a new meal
  * @param version the meal's version when the form was opened, sent back to notice a stale form;
@@ -21,6 +22,7 @@ import java.util.Set;
  * @param recipeUrl the typed recipe link
  * @param tags the typed tags, separated by commas
  * @param occasionTypes the ticked occasion types
+ * @param ingredients the ingredient names in the picker, one per chip, in the order they were added
  */
 public record MealForm(
     Long id,
@@ -29,7 +31,8 @@ public record MealForm(
     String notes,
     String recipeUrl,
     String tags,
-    Set<OccasionType> occasionTypes) {
+    Set<OccasionType> occasionTypes,
+    List<String> ingredients) {
 
   /**
    * A blank form for a new meal.
@@ -37,7 +40,7 @@ public record MealForm(
    * @return the empty form
    */
   public static MealForm blank() {
-    return new MealForm(null, 0, "", "", "", "", EnumSet.noneOf(OccasionType.class));
+    return new MealForm(null, 0, "", "", "", "", EnumSet.noneOf(OccasionType.class), List.of());
   }
 
   /**
@@ -48,7 +51,7 @@ public record MealForm(
    * @return the form with only the name filled in
    */
   public static MealForm named(String name) {
-    return new MealForm(null, 0, name, "", "", "", EnumSet.noneOf(OccasionType.class));
+    return new MealForm(null, 0, name, "", "", "", EnumSet.noneOf(OccasionType.class), List.of());
   }
 
   /**
@@ -67,7 +70,22 @@ public record MealForm(
         meal.notes() == null ? "" : meal.notes(),
         meal.recipeUrl() == null ? "" : meal.recipeUrl(),
         String.join(", ", meal.tags()),
-        types);
+        types,
+        List.copyOf(meal.ingredients()));
+  }
+
+  /**
+   * The ingredient names of a request, read from the repeated {@code ingredients} parameter.
+   *
+   * <p>The controller passes {@code request.getParameterValues("ingredients")} here instead of
+   * binding a {@code List<String>} parameter, because Spring splits a single value of such a
+   * parameter at commas, and "Salt, coarse" must stay one ingredient.
+   *
+   * @param values the raw values, or {@code null} when the request has none
+   * @return the values in order, as a new list; empty for {@code null}
+   */
+  public static List<String> namesOf(String[] values) {
+    return values == null ? List.of() : List.of(values);
   }
 
   /**
@@ -111,12 +129,12 @@ public record MealForm(
    * The values to hand to {@code MealService}. The tag text is split at commas and blank pieces are
    * dropped, so "a, , b" is two tags; the service then checks each name.
    *
-   * @return the details, not yet validated
+   * @return the details, not yet validated; the ingredients go through unchanged and the service
+   *     cleans and checks each name
    */
   public MealDetails details() {
     List<String> tagNames =
         Arrays.stream(tags.split(",")).map(String::strip).filter(name -> !name.isEmpty()).toList();
-    // The ingredient field arrives with the picker (#156); until then the form sends none.
-    return new MealDetails(name, notes, recipeUrl, tagNames, occasionTypes, List.of());
+    return new MealDetails(name, notes, recipeUrl, tagNames, occasionTypes, ingredients);
   }
 }

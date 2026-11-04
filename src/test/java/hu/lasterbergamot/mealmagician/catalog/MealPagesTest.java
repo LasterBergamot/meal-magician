@@ -397,6 +397,99 @@ class MealPagesTest {
     assertThat(meals.find(anna, annasHome, stew.id()).name()).isEqualTo("Stew by Bela");
   }
 
+  // ---- ingredients ----
+
+  @Test
+  void aFormPostSavesTheChipsAndTheCardAndDetailShowThem() throws Exception {
+    asAnna(post("/meals").param("name", "Omelette").param("ingredients", "Tojás", "Salt, coarse"))
+        .andExpect(status().isSeeOther());
+
+    MealView saved = meals.search(anna, annasHome, new MealSearch("omelette", null, false)).get(0);
+    assertThat(saved.ingredients()).containsExactlyInAnyOrder("Tojás", "Salt, coarse");
+    asAnna(get("/meals"))
+        .andExpect(content().string(containsString("Tojás")))
+        .andExpect(content().string(containsString("Salt, coarse")));
+    asAnna(get("/meals/" + saved.id()))
+        .andExpect(content().string(containsString("Hozzávalók")))
+        .andExpect(content().string(containsString("Tojás")));
+  }
+
+  @Test
+  void aSingleIngredientWithACommaIsNotSplit() throws Exception {
+    asAnna(post("/meals").param("name", "Soup").param("ingredients", "Salt, coarse"))
+        .andExpect(status().isSeeOther());
+
+    assertThat(
+            meals.search(anna, annasHome, new MealSearch("soup", null, false)).get(0).ingredients())
+        .containsExactly("Salt, coarse");
+  }
+
+  @Test
+  void aTooLongIngredientGives422KeepsTheOtherChipsAndShowsTheMessage() throws Exception {
+    asAnna(post("/meals").param("name", "Soup").param("ingredients", "Tojás", "x".repeat(61)))
+        .andExpect(status().isUnprocessableContent())
+        .andExpect(content().string(containsString("id=\"meal-ingredients-error\"")))
+        .andExpect(content().string(containsString("Egy hozzávaló 1–60 karakter lehet")))
+        .andExpect(content().string(containsString("name=\"ingredients\" value=\"Tojás\"")))
+        .andExpect(content().string(containsString("value=\"" + "x".repeat(61) + "\"")));
+    assertThat(meals.search(anna, annasHome, new MealSearch(null, null, false))).isEmpty();
+  }
+
+  @Test
+  void aStaleEditStillKeepsTheChips() throws Exception {
+    MealView stew = add("Stew");
+    meals.edit(anna, annasHome, stew.id(), new MealDetails("Stew by Bela", null, null, null));
+
+    asAnna(
+            post("/meals/" + stew.id())
+                .param("version", "0")
+                .param("name", "My stew")
+                .param("ingredients", "Tojás"))
+        .andExpect(status().isConflict())
+        .andExpect(content().string(containsString("name=\"ingredients\" value=\"Tojás\"")));
+  }
+
+  @Test
+  void anEditReplacesTheIngredients() throws Exception {
+    MealView stew =
+        meals.create(
+            anna,
+            annasHome,
+            new MealDetails("Stew", null, null, null, null, List.of("Tej", "Vaj")));
+
+    asAnna(
+            post("/meals/" + stew.id())
+                .param("version", String.valueOf(stew.version()))
+                .param("name", "Stew")
+                .param("ingredients", "Vaj"))
+        .andExpect(status().isSeeOther());
+
+    assertThat(meals.find(anna, annasHome, stew.id()).ingredients()).containsExactly("Vaj");
+  }
+
+  @Test
+  void theListOffersIngredientChipsOnlyWhenSomeMealHasOneAndFiltersByThem() throws Exception {
+    add("Plain");
+    asAnna(get("/meals"))
+        .andExpect(content().string(not(containsString("Szűrés hozzávaló szerint"))));
+
+    meals.create(
+        anna, annasHome, new MealDetails("Omelette", null, null, null, null, List.of("Tojás")));
+    meals.create(
+        anna, annasHome, new MealDetails("Pancake", null, null, null, null, List.of("Tej")));
+
+    asAnna(get("/meals").param("ingredient", "tojas"))
+        .andExpect(content().string(containsString("Szűrés hozzávaló szerint")))
+        .andExpect(content().string(containsString("Omelette")))
+        .andExpect(content().string(not(containsString(">Pancake<"))))
+        // The chosen chip is pressed and links to the list without the filter.
+        .andExpect(content().string(containsString("name=\"ingredient\" value=\"tojas\"")))
+        .andExpect(content().string(containsString("hx-get=\"/meals?ingredient=Tej\"")));
+    asAnna(get("/meals").param("ingredient", "Tojás"))
+        .andExpect(content().string(containsString("hx-get=\"/meals\"")))
+        .andExpect(content().string(containsString("aria-pressed=\"true\"")));
+  }
+
   // ---- quick add, archive, restore ----
 
   @Test

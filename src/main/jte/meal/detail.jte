@@ -7,7 +7,7 @@
 
 @param ViewContext ctx
 @param MealView meal
-<%-- One meal: notes, recipe link, tags, the occasions it suits, and the actions edit, archive
+<%-- One meal: notes, recipe link, tags, ingredients, the occasions it suits, and the actions edit, archive
      (behind a confirm dialog) and restore. The recipe link is always http or https (checked when
      the meal is saved) and opens with rel="noopener noreferrer", so the other site cannot reach
      back into this tab. Archive and restore are htmx posts (the CSRF header comes from the meta
@@ -57,6 +57,20 @@
               <ul class="flex flex-wrap gap-1.5">
                 @for(String tag : meal.tags())
                   <li>@template.ui._badge(tone = "brand", label = tag, icon = null)</li>
+                @endfor
+              </ul>
+            @endif
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-extrabold text-ink">${ctx.t("meal.detail.ingredients")}</dt>
+          <dd class="mt-1">
+            @if(meal.ingredients().isEmpty())
+              <span class="text-ink-muted">${ctx.t("meal.detail.none")}</span>
+            @else
+              <ul class="flex flex-wrap gap-1.5">
+                @for(String ingredient : meal.ingredients())
+                  <li>@template.ui._badge(tone = "neutral", label = ingredient, icon = null)</li>
                 @endfor
               </ul>
             @endif

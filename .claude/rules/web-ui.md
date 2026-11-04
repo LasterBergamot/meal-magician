@@ -111,6 +111,20 @@ paths:
   the message in `error` and the typed value (or the chosen option) passed back. Callers pass
   translated text from `ctx.t`; the components carry no text of their own. The style guide
   `dev/_forms.jte` shows every state.
+- **Combobox (`ui/_combobox`, #156):** a multi-select with chips for the ingredients on the meal
+  form (WAI-ARIA "Combobox with listbox popup": the input is `role="combobox"` with `aria-expanded`,
+  `aria-controls`, `aria-autocomplete="list"`, `aria-activedescendant`; the list is a `role="listbox"`
+  of `role="option"` rows). Parameters: `id`, `name`, `label`, `hint`, `placeholder`, `chosenLabel`,
+  `removeLabel` (translated text with `{0}`, pass `ctx.t(key, "{0}")`), `searchUrl`, `selected`,
+  `error`; texts come from the caller. **The chips live in the DOM, not in script state:** each is a
+  `ui/_combobox_chip` `<li>` with a hidden `<input name=…>` (repeated), so a form post and a 422
+  re-render carry them; read them with `request.getParameterValues`, not a `List<String>` parameter
+  (Spring splits a single value at commas). The Alpine `combobox` component has named methods only
+  (`open`, `close`, `move`, `choose`, `add`, `removeChip`, `backspace`, `onKeydown`), clones a chip
+  from the inert `<template x-ref="chip">`, and keeps focus in the input by cancelling `mousedown`
+  on the list. The list comes from `searchUrl` as `<li role="option" data-value>` rows
+  (`meal/_ingredient_options`). Do not use `<datalist>` (poor on phones). `sw.js` caches `app.js`:
+  bump its `CACHE` name when the script changes.
 - **Content and status components (`ui/`, R2b):** `ui/_badge.jte` (`tone`: neutral, brand, accent,
   success, warning, danger, info; a span, never a control), `ui/_chip.jte` (a filter button with
   `aria-pressed`; selected is a fill plus a check), `ui/_slot_chip.jte` and `ui/_slot_dot.jte`

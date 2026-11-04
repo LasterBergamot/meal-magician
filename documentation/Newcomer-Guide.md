@@ -33,6 +33,13 @@ allowlisted emails get in; households are shared through email-bound invite link
 - **Household:** the shared workspace; members are OWNER or MEMBER. It always has an owner: the
   last one cannot leave, they hand the household over first.
 - **Meal:** a reusable library entry (name, tags, notes, recipe link).
+- **Ingredient:** a name on a meal, such as "tojás", with no amount. Each household has its own list,
+  which starts from a built-in list of common Hungarian ingredients; "Tojás" and "tojas" are the same
+  ingredient.
+- **Combobox:** a text field with a list under it that narrows as you type, here the ingredient picker
+  on the meal form (`ui/_combobox`). You pick a suggestion or type a new name and tap the "Add" row;
+  what you picked becomes a removable chip. It is built on the WAI-ARIA combobox pattern, so it works
+  with a keyboard and a screen reader.
 - **Slot:** one planned meal on a date for a slot type (breakfast, lunch, …).
 - **Template:** a saved day or week of the plan (`plan_template`), applied with merge or replace.
 - **Merge / replace:** the two ways to copy or apply a day or week onto a target that already has
