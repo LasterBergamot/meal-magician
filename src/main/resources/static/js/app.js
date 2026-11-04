@@ -199,6 +199,197 @@
       },
     }));
 
+    // The combobox (ui/_combobox.jte, issue #156): a multi-select with chips, a search input and a
+    // list that htmx fills. It follows the WAI-ARIA Authoring Practices "Combobox with listbox
+    // popup" pattern (https://www.w3.org/WAI/ARIA/apg/patterns/combobox/): DOM focus stays on the
+    // input, the highlighted option is named by aria-activedescendant, ArrowDown/ArrowUp move it,
+    // Enter chooses it, Escape closes the list. The chips are NOT script state: each is a list item
+    // with a hidden input (the form field), so a normal form post and a 422 re-render carry them
+    // with no script at all. The script only adds or removes those items. Every handler is a named
+    // method because the CSP build of Alpine cannot evaluate expressions.
+    const MARKS = /\p{M}+/gu;
+    // The same folding as the server (accents and case ignored, blanks collapsed), so "tojas" and
+    // "Tojás" count as one ingredient here too.
+    const fold = (text) =>
+      text.normalize('NFD').replace(MARKS, '').toLowerCase().trim().replace(/\s+/g, ' ');
+    window.Alpine.data('combobox', () => ({
+      isOpen: false,
+      init() {
+        // htmx puts a new list into the listbox after every search; start it with nothing active.
+        this.$refs.listbox.addEventListener('htmx:afterSwap', () => this.reset());
+      },
+      get expanded() {
+        return this.isOpen ? 'true' : 'false';
+      },
+      get closed() {
+        return !this.isOpen;
+      },
+      open() {
+        this.isOpen = true;
+      },
+      close() {
+        this.isOpen = false;
+        this.deactivate();
+      },
+      // Focus left the whole component (not just the input for a chip button or an option).
+      focusOut(event) {
+        if (!this.$el.contains(event.relatedTarget)) {
+          this.close();
+        }
+      },
+      // A press on an option would blur the input, close the list and lose the click; stop that.
+      keepFocus(event) {
+        event.preventDefault();
+      },
+      options() {
+        return [...this.$refs.listbox.querySelectorAll('[role="option"]:not([hidden])')];
+      },
+      activeOption() {
+        return this.options().find((option) => option.getAttribute('aria-selected') === 'true');
+      },
+      chipInputs() {
+        return [...this.$refs.chips.querySelectorAll('input[type="hidden"]')];
+      },
+      hasChip(name) {
+        return this.chipInputs().some((input) => fold(input.value) === fold(name));
+      },
+      deactivate() {
+        this.$refs.listbox
+          .querySelectorAll('[aria-selected="true"]')
+          .forEach((option) => option.setAttribute('aria-selected', 'false'));
+        this.$refs.input.removeAttribute('aria-activedescendant');
+      },
+      // Called after each new list: give the rows ids (aria-activedescendant needs them), hide the
+      // ones already chosen and clear the highlight.
+      reset() {
+        const listbox = this.$refs.listbox;
+        this.deactivate();
+        listbox.querySelectorAll('[role="option"]').forEach((option, index) => {
+          option.id = `${listbox.id}-option-${index}`;
+          option.hidden = this.hasChip(option.dataset.value);
+        });
+      },
+      // Moves the highlight by one row, wrapping round at both ends.
+      move(step) {
+        this.open();
+        const options = this.options();
+        if (options.length === 0) {
+          return;
+        }
+        const current = options.findIndex((option) => option.getAttribute('aria-selected') === 'true');
+        let next;
+        if (current < 0) {
+          next = step > 0 ? 0 : options.length - 1;
+        } else {
+          next = (current + step + options.length) % options.length;
+        }
+        this.deactivate();
+        const option = options[next];
+        option.setAttribute('aria-selected', 'true');
+        this.$refs.input.setAttribute('aria-activedescendant', option.id);
+        option.scrollIntoView({ block: 'nearest' });
+      },
+      // A click on the list: the row may be the click target or hold it (the Add row has a span).
+      choose(event) {
+        const option = event.target instanceof Element ? event.target.closest('[role="option"]') : null;
+        if (option) {
+          this.pick(option.dataset.value);
+        }
+      },
+      // Enter with text typed and no row highlighted: take a listed row with that name if there is
+      // one (so its spelling wins), otherwise the typed text itself as a new ingredient. Returns
+      // false when nothing was typed, so Enter can submit the form as usual.
+      add() {
+        const typed = this.$refs.input.value.trim().replace(/\s+/g, ' ');
+        if (typed === '') {
+          return false;
+        }
+        const listed = this.options().find((option) => fold(option.dataset.value) === fold(typed));
+        this.pick(listed ? listed.dataset.value : typed);
+        return true;
+      },
+      // Adds the chip (unless it is there already), empties the search, refreshes the list for the
+      // next search and closes it. The input event is what makes htmx fetch the fresh list; the
+      // list is closed afterwards because that event also opens it.
+      pick(name) {
+        if (!this.hasChip(name)) {
+          this.addChip(name);
+        }
+        const input = this.$refs.input;
+        input.value = '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.focus();
+        this.close();
+      },
+      // Clones the chip from the inert <template>; the hidden input inside is the form field.
+      addChip(name) {
+        const chip = this.$refs.chip.content.firstElementChild.cloneNode(true);
+        chip.querySelector('input').value = name;
+        chip.querySelector('[data-chip-label]').textContent = name;
+        const button = chip.querySelector('[data-remove]');
+        button.setAttribute('aria-label', button.dataset.removeLabel.replace('{0}', name));
+        this.$refs.chips.append(chip);
+      },
+      removeChip(event) {
+        const button = event.target instanceof Element ? event.target.closest('[data-remove]') : null;
+        if (!button) {
+          return;
+        }
+        button.closest('[data-chip]').remove();
+        this.reset();
+        this.$refs.input.focus();
+      },
+      // Backspace in an empty search removes the last chip.
+      backspace() {
+        const last = this.chipInputs().pop();
+        if (last) {
+          last.closest('[data-chip]').remove();
+          this.reset();
+        }
+      },
+      onKeydown(event) {
+        if (event.isComposing) {
+          return;
+        }
+        switch (event.key) {
+          case 'ArrowDown':
+            event.preventDefault();
+            this.move(1);
+            break;
+          case 'ArrowUp':
+            event.preventDefault();
+            this.move(-1);
+            break;
+          case 'Enter': {
+            const active = this.isOpen ? this.activeOption() : undefined;
+            if (active) {
+              event.preventDefault();
+              this.pick(active.dataset.value);
+            } else if (this.add()) {
+              event.preventDefault();
+            }
+            break;
+          }
+          case 'Escape':
+            if (this.isOpen) {
+              event.preventDefault();
+              this.close();
+            }
+            break;
+          case 'Backspace':
+            if (this.$refs.input.value === '' && !event.repeat) {
+              this.backspace();
+            }
+            break;
+          case 'Tab':
+            this.close();
+            break;
+          default:
+            break;
+        }
+      },
+    }));
+
     // The sheet and the confirm dialog (ui/_sheet.jte, plan section 5). The markup is a native
     // <dialog> opened with showModal(), which makes the rest of the page inert, puts the dialog in
     // the top layer and closes it on Escape. This component adds what is left: a Tab trap (native

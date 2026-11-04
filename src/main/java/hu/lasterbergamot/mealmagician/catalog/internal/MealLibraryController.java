@@ -49,6 +49,7 @@ class MealLibraryController {
    * @param household the household of the request
    * @param q part of a meal name
    * @param tag a tag the meals must have
+   * @param ingredient an ingredient the meals must have
    * @param archived whether archived meals are shown too
    * @param sort {@code name} for alphabetical; anything else is "recent"
    * @param request the current request
@@ -62,12 +63,13 @@ class MealLibraryController {
       CurrentHousehold household,
       @RequestParam(required = false) String q,
       @RequestParam(required = false) String tag,
+      @RequestParam(required = false) String ingredient,
       @RequestParam(defaultValue = "false") boolean archived,
       @RequestParam(required = false) String sort,
       HttpServletRequest request,
       HttpServletResponse response,
       Model model) {
-    MealFilter filter = MealFilter.of(q, tag, archived, sort);
+    MealFilter filter = MealFilter.of(q, tag, ingredient, archived, sort);
     model.addAttribute("page", pages.page(user.userId(), household.id(), filter, ""));
     model.addAttribute("quickSheet", QuickAdd.empty(QuickAdd.SHEET));
     model.addAttribute("quickBar", QuickAdd.empty(QuickAdd.BAR));
@@ -75,7 +77,7 @@ class MealLibraryController {
   }
 
   /**
-   * Shows one meal with its notes, recipe link, tags and occasion types.
+   * Shows one meal with its notes, recipe link, tags, ingredients and occasion types.
    *
    * @param user the signed-in person
    * @param household the household of the request

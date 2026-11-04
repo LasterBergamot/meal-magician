@@ -6,7 +6,7 @@
 
 @param ViewContext ctx
 <%-- Section of the style guide (/dev/ui) for the form components (R2c): the text field, the select,
-     the search field and the segmented control, each in every state. The 422 state is a field and a
+     the search field, the combobox and the segmented control, each in every state. The 422 state is a field and a
      select with an error and the typed value kept, as a rejected form returns them. The segmented
      control has no target here, so its segments are plain links and a click does not swap this
      page. Text comes from ctx.t; the names in the code are identifiers. --%>
@@ -70,6 +70,30 @@
       <div class="flex flex-col gap-2">
         <span class="text-xs font-bold text-ink-muted">${ctx.t("dev.ui.state.disabled")}</span>
         @template.ui._search(id = "demo-search-disabled", name = "q-disabled", label = ctx.t("dev.forms.search.label"), value = "", placeholder = ctx.t("dev.forms.search.placeholder"), disabled = true, attrs = Map.of())
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4">
+    <h3 class="font-display text-xl font-semibold text-ink">${ctx.t("dev.forms.combobox.heading")}</h3>
+    <div class="grid gap-6 md:grid-cols-2">
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-ink-muted">${ctx.t("dev.ui.state.default")}</span>
+        @template.ui._combobox(id = "demo-combobox-default", name = "ingredients-default", label = ctx.t("dev.forms.combobox.label"), hint = ctx.t("dev.forms.combobox.hint"),
+          placeholder = ctx.t("dev.forms.combobox.search"), chosenLabel = ctx.t("dev.forms.combobox.chosen"), removeLabel = ctx.t("dev.forms.combobox.remove", "{0}"),
+          searchUrl = "/meals/ingredients", selected = List.of(), error = null)
+      </div>
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-ink-muted">${ctx.t("dev.forms.state.value")}</span>
+        @template.ui._combobox(id = "demo-combobox-chips", name = "ingredients-chips", label = ctx.t("dev.forms.combobox.label"), hint = null,
+          placeholder = ctx.t("dev.forms.combobox.search"), chosenLabel = ctx.t("dev.forms.combobox.chosen"), removeLabel = ctx.t("dev.forms.combobox.remove", "{0}"),
+          searchUrl = "/meals/ingredients", selected = List.of(ctx.t("dev.forms.combobox.sample1"), ctx.t("dev.forms.combobox.sample2")), error = null)
+      </div>
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-ink-muted">${ctx.t("dev.forms.state.error")}</span>
+        @template.ui._combobox(id = "demo-combobox-error", name = "ingredients-error", label = ctx.t("dev.forms.combobox.label"), hint = null,
+          placeholder = ctx.t("dev.forms.combobox.search"), chosenLabel = ctx.t("dev.forms.combobox.chosen"), removeLabel = ctx.t("dev.forms.combobox.remove", "{0}"),
+          searchUrl = "/meals/ingredients", selected = List.of(ctx.t("dev.forms.combobox.sample1")), error = ctx.t("dev.forms.combobox.error"))
       </div>
     </div>
   </div>
