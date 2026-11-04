@@ -39,6 +39,13 @@ foundation, the meal search and the draft logic (#157 to #159, below); its pages
     made. Usage is added with one `UPDATE x = x + n` (row created with `ON CONFLICT DO NOTHING`
     first) in a transaction of its own, so concurrent calls lose nothing. Cost is rounded up per
     call. The check is before the call, so two simultaneous calls can overshoot the cap by one call.
+  - **Scripted model (#160).** The profile `fake-ai` (`application-fake-ai.yml`, `FakeAiConfig`)
+    switches the assistant on and replaces the two Spring AI models with `ScriptedChatModel` and
+    `ScriptedEmbeddingModel`, so the real gateway, ledger, generator and controllers run with no
+    Google. The chat model calls the prompt's own `searchMeals` tool (so the ids are real), keeps the
+    request texts it received, and can be slowed (`mm.ai.fake.delay`) or made to fail. It is used by
+    the tests, by `compose.e2e.yml` and for a local look; `ProductionConfigGuard` refuses it in
+    production.
   - **Meal search index (#158).** `EmbeddingIndex` finds the household's meals that fit a request
     ("something light with vegetables") without sending the library to the model. The vectors live
     in `meal_embedding` (V14, Postgres only, `vector(768)`), written by `EmbeddingStore` with

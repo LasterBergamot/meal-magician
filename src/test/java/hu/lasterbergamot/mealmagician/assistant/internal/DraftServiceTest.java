@@ -644,6 +644,89 @@ class DraftServiceTest {
     assertThat(draftRows()).isEqualTo(1);
   }
 
+  // ---- one slot ----
+
+  private static String pick(long mealId, String reason) {
+    return "{\"mealId\":%d,\"reason\":\"%s\"}".formatted(mealId, reason);
+  }
+
+  private static String picks(String... pickJson) {
+    return "{\"picks\":[%s]}".formatted(String.join(",", pickJson));
+  }
+
+  @Test
+  void aSlotRequestGetsLibraryMealsWithTheirNamesAndCleanedReasons() {
+    model.thenReply(picks(pick(soup, "  Light and warm  "), pick(stew, "")));
+
+    var found = service.suggestSlot(anna, home, EN, MONDAY, SlotType.DINNER);
+
+    assertThat(found)
+        .extracting(s -> s.mealId() + "/" + s.mealName() + "/" + s.reason())
+        .containsExactly(soup + "/Soup/Light and warm", stew + "/Stew/null");
+    assertThat(lastUserMessage(model.prompts.get(0))).contains("DINNER").contains("2026-11-02");
+    assertThat(draftRows()).isZero();
+  }
+
+  @Test
+  void aSlotRequestKeepsEachMealOnceAndAtMostThree() {
+    long extra = meals.quickAdd(anna, home, "Pasta").id();
+    model.thenReply(
+        picks(
+            pick(soup, "a"),
+            pick(soup, "again"),
+            pick(stew, "b"),
+            pick(cake, "c"),
+            pick(extra, "d")));
+
+    var found = service.suggestSlot(anna, home, EN, MONDAY, SlotType.LUNCH);
+
+    assertThat(found).extracting(s -> s.mealId()).containsExactly(soup, stew, cake);
+  }
+
+  @Test
+  void aSlotAnswerThatIsNotJsonIsAskedAgainOnceAndThenFails() {
+    model.thenReply("sure, soup").thenReply(picks(pick(soup, "ok")));
+
+    assertThat(service.suggestSlot(anna, home, EN, MONDAY, SlotType.LUNCH)).hasSize(1);
+    assertThat(model.prompts).hasSize(2);
+    assertThat(lastUserMessage(model.prompts.get(1))).contains("not valid JSON");
+
+    model.thenReply("no").thenReply("still no");
+
+    assertThatThrownBy(() -> service.suggestSlot(anna, home, EN, MONDAY, SlotType.LUNCH))
+        .isInstanceOf(DraftGenerationException.class);
+  }
+
+  @Test
+  void aSlotAnswerWithUnknownIdsIsAskedAgainAndThenTheRealOnesAreKept() {
+    long foreign = meals.quickAdd(bela, other, "Foreign").id();
+    model
+        .thenReply(picks(pick(foreign, "x"), pick(soup, "y")))
+        .thenReply(picks(pick(foreign, "x"), pick(soup, "y")));
+
+    var found = service.suggestSlot(anna, home, EN, MONDAY, SlotType.LUNCH);
+
+    assertThat(model.prompts).hasSize(2);
+    assertThat(lastUserMessage(model.prompts.get(1))).contains("not in the library");
+    assertThat(found).extracting(s -> s.mealId()).containsExactly(soup);
+  }
+
+  @Test
+  void aSlotAnswerWithNoPicksOrEmptyEntriesIsAnEmptyList() {
+    model.thenReply("{\"picks\":null}");
+    assertThat(service.suggestSlot(anna, home, EN, MONDAY, SlotType.LUNCH)).isEmpty();
+
+    model.thenReply("{\"picks\":[null,{\"mealId\":null,\"reason\":\"r\"}]}");
+    assertThat(service.suggestSlot(anna, home, EN, MONDAY, SlotType.LUNCH)).isEmpty();
+  }
+
+  @Test
+  void aSlotRequestFromAPersonOutsideTheHouseholdIsRefusedBeforeTheModelIsAsked() {
+    assertThatThrownBy(() -> service.suggestSlot(bela, home, EN, MONDAY, SlotType.LUNCH))
+        .isInstanceOf(HouseholdNotFoundException.class);
+    assertThat(model.prompts).isEmpty();
+  }
+
   // ---- retention ----
 
   @Test

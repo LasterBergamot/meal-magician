@@ -7,6 +7,7 @@ import hu.lasterbergamot.mealmagician.assistant.DraftNotFoundException;
 import hu.lasterbergamot.mealmagician.assistant.DraftStatus;
 import hu.lasterbergamot.mealmagician.assistant.DraftView;
 import hu.lasterbergamot.mealmagician.assistant.InvalidRequestException;
+import hu.lasterbergamot.mealmagician.assistant.SlotSuggestion;
 import hu.lasterbergamot.mealmagician.catalog.MealDetails;
 import hu.lasterbergamot.mealmagician.catalog.MealSearch;
 import hu.lasterbergamot.mealmagician.catalog.MealService;
@@ -15,6 +16,7 @@ import hu.lasterbergamot.mealmagician.household.HouseholdService;
 import hu.lasterbergamot.mealmagician.planning.CopyMode;
 import hu.lasterbergamot.mealmagician.planning.DraftSlot;
 import hu.lasterbergamot.mealmagician.planning.PlanningService;
+import hu.lasterbergamot.mealmagician.planning.SlotType;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -134,6 +136,30 @@ public class DraftService {
             made.result().summary(),
             made.result().items());
     return view(userId, saved);
+  }
+
+  /**
+   * Suggests up to three library meals for one slot. Nothing is stored: the suggestions are only
+   * shown, and planning one goes through the planner's normal "add to slot" route.
+   *
+   * @param userId the {@code app_user} id of the person asking
+   * @param householdId the household
+   * @param locale the person's language, which the reasons are written in
+   * @param date the day of the slot
+   * @param slotType the slot type
+   * @return at most three suggestions, best first; empty when nothing fits
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member
+   * @throws hu.lasterbergamot.mealmagician.assistant.SpendCapExceededException if the household's
+   *     monthly allowance is used up; no model call was made
+   * @throws hu.lasterbergamot.mealmagician.assistant.ModelUnavailableException if the model failed
+   * @throws hu.lasterbergamot.mealmagician.assistant.DraftGenerationException if the model's answer
+   *     was not JSON twice
+   */
+  public List<SlotSuggestion> suggestSlot(
+      long userId, long householdId, Locale locale, LocalDate date, SlotType slotType) {
+    households.require(householdId, userId);
+    return generator.suggestSlot(userId, householdId, locale, date, slotType);
   }
 
   /**

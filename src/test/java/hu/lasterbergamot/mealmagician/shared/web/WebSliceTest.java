@@ -26,9 +26,9 @@ import org.springframework.security.web.SecurityFilterChain;
  * on its own, so this meta-annotation adds them. Time is fixed to 2026-10-31 in Budapest, which was
  * a Saturday.
  *
- * <p>The household module's web classes, the catalog, planning, feedback and sharing controllers
- * and the allowlist admin controller are left out: they need their services and a database, and are
- * tested end to end in {@code HouseholdPagesTest} and {@code AllowlistAdminPagesTest}.
+ * <p>The household module's web classes, the catalog, planning, feedback, sharing and assistant web
+ * classes and the allowlist admin controller are left out: they need their services and a database,
+ * and are tested end to end in {@code HouseholdPagesTest} and {@code AllowlistAdminPagesTest}.
  *
  * <p>Spring Security is on the classpath, so a slice would otherwise get its default "everything
  * needs a login" chain. {@link OpenSecurity} lets every request through: these tests are about
@@ -41,7 +41,7 @@ import org.springframework.security.web.SecurityFilterChain;
         @ComponentScan.Filter(
             type = FilterType.REGEX,
             pattern =
-                "hu\\.lasterbergamot\\.mealmagician\\.(household\\..*|catalog\\.internal\\..*|planning\\.internal\\..*|feedback\\.internal\\..*|sharing\\.internal\\..*|identity\\.internal\\.AllowlistAdminController)"))
+                "hu\\.lasterbergamot\\.mealmagician\\.(household\\..*|catalog\\.internal\\..*|planning\\.internal\\..*|feedback\\.internal\\..*|sharing\\.internal\\..*|assistant\\.internal\\..*|identity\\.internal\\.AllowlistAdminController)"))
 @ImportAutoConfiguration({JteAutoConfiguration.class, ServletJteAutoConfiguration.class})
 @Import({I18nConfig.class, WebSliceTest.FixedClock.class, WebSliceTest.OpenSecurity.class})
 @interface WebSliceTest {

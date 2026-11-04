@@ -17,7 +17,9 @@ services:
     environment:
       # `dev` switches on the /dev/ui style guide that the component e2e tests drive; the datasource
       # variables below override the dev profile's in-memory H2, so the data still lives in Postgres.
-      SPRING_PROFILES_ACTIVE: dev,postgres
+      # `fake-ai` switches the assistant on with a scripted model (#160), so the wizard can be driven
+      # in the browser without Google.
+      SPRING_PROFILES_ACTIVE: dev,postgres,fake-ai
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mealmagician
       SPRING_DATASOURCE_USERNAME: mealmagician
       SPRING_DATASOURCE_PASSWORD: mealmagician

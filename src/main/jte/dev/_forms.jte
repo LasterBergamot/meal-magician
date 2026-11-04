@@ -99,6 +99,31 @@
   </div>
 
   <div class="flex flex-col gap-4">
+    <h3 class="font-display text-xl font-semibold text-ink">${ctx.t("dev.forms.textarea.heading")}</h3>
+    <div class="grid gap-6 md:grid-cols-2">
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-ink-muted">${ctx.t("dev.ui.state.default")}</span>
+        @template.ui._field(id = "demo-note-default", name = "note-default", label = ctx.t("dev.forms.textarea.label"), type = "text", value = "", hint = ctx.t("dev.forms.textarea.hint"), error = null, required = false, disabled = false, attrs = Map.of(), multiline = true, rows = 3)
+      </div>
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-ink-muted">${ctx.t("dev.forms.state.error")}</span>
+        @template.ui._field(id = "demo-note-error", name = "note-error", label = ctx.t("dev.forms.textarea.label"), type = "text", value = ctx.t("dev.forms.textarea.value"), hint = null, error = ctx.t("dev.forms.textarea.error"), required = false, disabled = false, attrs = Map.of(), multiline = true, rows = 3)
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4">
+    <h3 class="font-display text-xl font-semibold text-ink">${ctx.t("dev.forms.checkchip.heading")}</h3>
+    <fieldset class="flex flex-col gap-2">
+      <legend class="text-sm font-extrabold text-ink">${ctx.t("dev.forms.checkchip.legend")}</legend>
+      <div class="flex flex-wrap gap-2">
+        @template.ui._check_chip(name = "demo-chip", value = "a", label = ctx.t("dev.forms.checkchip.off"), checked = false)
+        @template.ui._check_chip(name = "demo-chip", value = "b", label = ctx.t("dev.forms.checkchip.on"), checked = true)
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="flex flex-col gap-4">
     <h3 class="font-display text-xl font-semibold text-ink">${ctx.t("dev.forms.segmented.heading")}</h3>
     <div class="flex flex-col gap-2">
       <span class="text-xs font-bold text-ink-muted">${ctx.t("dev.forms.segmented.count", 2)}</span>

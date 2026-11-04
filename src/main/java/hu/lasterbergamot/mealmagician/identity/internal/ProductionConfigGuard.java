@@ -8,6 +8,7 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 /**
@@ -81,6 +82,9 @@ class ProductionConfigGuard implements BeanFactoryPostProcessor {
     if (!"framework".equals(environment.getProperty("server.forward-headers-strategy"))) {
       problems.add(
           "server.forward-headers-strategy must be 'framework' (the hosting proxy terminates TLS)");
+    }
+    if (environment.acceptsProfiles(Profiles.of("fake-ai"))) {
+      problems.add("the fake-ai profile is for tests and demos and must not run in production");
     }
     if (environment.getProperty("mm.ai.enabled", Boolean.class, false)) {
       ASSISTANT_SETTINGS.forEach((property, message) -> {

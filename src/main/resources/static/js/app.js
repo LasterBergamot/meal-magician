@@ -435,6 +435,12 @@
               opener.focus();
             }
             opener = null;
+            // Cancel while the wizard is thinking (#160): a request the sheet marked
+            // data-abort-on-close is stopped, so the browser does not wait for it. The server call
+            // may still finish; its draft is purged with the old ones.
+            dialog
+              .querySelectorAll('[data-abort-on-close]')
+              .forEach((el) => window.htmx?.trigger(el, 'htmx:abort'));
           });
           // A control outside the sheet may open it (plan/week.jte's page-level sheets): "sheetOpener"
           // sends this event with the sheet's id and itself, so focus returns to it on close.
@@ -561,6 +567,21 @@
     if ((xhr.status === 401 || xhr.status === 403) && !xhr.getResponseHeader('HX-Redirect')) {
       event.detail.shouldSwap = false;
       window.location.assign('/');
+    }
+  });
+
+  // The wizard's Discard (#160) answers with HX-Trigger: assistant-close; the draft is gone, so the
+  // assistant sheet closes. The event bubbles from the element that made the request.
+  document.addEventListener('assistant-close', () => {
+    document.getElementById('assistant-sheet')?.close();
+  });
+
+  // When a draft (or a refined draft) arrives in the wizard's sheet, focus moves to the element the
+  // server marked data-autofocus: the draft's heading, or the idea card that was just added (#160).
+  document.addEventListener('htmx:afterSettle', (event) => {
+    const target = event.detail.target;
+    if (target?.id === 'assistant-sheet-body') {
+      target.querySelector('[data-autofocus]')?.focus();
     }
   });
 

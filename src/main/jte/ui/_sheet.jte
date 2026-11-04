@@ -10,6 +10,7 @@
 @param boolean closable
 @param Content trigger
 @param Content body
+@param boolean side = false
 <%-- The sheet (plan-ui-redesign.md sections 5 and 6.3): a native <dialog> opened with showModal() and
      driven by the Alpine component "sheet" in static/js/app.js. Phones get a bottom sheet with a
      grabber that can be dragged down to close it; from md up it is a centred dialog. centred = true
@@ -24,6 +25,9 @@
      sheet closes. body is the content; htmx may load into it, and a sheet is never opened from a
      sheet.
 
+     side = true makes a non-centred sheet a right-hand panel from md up (the assistant sheet, so the
+     week stays visible beside it); on a phone it is still a bottom sheet, up to 92 dvh.
+
      Escape closes it (the browser's cancel), so does the X, a click on the backdrop and a swipe.
      Tab cycles inside it. Nothing here is hand-written CSS: colours and shadows are tokens, and
      the starting and transition states come from Tailwind's starting: variant. Classes are written
@@ -34,13 +38,18 @@
           class="max-w-none overflow-visible bg-transparent p-0 text-ink backdrop:bg-scrim transition-[translate,opacity] duration-[var(--mm-duration-base)] starting:opacity-0
             @if(centred)
               m-auto w-[min(100%_-_2rem,32rem)] starting:translate-y-4
+            @elseif(side)
+              mt-auto w-full starting:translate-y-full md:mt-0 md:mr-0 md:mb-0 md:ml-auto md:h-dvh md:max-h-dvh md:w-[min(100%,30rem)] md:starting:translate-x-full md:starting:translate-y-0
             @else
               mt-auto w-full starting:translate-y-full md:m-auto md:w-[min(100%_-_2rem,32rem)] md:starting:translate-y-4
             @endif">
-    <div class="flex max-h-[88dvh] flex-col bg-surface-raised shadow-sticker-3
+    <div class="flex flex-col bg-surface-raised shadow-sticker-3
       @if(centred)
-        rounded-xl border-2 border-outline
+        max-h-[88dvh] rounded-xl border-2 border-outline
+      @elseif(side)
+        max-h-[92dvh] rounded-t-xl border-x-2 border-t-2 border-outline md:h-full md:max-h-none md:rounded-none md:rounded-l-xl md:border-2 md:border-r-0
       @else
+        max-h-[88dvh]
         rounded-t-xl border-x-2 border-t-2 border-outline md:rounded-xl md:border-2
       @endif">
       @if(!centred)

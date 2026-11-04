@@ -69,6 +69,15 @@ allowlisted emails get in; households are shared through email-bound invite link
 - **Allowlist:** emails allowed to sign in at all; invites add to it.
 - **Invite:** an owner's single-use, expiring `/join/<code>` link for one e-mail address; only the
   code's hash is stored.
+- **Draft:** what the assistant ("Varázsló" / Wizard) proposes for a week or an occasion: a saved list
+  of items per day and slot type that is *not* in the plan yet. The member can remove items, ask for
+  changes, and then Accept (the library meals are written to the plan) or Discard. See `assistant/`.
+- **Idea:** an item in a draft that is not a meal of the household's library yet (a name, a reason and
+  some ingredients the model made up). It is drawn as a dashed card; "Add to meals" puts it in the
+  library, and an accepted draft leaves out the ideas that were not added.
+- **Quick-request chip:** one of four ticks (less meat, quick meals, more vegetable stews, leftovers)
+  next to the request box. The browser sends only its key; the server turns it into text in the
+  member's language.
 - **Design token:** a named colour or shape value, a `--mm-*` CSS variable in `app.css` mapped to a
   class such as `bg-surface`. Pages use the token and never a raw palette colour, so both themes
   stay consistent.
@@ -114,6 +123,27 @@ overwrites the first.
 
 Errors take a similar path: an unknown URL ends up in `AppErrorController`, which renders the
 404 page (or a fragment for htmx).
+
+### How the assistant gets onto the plan page
+
+The plan page belongs to `planning`, and `planning` may not depend on `assistant` (Spring Modulith
+would fail the build). So the plan templates hold only empty placeholders, for example in
+`plan/_week.jte`: `<div id="plan-assistant-entry" hx-get="/assistant/entry?week=…" hx-trigger="load">`.
+When the page has loaded, htmx asks the assistant module for that fragment:
+
+1. `GET /assistant/entry` first meets `AssistantGate`, an interceptor. If `mm.ai.enabled` is false
+   (the default) it answers 204 with no body and the placeholder stays empty: the plan page looks as
+   if the assistant did not exist. Every other `/assistant/**` route answers 404.
+2. If it is on, `AssistantController.entry` reads the week through `PlanningService` (is anything
+   planned?) and returns `assistant/_entry.jte`: the "Suggest my week" button, a hint line for an empty
+   week and the assistant's own sheet. The fragment replaces the placeholder.
+3. The button loads the request form into the sheet. Sending it posts to `/assistant/drafts`. The
+   model call takes seconds, so the form shows a waiting state by CSS while htmx's request runs.
+4. The draft comes back as a fragment, and nothing is written to the plan. Only Accept
+   (`POST /assistant/drafts/{id}/accept`) calls the planning module, then redirects to the week, where
+   a third placeholder, `#assistant-notice`, loads the "x meals added" note.
+
+In tests the model is `ScriptedChatModel` (profile `fake-ai`), so no test calls Google.
 
 ### A request with no sign-in: `GET /share/{token}`
 

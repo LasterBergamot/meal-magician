@@ -144,6 +144,17 @@ class ProductionConfigGuardTest {
         .hasMessageContaining(property);
   }
 
+  @Test
+  void theScriptedAssistantProfileIsRefused() {
+    var scripted = validEnvironment();
+    scripted.setActiveProfiles("prod", "fake-ai");
+    var real = validEnvironment();
+    real.setActiveProfiles("prod");
+
+    assertProblem(scripted, "fake-ai");
+    assertThat(ProductionConfigGuard.problems(real)).isEmpty();
+  }
+
   /** Runs the guard the way Spring does: against a bean factory that knows the environment. */
   private static void check(MockEnvironment environment) {
     var beanFactory = new DefaultListableBeanFactory();
