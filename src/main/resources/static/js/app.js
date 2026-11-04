@@ -227,6 +227,13 @@
       open() {
         this.isOpen = true;
       },
+      // Typing starts a new search. The rows on screen still belong to the old text until htmx
+      // replaces them, so nothing is highlighted meanwhile: Enter then takes the typed text, never a
+      // stale row.
+      typed() {
+        this.open();
+        this.deactivate();
+      },
       close() {
         this.isOpen = false;
         this.deactivate();
@@ -314,6 +321,8 @@
       pick(name) {
         if (!this.hasChip(name)) {
           this.addChip(name);
+          // Hides the row just added, so an Add row for this name does not stay on the list.
+          this.reset();
         }
         const input = this.$refs.input;
         input.value = '';

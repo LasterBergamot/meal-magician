@@ -54,6 +54,14 @@ class IngredientPickerE2ETest {
     playwright.close();
   }
 
+  /**
+   * Narrows the Add rows to the one for {@code text}. The list is replaced by htmx after each
+   * keystroke, so an Add row for an earlier search can still be on screen when the test looks.
+   */
+  private static Locator.FilterOptions addRow(String text) {
+    return new Locator.FilterOptions().setHasText(text);
+  }
+
   @ParameterizedTest(name = "{0} ({1}x{2})")
   @CsvSource({"phone, 390, 844", "desktop, 1280, 800"})
   void aMemberPicksSearchesAndAddsIngredientsAndSavesThem(String device, int width, int height)
@@ -97,7 +105,7 @@ class IngredientPickerE2ETest {
 
       // A name that is not listed is added with one tap on the "Add" row.
       input.pressSequentially("kekszmorzsa");
-      Locator add = list.locator("[role=option][data-add]");
+      Locator add = list.locator("[role=option][data-add]").filter(addRow("kekszmorzsa"));
       add.waitFor();
       assertThat(add.textContent()).contains("kekszmorzsa");
       assertThat(list.locator("[role=option]").count()).isEqualTo(1);
@@ -107,7 +115,7 @@ class IngredientPickerE2ETest {
       // The keyboard: type a new name, ArrowDown to its row, Enter adds it; Backspace in the empty
       // field removes the last chip again; Escape closes the list.
       input.pressSequentially("zzfűszer");
-      list.locator("[role=option][data-add]").waitFor();
+      list.locator("[role=option][data-add]").filter(addRow("zzfűszer")).waitFor();
       input.press("ArrowDown");
       assertThat(input.getAttribute("aria-activedescendant")).isNotEmpty();
       input.press("Enter");

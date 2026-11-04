@@ -42,7 +42,7 @@
            aria-expanded="false" x-bind:aria-expanded="expanded" aria-controls="${id}-listbox" aria-autocomplete="list"
            aria-invalid="${error != null ? "true" : "false"}"
            hx-get="${searchUrl}" hx-trigger="input changed delay:150ms, focus" hx-target="#${id}-listbox" hx-swap="innerHTML" hx-include="this" hx-sync="this:replace"
-           x-ref="input" x-on:keydown="onKeydown" x-on:input="open" x-on:focus="open" x-on:click="open"
+           x-ref="input" x-on:keydown="onKeydown" x-on:input="typed" x-on:focus="open" x-on:click="open"
            class="block h-12 w-full rounded-md border-2 bg-surface-raised px-4 text-base text-ink placeholder:text-ink-muted
              @if(error != null) border-danger @else border-border-strong @endif"
            $unsafe{HtmlAttributes.render(HtmlAttributes.describedBy(id, hint != null, error != null))}>
