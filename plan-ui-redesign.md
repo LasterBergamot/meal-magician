@@ -994,8 +994,11 @@ The first two belong on `/dev/ui` with the other components.
 - **Model text is untrusted and plain.** Reasons and chat replies are escaped by JTE and shown with
   `whitespace-pre-line`, so line breaks survive and markdown does not render. The prompts ask for
   short paragraphs and "–" lists, never `**` or `#`.
-- **Honest about limits.** Every place where a member types a request shows, in `caption` under the
-  field, that it goes to Google Gemini and that the wizard knows nothing about allergies or diets.
+- **Honest about the provider.** The places where a member first types a request (the week sheet's
+  request step and the chat page) say, in `caption` under the field, that it goes to Google Gemini.
+  The refine form lives in the same sheet a moment later and does not repeat it. *(Amended 2026-11-04,
+  owner: the notice that the wizard knows nothing about allergies or diets was dropped; was: every
+  place where a member types a request shows both notices.)*
 
 ### D.2 Entry points
 
@@ -1018,7 +1021,8 @@ desktop, so the week stays visible beside it. Its body is swapped through five s
    - **Quick requests:** a `fieldset` (legend `assistant.hint.label`) of four check chips
      (`ui/_check_chip`): `assistant.hint.lessMeat`, `.quick`, `.vegStew`, `.leftovers`. Each one
      ticked is sent as a `hint` value, and the server adds its translated text to the request.
-   - A compact `info` alert, `assistant.notice.allergy`, then `caption` `assistant.notice.provider`.
+   - A `caption`, `assistant.notice.provider`, under the field. *(Amended 2026-11-04: there is no
+     allergy alert any more.)*
    - Footer: `primary` `assistant.start`.
 2. **Waiting** (`_waiting`, 10–30 s)
    - `ui/_skeleton_rows` shaped like three day cards, the region `aria-busy="true"`.
@@ -1135,7 +1139,6 @@ do not list. English avoids plural forms the way the bundles already do ("Meals 
 | `assistant.hint.quick` (new) | Gyors ételek | Quick meals |
 | `assistant.hint.vegStew` (new) | Több főzelék | More vegetable stews |
 | `assistant.hint.leftovers` (new) | Maradékbarát | Leftover-friendly |
-| `assistant.notice.allergy` | A varázsló nem tud az allergiákról és a diétákról, ezért minden javaslatot ellenőrizz. | The wizard doesn't know about allergies or diets, so check every suggestion yourself. (#160 had "The assistant does not know…".) |
 | `assistant.notice.provider` (new) | A kérésedet a Google Gemini dolgozza fel. | Your request is sent to Google Gemini. |
 | `assistant.start` | Kérem a javaslatot | Get suggestions |
 | `assistant.thinking` | A varázsló már főzi a hetedet… ez akár fél percig is eltarthat. | The wizard is cooking up your week… this can take up to half a minute. |
@@ -1178,7 +1181,7 @@ do not list. English avoids plural forms the way the bundles already do ("Meals 
 | `assistant.chat.you` | Te | You |
 | `assistant.chat.wizard` | Varázsló | Wizard |
 | `assistant.chat.thinking` | A varázsló gondolkodik… | The wizard is thinking… |
-| `assistant.chat.footnote` | Az üzeneteidet a Google Gemini dolgozza fel. Allergiákról és diétákról nem tud. | Your messages are sent to Google Gemini. It doesn't know about allergies or diets. |
+| `assistant.chat.footnote` | Az üzeneteidet a Google Gemini dolgozza fel. | Your messages are sent to Google Gemini. |
 
 ### D.8 Accessibility and checks
 
