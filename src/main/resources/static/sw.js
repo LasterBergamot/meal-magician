@@ -12,7 +12,8 @@
 // response are deliberately never cached: STATIC_PATHS must stay an allowlist of static folders
 // (PwaAssetsTest fails if it could match /share/).
 // v4 (#130): the heading font changed to Baloo 2; a new name drops the v3 cache.
-const CACHE = 'mm-static-v4';
+// v5 (#156): app.js gained the combobox component; a new name drops the v4 cache.
+const CACHE = 'mm-static-v5';
 const STATIC_PATHS = /^\/(css|js|icons|fonts)\/|^\/manifest\.webmanifest$/;
 
 self.addEventListener('install', () => self.skipWaiting());

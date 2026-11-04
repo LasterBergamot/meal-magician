@@ -117,12 +117,24 @@ behaviour is in [[Current State: Backend]].
 - **Recipe links** are shown on the meal's page only. They open in a new tab with
   `rel="noopener noreferrer"`, so the other site cannot reach back into this tab. The list card
   shows no recipe link, because a link inside the card's stretched link is not allowed.
+- **Ingredients (#156):** the form has an ingredient picker (`ui/_combobox`, below) under the tags.
+  `GET /meals/ingredients?q=` (`IngredientOptionsController`, a member-only route registered in
+  `TenantEndpoints`) answers with the rows of the list only (`meal/_ingredient_options.jte`): the
+  household's own ingredients first, then the built-in list, at most 20, matching ignoring case and
+  accents ("tojas" finds "tojás"), and an "Add «text»" row when nothing listed is exactly that text.
+  The chips post as the repeated field `ingredients`, one hidden input each, never as one joined
+  text (a name may hold a comma; `MealFormController` reads `getParameterValues`, because Spring
+  would split a single value at commas). A 422 draws the chips again from `MealForm.ingredients`.
+  The card and the meal's page show the ingredients as neutral badges (the tags stay violet). The
+  list has a second chip row, "Filter by ingredient", shown when some meal has an ingredient; it
+  uses the `ingredient` URL parameter and, like the tag row, one at a time. The row lists the
+  ingredients of the whole library, so it does not shrink while one is chosen.
 - **Occasion types** are checkboxes on the form and badges on the meal's page. The labels come from
   the `meal.occasion.*` keys.
 - **Templates:** `meal/list.jte` (the page) and `meal/_results.jte` (the part htmx swaps),
   `_card.jte` (one meal in the list), `detail.jte`, `form.jte` (the create and edit page) and
   `_form.jte` (its form, which swaps itself), `_quick.jte` (the quick-add form) and
-  `_link_button.jte` (a link drawn like a `ui/_button`, because `ui/_button` always draws a
+  `_ingredient_options.jte` (the picker's list rows), `_link_button.jte` (a link drawn like a `ui/_button`, because `ui/_button` always draws a
   `<button>`). The textarea and the occasion checkboxes are drawn in `_form.jte` itself, since the
   design system has no component for them yet.
 - **Tests:** `MealPagesTest` runs the pages through MockMvc (the list, filters, sort, htmx
@@ -669,6 +681,36 @@ are all on `/dev/ui` in `dev/_forms.jte`, in every state.
   so the fragments never write them by hand. Tests: `FormComponentsPageTest` reads every state
   from the `/dev/ui` HTML, `DescribedByTest` and `HtmxFetchTest` cover the helpers, and
   `UiGuardTest` checks the text and the CSP rules of the templates.
+
+### Combobox (#156)
+
+`ui/_combobox.jte` is a multi-select with removable chips, a search input and a list that htmx
+loads. It follows the WAI-ARIA "Combobox with listbox popup" pattern. The meal form uses it for
+ingredients; the style guide shows it empty, with chips and with an error. Tags could use it later.
+- **Parameters:** `id` (the input's id; the list is `<id>-listbox`), `name` (the form field of the
+  chips), `label`, `hint`, `placeholder`, `chosenLabel` (names the chip list), `removeLabel` (a text
+  with `{0}` for the chip, for example `ctx.t("meal.form.ingredients.remove", "{0}")`), `searchUrl`,
+  `selected` (the chips to draw) and `error`. The component carries no text of its own.
+- **ARIA:** the input is `role="combobox"` with `aria-expanded`, `aria-controls` (the list's id),
+  `aria-autocomplete="list"` and `aria-activedescendant`; the list is a `role="listbox"` of
+  `role="option"` rows, and the highlighted row has `aria-selected="true"`. Focus never leaves the
+  input. The error and hint are linked with `aria-describedby`.
+- **Keyboard:** ArrowDown and ArrowUp move the highlight, Enter picks it (or, with text typed and
+  nothing highlighted, adds that text), Escape closes the list, Backspace in an empty field removes
+  the last chip, Tab closes the list.
+- **Why the chips are hidden inputs:** each chip is a list item holding a hidden `<input
+  name="…" value="…">`. The form post and the 422 re-render therefore carry the chips with no script
+  state to rebuild. The Alpine `combobox` component (`app.js`, named methods only: `open`, `close`,
+  `move`, `choose`, `add`, `removeChip`, `backspace`, `onKeydown`) only clones a chip from an inert
+  `<template>` or removes one.
+- **htmx:** the input has `hx-get=searchUrl`, `hx-trigger="input changed delay:150ms, focus"` and
+  `hx-sync="this:replace"`, so an older answer never overwrites a newer one. Options already chosen
+  are hidden after each swap. A click on the list is handled by one listener on the list (event
+  delegation), and `mousedown` on the list is cancelled so the input keeps focus and the click is
+  not lost.
+- **Tests:** `FormComponentsPageTest` (the ARIA wiring and the states), `IngredientOptionsPageTest`
+  (the list and the form), and the browser test `IngredientPickerE2ETest` (pick, search, add, save
+  at phone and desktop size).
 
 ### Sheet and confirm dialog (R3, #75)
 

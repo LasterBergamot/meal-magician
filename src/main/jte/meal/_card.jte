@@ -4,7 +4,7 @@
 @param ViewContext ctx
 @param MealView meal
 <%-- One meal in the list: its name (one stretched link to the detail page), a short look at the
-     notes, its tags and an Archived badge. Recipe links are not shown here: a link inside the
+     notes, its tags, its ingredients (neutral badges, so they differ from the violet tags) and an Archived badge. Recipe links are not shown here: a link inside the
      stretched link is not allowed (plan-ui-redesign.md section 5, Card). --%>
 <li>
   @template.ui._card(variant = "default", content = @`
@@ -21,6 +21,13 @@
       <ul class="flex flex-wrap gap-1.5">
         @for(String tag : meal.tags())
           <li>@template.ui._badge(tone = "brand", label = tag, icon = null)</li>
+        @endfor
+      </ul>
+    @endif
+    @if(!meal.ingredients().isEmpty())
+      <ul aria-label="${ctx.t("meal.detail.ingredients")}" class="flex flex-wrap gap-1.5">
+        @for(String ingredient : meal.ingredients())
+          <li>@template.ui._badge(tone = "neutral", label = ingredient, icon = null)</li>
         @endfor
       </ul>
     @endif

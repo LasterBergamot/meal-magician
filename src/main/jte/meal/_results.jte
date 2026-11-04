@@ -12,10 +12,11 @@
 <%-- The part of the meal list that changes while searching: the tag chips, the archived switch, the
      sort control and the meals (or an empty state). htmx swaps it into #meal-results; the page and
      this fragment are the same markup, so a reload shows what the swap showed. The hidden inputs in
-     #meal-state carry the filter that the search box does not hold itself (tag, sort, archived),
+     #meal-state carry the filter that the search box does not hold itself (tag, ingredient, sort, archived),
      which the search box includes when it sends its request. --%>
 <div id="meal-state" hidden>
   <input type="hidden" name="tag" value="${page.filter().tag()}">
+  <input type="hidden" name="ingredient" value="${page.filter().ingredient()}">
   <input type="hidden" name="sort" value="${page.filter().sort()}">
   @if(page.filter().archived())
     <input type="hidden" name="archived" value="true">
@@ -33,6 +34,14 @@
         @for(String tag : page.tags())
           @template.ui._chip(label = tag, selected = tag.equalsIgnoreCase(page.filter().tag()),
             attrs = Map.of("hx-get", page.filter().hrefToggleTag(tag), "hx-target", "#meal-results", "hx-push-url", "true"))
+        @endfor
+      </div>
+    @endif
+    @if(!page.ingredients().isEmpty())
+      <div role="group" aria-label="${ctx.t("meal.filter.ingredients")}" class="flex gap-2 overflow-x-auto pr-1 pb-1.5 md:flex-wrap">
+        @for(String ingredient : page.ingredients())
+          @template.ui._chip(label = ingredient, selected = ingredient.equalsIgnoreCase(page.filter().ingredient()),
+            attrs = Map.of("hx-get", page.filter().hrefToggleIngredient(ingredient), "hx-target", "#meal-results", "hx-push-url", "true"))
         @endfor
       </div>
     @endif

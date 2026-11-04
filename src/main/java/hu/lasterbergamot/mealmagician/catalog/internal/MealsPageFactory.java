@@ -4,9 +4,11 @@ import hu.lasterbergamot.mealmagician.catalog.MealSearch;
 import hu.lasterbergamot.mealmagician.catalog.MealService;
 import hu.lasterbergamot.mealmagician.catalog.MealView;
 import hu.lasterbergamot.mealmagician.catalog.RecentMealsProvider;
+import java.text.Collator;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
@@ -49,10 +51,39 @@ class MealsPageFactory {
   MealsPage page(long userId, long householdId, MealFilter filter, String quickName) {
     List<MealView> found =
         meals.search(
-            userId, householdId, new MealSearch(filter.q(), filter.tag(), filter.archived()));
+            userId,
+            householdId,
+            new MealSearch(filter.q(), filter.tag(), filter.ingredient(), filter.archived()));
     List<MealView> ordered =
         MealFilter.NAME.equals(filter.sort()) ? found : recentFirst(userId, householdId, found);
-    return new MealsPage(filter, ordered, meals.tagNames(userId, householdId), quickName);
+    return new MealsPage(
+        filter,
+        ordered,
+        meals.tagNames(userId, householdId),
+        ingredientNames(userId, householdId, filter, found),
+        quickName);
+  }
+
+  /**
+   * The ingredient names for the filter chips: every ingredient on a library meal, so the row does
+   * not shrink to the one chosen ingredient once a filter is on. {@code MealService} has no call
+   * for "the ingredients in use", so they are read off the meals; when a filter narrowed the
+   * result, the unfiltered library is searched once more (a household's library is small).
+   *
+   * @return the distinct names in Hungarian collation order
+   */
+  private List<String> ingredientNames(
+      long userId, long householdId, MealFilter filter, List<MealView> found) {
+    List<MealView> library =
+        filter.narrows()
+            ? meals.search(userId, householdId, new MealSearch(null, null, null, filter.archived()))
+            : found;
+    Collator collator = Collator.getInstance(Locale.of("hu"));
+    return library.stream()
+        .flatMap(meal -> meal.ingredients().stream())
+        .distinct()
+        .sorted(collator)
+        .toList();
   }
 
   /**
