@@ -65,7 +65,7 @@ $1.65 per million input tokens and $9.90 per million output tokens (thinking tok
 `gemini-embedding-001` for the meal search. A draft costs a few cents at most; real use is expected to be
 cents per month.
 
-- **Spend cap:** every household may spend **$5 a month** (`mm.ai.monthly-cap-usd`). The check is before
+- **Spend cap:** every household may spend **$10 a month** (`mm.ai.monthly-cap-usd`). The check is before
   each call, so a household at the cap gets a message and no call is made. Usage is added after each call
   in the `assistant_usage` table (tokens and micro-USD per household and month). A new month starts at
   zero by itself.

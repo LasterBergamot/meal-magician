@@ -75,7 +75,7 @@ mm:
     # credentials are needed, nothing calls out. MM_AI_ENABLED=true turns it on (release.yml does
     # that only when the GitHub variable AI_ENABLED is 'true').
     enabled: false
-    monthly-cap-usd: 5.00
+    monthly-cap-usd: 10.00
     # USD per million tokens of the chosen chat model (no defaults: they must match the model).
     # ProductionConfigGuard requires both when the assistant is on.
     price-input-per-million-usd: ${AI_PRICE_IN:}

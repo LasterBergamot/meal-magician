@@ -102,7 +102,8 @@ class AssistantServiceTest {
             LocalDate.now(hu.lasterbergamot.mealmagician.shared.ClockConfig.ZONE)
                 .withDayOfMonth(1));
     assertThat(usage.costMicroUsd()).isZero();
-    assertThat(usage.capMicroUsd()).isEqualTo(5_000_000L);
+    // The ledger comes from the Spring context, so this is the default cap in application.yml: $10.
+    assertThat(usage.capMicroUsd()).isEqualTo(10_000_000L);
     assertThat(usage.capReached()).isFalse();
   }
 
