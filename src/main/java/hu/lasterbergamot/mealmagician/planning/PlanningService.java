@@ -366,6 +366,59 @@ public class PlanningService {
   }
 
   /**
+   * Writes an accepted assistant draft into one ISO week of the plan. This is the only door the
+   * assistant has to the plan, so it follows the same rules as everything else: {@link
+   * CopyMode#MERGE} appends after the meals already there and {@link CopyMode#REPLACE} first
+   * empties the whole week, Monday to Sunday (D26), through the shared {@code SlotWriter}. One
+   * {@link SlotPlanned} is published per slot, so the listeners see a draft like any other
+   * planning. The slots are written without a note, in the order given.
+   *
+   * <p>Everything is checked before the first write, so a refused draft changes nothing. The whole
+   * call runs in one transaction (or joins the caller's), which is why the caller must not hold it
+   * open across a model call.
+   *
+   * @param userId the {@code app_user} id of the person accepting the draft
+   * @param householdId the household whose plan it is
+   * @param weekMonday the Monday of the week to write; any other day is moved back to its Monday
+   * @param draft the slots to write; each date must lie inside that week
+   * @param mode merge or replace
+   * @return how many slots were written, which is {@code draft.size()}
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member of the household
+   * @throws InvalidPlanException with {@code NOTHING_TO_COPY} if the list is empty (so a replace
+   *     never silently wipes a week), {@code OUTSIDE_WEEK} if a date is not in the week, or {@code
+   *     MEAL_ARCHIVED} if a meal is archived; nothing is written then
+   * @throws hu.lasterbergamot.mealmagician.catalog.MealNotFoundException if a meal does not exist
+   *     in this household; nothing is written then
+   * @throws PlanConflictException if a replace finds that the week changed meanwhile
+   */
+  public int applyDraft(
+      long userId, long householdId, LocalDate weekMonday, List<DraftSlot> draft, CopyMode mode) {
+    households.require(householdId, userId);
+    if (draft.isEmpty()) {
+      throw new InvalidPlanException(PlanProblem.NOTHING_TO_COPY);
+    }
+    LocalDate monday = weekMonday.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    LocalDate sunday = monday.plusDays(6);
+    for (DraftSlot slot : draft) {
+      if (slot.date().isBefore(monday) || slot.date().isAfter(sunday)) {
+        throw new InvalidPlanException(PlanProblem.OUTSIDE_WEEK);
+      }
+    }
+    // find() is tenant-scoped, so a meal of another household is a 404 here, not a plan entry.
+    for (long mealId : draft.stream().map(DraftSlot::mealId).distinct().toList()) {
+      if (meals.find(userId, householdId, mealId).archived()) {
+        throw new InvalidPlanException(PlanProblem.MEAL_ARCHIVED);
+      }
+    }
+    List<SlotSeed> seeds =
+        draft.stream()
+            .map(slot -> new SlotSeed(slot.date(), slot.slotType(), slot.mealId(), null))
+            .toList();
+    return writer.write(householdId, monday, sunday, seeds, mode);
+  }
+
+  /**
    * The meals the household planned on or before today, most recent first, for "recently used
    * first" in the library. A meal appears once. The library page sorts its list by this order and
    * keeps the meals not in it at the end.

@@ -6,7 +6,7 @@ library, #66 and #88), the `planning` module (the weekly plan, reuse, occasions 
 and the week page, `planning/internal/PlanController`), the `feedback` module (ratings and the meal
 history, #124, #128, #132) and the `sharing` module (share links, the print view and the public
 share page, #125, #129, #131). Phases 0 to 5 are built; the `assistant` module (Phase 7) has its
-foundation (#157, below) and the features are still to come.
+foundation, the meal search and the draft logic (#157 to #159, below); its pages are still to come.
 
 - **Application class** `MealMagicianApplication` starts Spring Boot; everything lives below its
   package `hu.lasterbergamot.mealmagician`.
@@ -58,8 +58,65 @@ foundation (#157, below) and the features are still to come.
     scan is exact and fast. Meal text (names, notes, ingredients) goes to Vertex to be embedded and
     is never logged. The table is derived data and can be rebuilt; the H2 profile has no such table,
     so the assistant is unavailable without Postgres.
-  - **Public API:** `AssistantService.enabled()` and `usageThisMonth(userId, householdId)` (members
-    only; 404 while off). `ProductionConfigGuard` fails a `prod` start with the assistant on and a
+  - **Tools and drafts (#159).** The model can read the household's data through six tools in
+    `AssistantTools`, one object per request that is built for one person and one household. Those two
+    ids are fixed in its constructor: **no tool has a household or user parameter**, so the model
+    cannot ask for another household (a test checks every tool's parameters and schema, and that
+    each returns nothing when the data is in another household), and **no tool writes anything**.
+    The tools are `recentWeeks` (up to 8 weeks), `searchMeals` (semantic, via the index, up to 15,
+    with tags and ingredients; the first call of a request syncs the index), `mealDetails` (up to
+    15), `householdPreferences` (liked, disliked and comments per member, from
+    `RatingService.recent`), `upcomingOccasions` (up to 90 days) and `currentDate` (with
+    "Hungary, Central Europe" so the model can judge the season). Every limit is clamped.
+  - **What is anonymised.** Members are "member 1", "member 2" ... (`Pseudonyms`, numbered by user
+    id); a member who left is "a former member". A display name or an e-mail address is never put
+    into a prompt or a tool result. What does go to Google: meal names, notes, tags, ingredients,
+    occasion names, dates, slot types, ratings and the **rating comments** and the member's request
+    as typed (a member can write a name into those; the privacy note says so). All member text is
+    data: the system prompt says so, the request and follow-ups are put into the prompt as quoted
+    JSON strings, and the model can only read. The system prompt also forbids claiming that a meal is
+    safe for an allergy (no dietary rules are stored) and asks for the answer in the member's
+    language (Hungarian when `Locale` is `hu`, else English).
+  - **How a draft is made.** `AssistantService.draftWeek(userId, householdId, locale, anyDay,
+    request)` checks membership and the length (1 200 characters at most, else
+    `InvalidRequestException` and no model call), then `DraftGenerator` sends the prompt through
+    `ModelGateway` (cap and timeout apply; the call runs outside any database transaction) with
+    the tools attached. The answer is JSON in the text (`DraftProposal`: a summary and items that are
+    either `{date, slotType, mealId}` or `{date, slotType, idea{name, reason, tags, ingredients}}`);
+    tool calling and JSON output work together on the chosen model, and the schema comes from Spring
+    AI's `BeanOutputConverter`. `DraftValidator` then checks every item: a `mealId` that is not an
+    active meal of the household, a date outside the week and an idea without a name are dropped,
+    ideas are capped at 5, texts are trimmed to their column sizes. If ids were invalid or the answer
+    was not usable JSON the model is told what was wrong and asked **once** more; a second failure
+    throws `DraftGenerationException` and nothing is stored. Invented ids never reach storage.
+  - **Stored drafts.** `assistant_draft` and `assistant_draft_item` (V15, common): a draft has its
+    household, the week's Monday, a status (OPEN or ACCEPTED), the member's request (up to 1 200
+    characters), the conversation as JSON and the summary. An item is a library meal **or** an idea
+    (a check enforces exactly one), with composite foreign keys that keep it in the draft's household
+    and refuse a meal of another one. A draft is kept for 7 days: `DraftStore` deletes older ones when
+    a new draft is stored (no scheduler), so the request text and conversation also appear in
+    backups until then. Any member may use any draft of the household.
+  - **Using a draft.** `refine` sends a follow-up (same length limit) with the draft as it stands,
+    including what members removed by hand, and replaces the items; `removeItem` takes one out;
+    `addIdeaToLibrary` creates the meal through `MealService.create` (name, tags, ingredients) and
+    turns the item into a library item; `discard` deletes the draft; `draft` reads it. `accept(…,
+    CopyMode)` closes the draft with one conditional update (OPEN to ACCEPTED, so a second accept is
+    a `DraftClosedException`, 409) and writes the library items through `PlanningService.applyDraft`
+    in the same transaction, so a refused write (a week that changed, a meal archived since) leaves
+    the draft open. Ideas that are not in the library are dropped and counted in `AcceptResult`;
+    they never reach the plan by themselves.
+  - **`PlanningService.applyDraft` and `RatingService.recent`.** `applyDraft(userId, householdId,
+    weekMonday, List<DraftSlot>, CopyMode)` is the assistant's only door to the plan: it refuses an
+    empty list, a date outside the week (`OUTSIDE_WEEK`), an archived meal (`MEAL_ARCHIVED`) and a
+    meal of another household (404) before writing anything, then writes through the same
+    `SlotWriter` as copying (merge appends; replace empties Monday to Sunday first, D26) and
+    publishes one `SlotPlanned` per slot. `RatingService.recent(userId, householdId, limit)` returns
+    the household's latest ratings of any meal, newest first, with comments, former members dropped
+    (limit 1 to 100).
+  - **Public API:** `AssistantService.enabled()`, `usageThisMonth(userId, householdId)` (members
+    only; 404 while off) and the draft methods above (`draftWeek`, `refine`, `removeItem`,
+    `addIdeaToLibrary`, `accept`, `discard`, `draft`; all 404 while the assistant is off). No page
+    uses them yet (#160). `ProductionConfigGuard` fails a `prod` start with the assistant on and a
     project, location, model id or price missing.
 - **Guard tests (#14)** enforce the conventions so nobody has to remember them:
   `EveryEndpointNeedsSignInTests` calls every mapped controller endpoint anonymously and fails if

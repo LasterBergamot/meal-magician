@@ -50,6 +50,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class RatingService {
 
+  /** The most ratings {@link #recent} will read in one call. */
+  static final int MAX_RECENT = 100;
+
   private final RatingRepository ratings;
   private final PlanningService planning;
   private final MealService meals;
@@ -244,6 +247,28 @@ public class RatingService {
         (int) ratings.countByHouseholdIdAndMealIdAndThumb(householdId, mealId, Thumb.DOWN),
         ratings.averageStars(householdId, mealId),
         views(latest, householdId, userId));
+  }
+
+  /**
+   * The household's latest ratings across all meals, with their comments, for the assistant to
+   * learn what the household likes. Newest first (by when the rating was given or last changed).
+   * Ratings of former members are dropped, as in {@link #forMeal}. The limit is applied before the
+   * former members are dropped, so a household that has lost members may get slightly fewer.
+   *
+   * @param userId the {@code app_user} id of the person asking
+   * @param householdId the household
+   * @param limit how many to read; clamped to 1 to 100
+   * @return the ratings of current members, newest first; empty when nothing is rated
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member of the household
+   */
+  @Transactional(readOnly = true)
+  public List<RatingView> recent(long userId, long householdId, int limit) {
+    households.require(householdId, userId);
+    List<Rating> latest =
+        ratings.findByHouseholdIdOrderByUpdatedAtDescIdDesc(
+            householdId, PageRequest.of(0, Math.clamp(limit, 1, MAX_RECENT)));
+    return views(latest, householdId, userId);
   }
 
   /** Display names by user id. Only {@code displayName} is read; the e-mail is never copied. */

@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
@@ -36,6 +37,9 @@ class AssistantServiceTest {
   @Autowired private JdbcTemplate jdbc;
   @Autowired private ApplicationContext context;
 
+  @Autowired
+  private ObjectProvider<hu.lasterbergamot.mealmagician.assistant.internal.DraftService> drafts;
+
   private long anna;
   private long cili;
   private long annas;
@@ -56,7 +60,7 @@ class AssistantServiceTest {
             BigDecimal.ONE,
             768,
             Duration.ofSeconds(1));
-    return new AssistantService(on, ledger, households);
+    return new AssistantService(on, ledger, households, drafts);
   }
 
   @Test

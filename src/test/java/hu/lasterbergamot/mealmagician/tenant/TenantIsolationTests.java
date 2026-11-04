@@ -300,7 +300,7 @@ class TenantIsolationTests {
   }
 
   private static TenantWorld world() {
-    return new TenantWorld(1, 2, 10, 11, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110);
+    return new TenantWorld(1, 2, 10, 11, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120);
   }
 
   /** "METHOD /pattern" of every mapped handler that works on a household. */
@@ -393,6 +393,17 @@ class TenantIsolationTests {
             .create(homeOwner, homeId, LocalDate.of(2026, 11, 2), ShareExpiry.DAYS_7)
             .link()
             .id();
+    // Inserted with SQL: the assistant is off in this context, so its draft service does not exist.
+    jdbc.update(
+        "insert into assistant_draft (household_id, created_by, week_start, status, request_text,"
+            + " conversation, created_at) values (?, ?, ?, 'OPEN', 'plan', '[]', ?)",
+        homeId,
+        homeOwner,
+        LocalDate.of(2026, 11, 2),
+        OffsetDateTime.now());
+    long draftId =
+        jdbc.queryForObject(
+            "select id from assistant_draft where household_id = ?", Long.class, homeId);
     currentWorld =
         new TenantWorld(
             homeId,
@@ -408,7 +419,8 @@ class TenantIsolationTests {
             occasionId,
             occasionItemId,
             occasionTemplateId,
-            shareLinkId);
+            shareLinkId,
+            draftId);
     return currentWorld;
   }
 }
