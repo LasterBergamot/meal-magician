@@ -125,6 +125,14 @@ paths:
   on the list. The list comes from `searchUrl` as `<li role="option" data-value>` rows
   (`meal/_ingredient_options`). Do not use `<datalist>` (poor on phones). `sw.js` caches `app.js`:
   bump its `CACHE` name when the script changes.
+- **Suggesting text field (`ui/_suggest_field`, #174):** the Tags field of the meal form. A plain
+  text input (`name="tags"`, one comma-separated string, no chips) with the same ARIA combobox
+  wiring and tokens as the combobox, but it only suggests. Parameters: `id`, `name`, `label`,
+  `hint`, `value`, `error`, `searchUrl`, `listLabel`. The Alpine `tagSuggest` component works on
+  the comma-separated segment under the caret: an `htmx:configRequest` listener swaps the
+  request's parameters for `q` = that segment, and picking a row replaces the segment with the
+  tag's exact spelling plus ", ". The rows come from `GET /meals/tags` (`meal/_tag_options`, no
+  Add row; an empty body hides the list). Do not turn it into chips.
 - **Content and status components (`ui/`, R2b):** `ui/_badge.jte` (`tone`: neutral, brand, accent,
   success, warning, danger, info; a span, never a control), `ui/_chip.jte` (a filter button with
   `aria-pressed`; selected is a fill plus a check), `ui/_slot_chip.jte` and `ui/_slot_dot.jte`

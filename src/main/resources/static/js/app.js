@@ -399,6 +399,169 @@
       },
     }));
 
+    // The suggesting text field (ui/_suggest_field.jte, issue #174): the Tags field of the meal
+    // form. Same WAI-ARIA combobox pattern and list rows as `combobox` above, but the field stays
+    // plain text: its value is one comma-separated string and nothing is a chip. The "current
+    // segment" is the text between the commas around the caret; only that goes to the server as q,
+    // and choosing a row replaces just that segment with the row's exact spelling plus ", ". A
+    // name with no matching row is simply typed, so the list never blocks anything.
+    window.Alpine.data('tagSuggest', () => ({
+      isOpen: false,
+      init() {
+        this.$refs.listbox.addEventListener('htmx:afterSwap', () => this.reset());
+        // htmx would send the whole field (?tags=a, b, ve); the list wants only the segment being
+        // typed, as q.
+        this.$refs.input.addEventListener('htmx:configRequest', (event) => {
+          delete event.detail.parameters[this.$refs.input.name];
+          event.detail.parameters.q = this.segment().text;
+        });
+      },
+      get expanded() {
+        return this.isOpen ? 'true' : 'false';
+      },
+      get closed() {
+        return !this.isOpen;
+      },
+      open() {
+        this.isOpen = true;
+      },
+      typed() {
+        this.open();
+        this.deactivate();
+      },
+      close() {
+        this.isOpen = false;
+        this.deactivate();
+      },
+      focusOut(event) {
+        if (!this.$el.contains(event.relatedTarget)) {
+          this.close();
+        }
+      },
+      keepFocus(event) {
+        event.preventDefault();
+      },
+      // The comma-separated segment the caret is in: where it starts and ends in the value and its
+      // trimmed text.
+      segment() {
+        const input = this.$refs.input;
+        const value = input.value;
+        const caret = input.selectionStart === null ? value.length : input.selectionStart;
+        const start = value.slice(0, caret).lastIndexOf(',') + 1;
+        const comma = value.indexOf(',', caret);
+        const end = comma < 0 ? value.length : comma;
+        return { start, end, text: value.slice(start, end).trim() };
+      },
+      // The folded text of every other segment, so a tag already in the field is not offered again.
+      otherTags() {
+        const value = this.$refs.input.value;
+        const { start, end } = this.segment();
+        return `${value.slice(0, start)},${value.slice(end)}`
+          .split(',')
+          .map(fold)
+          .filter((tag) => tag !== '');
+      },
+      options() {
+        return [...this.$refs.listbox.querySelectorAll('[role="option"]:not([hidden])')];
+      },
+      activeOption() {
+        return this.options().find((option) => option.getAttribute('aria-selected') === 'true');
+      },
+      deactivate() {
+        this.$refs.listbox
+          .querySelectorAll('[aria-selected="true"]')
+          .forEach((option) => option.setAttribute('aria-selected', 'false'));
+        this.$refs.input.removeAttribute('aria-activedescendant');
+      },
+      // After each new list: give the rows ids (aria-activedescendant needs them), hide the tags
+      // already in the field and clear the highlight.
+      reset() {
+        const listbox = this.$refs.listbox;
+        const taken = this.otherTags();
+        this.deactivate();
+        listbox.querySelectorAll('[role="option"]').forEach((option, index) => {
+          option.id = `${listbox.id}-option-${index}`;
+          option.hidden = taken.includes(fold(option.dataset.value));
+        });
+      },
+      move(step) {
+        this.open();
+        const options = this.options();
+        if (options.length === 0) {
+          return;
+        }
+        const current = options.findIndex((option) => option.getAttribute('aria-selected') === 'true');
+        let next;
+        if (current < 0) {
+          next = step > 0 ? 0 : options.length - 1;
+        } else {
+          next = (current + step + options.length) % options.length;
+        }
+        this.deactivate();
+        const option = options[next];
+        option.setAttribute('aria-selected', 'true');
+        this.$refs.input.setAttribute('aria-activedescendant', option.id);
+        option.scrollIntoView({ block: 'nearest' });
+      },
+      choose(event) {
+        const option = event.target instanceof Element ? event.target.closest('[role="option"]') : null;
+        if (option) {
+          this.pick(option.dataset.value);
+        }
+      },
+      // Replaces the current segment with the tag's exact spelling and ", ", keeps the other
+      // segments, puts the caret after the new ", " and closes the list. The value is set in
+      // script, which fires no input event, so no new search starts until the person types again.
+      pick(name) {
+        const input = this.$refs.input;
+        const value = input.value;
+        const { start, end } = this.segment();
+        const head = value.slice(0, start).replace(/\s+$/, '');
+        const tail = value.slice(end).replace(/^[\s,]+/, '');
+        const before = head === '' ? '' : `${head} `;
+        const inserted = `${before}${name}, `;
+        input.value = `${inserted}${tail}`;
+        input.setSelectionRange(inserted.length, inserted.length);
+        input.focus();
+        this.close();
+      },
+      onKeydown(event) {
+        if (event.isComposing) {
+          return;
+        }
+        switch (event.key) {
+          case 'ArrowDown':
+            event.preventDefault();
+            this.move(1);
+            break;
+          case 'ArrowUp':
+            event.preventDefault();
+            this.move(-1);
+            break;
+          case 'Enter': {
+            // Only a highlighted row is taken; otherwise Enter submits the form as usual.
+            const active = this.isOpen ? this.activeOption() : undefined;
+            if (active) {
+              event.preventDefault();
+              this.pick(active.dataset.value);
+            }
+            break;
+          }
+          case 'Escape':
+            if (this.isOpen) {
+              event.preventDefault();
+              this.close();
+            }
+            break;
+          case 'Tab':
+            this.close();
+            break;
+          default:
+            break;
+        }
+      },
+    }));
+
     // The sheet and the confirm dialog (ui/_sheet.jte, plan section 5). The markup is a native
     // <dialog> opened with showModal(), which makes the rest of the page inert, puts the dialog in
     // the top layer and closes it on Escape. This component adds what is left: a Tab trap (native

@@ -55,4 +55,23 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
       order by t.nameKey
       """)
   List<Tag> findInUse(long householdId);
+
+  /**
+   * The tags a household uses, with how many meals carry each, for the Tags field's suggestions.
+   * Only tags on at least one meal are listed. Both the tag and the link are matched to the
+   * household, so a row of another household can never join in.
+   *
+   * @param householdId the household
+   * @return one row per tag, the most used first, then by lower-case name
+   */
+  @Query(
+      """
+      select new hu.lasterbergamot.mealmagician.catalog.internal.TagUse(
+               t.name, t.nameKey, count(mt.id.mealId))
+      from Tag t join MealTag mt on mt.id.tagId = t.id
+      where t.householdId = :householdId and mt.householdId = :householdId
+      group by t.id, t.name, t.nameKey
+      order by count(mt.id.mealId) desc, t.nameKey
+      """)
+  List<TagUse> findUsage(long householdId);
 }

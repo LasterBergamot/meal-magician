@@ -17,6 +17,7 @@ import hu.lasterbergamot.mealmagician.catalog.internal.MealTagRepository;
 import hu.lasterbergamot.mealmagician.catalog.internal.NameWriter;
 import hu.lasterbergamot.mealmagician.catalog.internal.Tag;
 import hu.lasterbergamot.mealmagician.catalog.internal.TagRepository;
+import hu.lasterbergamot.mealmagician.catalog.internal.TagUse;
 import hu.lasterbergamot.mealmagician.household.HouseholdService;
 import java.time.Clock;
 import java.time.Instant;
@@ -55,6 +56,9 @@ public class MealService {
 
   /** The most ingredient suggestions one call returns. */
   private static final int SUGGESTIONS_MAX = 50;
+
+  /** The most tag suggestions one call returns; the pool is small and a phone list is short. */
+  private static final int TAG_SUGGESTIONS_MAX = 10;
 
   private final MealRepository meals;
   private final TagRepository tags;
@@ -384,6 +388,35 @@ public class MealService {
   public List<String> tagNames(long userId, long householdId) {
     households.require(householdId, userId);
     return tags.findInUse(householdId).stream().map(Tag::getName).toList();
+  }
+
+  /**
+   * Suggestions for the Tags field of the meal form: the household's tags that are on at least one
+   * meal (the same pool as {@link #tagNames}) whose name contains the typed text, most used first,
+   * then alphabetical. Matching ignores case and accents, so "vegan" finds "Vegán". Nothing typed
+   * lists the most used tags. The field stays free text: these are only offers, and a tag not
+   * listed is created as before when the meal is saved.
+   *
+   * <p>The pool is read per household, so another household's tags are never returned. Folding
+   * happens here and not in SQL because accent folding is not portable between H2 and Postgres, and
+   * a household has only a handful of tags.
+   *
+   * @param userId the {@code app_user} id of the person asking
+   * @param householdId the household
+   * @param query the tag text typed so far; {@code null} or blank means nothing typed
+   * @return at most 10 tag names in their stored spelling; empty when none matches
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member of the household
+   */
+  @Transactional(readOnly = true)
+  public List<String> tagSuggestions(long userId, long householdId, String query) {
+    households.require(householdId, userId);
+    String key = query == null ? "" : MealRules.tagSearchKey(query);
+    return tags.findUsage(householdId).stream()
+        .filter(use -> MealRules.tagSearchKey(use.name()).contains(key))
+        .limit(TAG_SUGGESTIONS_MAX)
+        .map(TagUse::name)
+        .toList();
   }
 
   private MealView setArchived(long userId, long householdId, long mealId, boolean archived) {

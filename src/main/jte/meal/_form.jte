@@ -48,9 +48,8 @@
     error = page.error("recipeUrl") == null ? null : ctx.t(page.error("recipeUrl")), required = false, disabled = false,
     attrs = Map.of("maxlength", "2000", "autocomplete", "off", "inputmode", "url"))
 
-  @template.ui._field(id = "meal-tags", name = "tags", label = ctx.t("meal.form.tags"), type = "text", value = page.form().tags(), hint = ctx.t("meal.form.tags.hint"),
-    error = page.error("tags") == null ? null : ctx.t(page.error("tags")), required = false, disabled = false,
-    attrs = Map.of("autocomplete", "off"))
+  @template.ui._suggest_field(id = "meal-tags", name = "tags", label = ctx.t("meal.form.tags"), hint = ctx.t("meal.form.tags.hint"), value = page.form().tags(),
+    error = page.error("tags") == null ? null : ctx.t(page.error("tags")), searchUrl = "/meals/tags", listLabel = ctx.t("meal.form.tags.suggestions"))
 
   @template.ui._combobox(id = "meal-ingredients", name = "ingredients", label = ctx.t("meal.form.ingredients"), hint = ctx.t("meal.form.ingredients.hint"),
     placeholder = ctx.t("meal.form.ingredients.search"), chosenLabel = ctx.t("meal.form.ingredients.chosen"),

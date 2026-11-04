@@ -194,7 +194,7 @@ foundation, the meal search and the draft logic (#157 to #159, below); its pages
 - **Meal library (#66), module `catalog`:** `MealService` is the public entry point: `create`,
   `quickAdd` (name only, for a phone), `edit`, `archive` and `restore`, `find`, `search` (part of
   the name, a tag and/or an ingredient, ignoring case, archived meals left out unless asked for),
-  `tagNames` and `ingredientSuggestions`.
+  `tagNames`, `tagSuggestions` and `ingredientSuggestions`.
   Every method takes the asking person's id and the household id, and first checks membership
   through `HouseholdService.require`, so a stranger gets 404. A meal of another household is 404 as
   well, because every meal lookup is scoped by household. Every member may use the library, so
@@ -264,6 +264,17 @@ foundation, the meal search and the draft logic (#157 to #159, below); its pages
     which kind each line is. The starter list is the table `ingredient_seed` (about 160 common
     Hungarian ingredient names loaded by V12): global, read-only reference data and the only table
     without a `household_id`. A test recomputes every seed key with `MealRules.ingredientKey`.
+  - **Tag suggestions (#174):** `MealService.tagSuggestions(userId, householdId, query)` feeds the
+    Tags field of the meal form. The pool is the household's tags that are on at least one meal (the
+    same rule as `tagNames`), read with `TagRepository.findUsage` (one query, a `TagUse` row per tag
+    with the number of meals). It keeps the tags whose name contains the typed text, ignoring case
+    **and accents** (`MealRules.tagSearchKey`, so "vegan" finds "Vegán"), most used first, then by
+    name, at most 10. The folding is done in Java because accent folding is not portable between H2
+    and Postgres and a household has few tags. Only the search folds accents: a tag's identity is
+    still `MealRules.tagKey` (lower case, accents kept), so "vegan" and "vegán" typed by hand stay
+    two tags; picking the suggestion is what prevents the near-duplicate. `GET /meals/tags?q=` is
+    `TagOptionsController`, member-only and household-scoped like the ingredient route (a person in
+    no household gets 404), registered in `TenantEndpoints`.
   - **Race-safe creation:** `NameWriter` finds or creates a tag or ingredient. The old way (look up,
     then save) failed when two people created the same new name at once: the second insert broke the
     unique key, and on Postgres that aborts the whole transaction, so the person got a server error.

@@ -164,6 +164,8 @@ public final class TenantEndpoints {
           TenantEndpoint.forMembers(GET, "/meals/new", w -> NONE),
           // the ingredient picker's list (#156): every member, the household's own names only
           TenantEndpoint.forMembers(GET, "/meals/ingredients", w -> NONE),
+          // the Tags field's suggestion list (#174): every member, the household's own tags only
+          TenantEndpoint.forMembers(GET, "/meals/tags", w -> NONE),
           TenantEndpoint.forMembers(POST, "/meals", w -> NONE),
           TenantEndpoint.forMembers(POST, "/meals/quick", w -> NONE),
           TenantEndpoint.forMembers(GET, "/meals/{mealId}", w -> Map.of("mealId", w.homeMealId())),
