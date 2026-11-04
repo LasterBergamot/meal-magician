@@ -42,6 +42,14 @@ dependencies {
     // The assistant (#157): Gemini on Vertex AI. Inert unless mm.ai.enabled=true (application.yml).
     implementation(libs.spring.ai.starter.model.google.genai)
     implementation(libs.spring.ai.starter.model.google.genai.embedding)
+    // The Google SDK brings in Guava 33.4.0, which has CVE-2026-102554 (HIGH; the Trivy gate in
+    // ci.yml fails on it). This pins the fixed release for every configuration. Remove it when the
+    // SDK's own Guava is new enough.
+    constraints {
+        implementation("com.google.guava:guava:33.7.2-jre") {
+            because("CVE-2026-102554 in the Guava 33.4.0 that the Google GenAI SDK brings in")
+        }
+    }
 
     // Annotation processor configurations don't see the BOM above, so it is repeated for them.
     annotationProcessor(platform(libs.spring.boot.bom))
