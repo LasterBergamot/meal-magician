@@ -8,7 +8,9 @@ import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
 
 class AiPropertiesTest {
 
@@ -35,6 +37,22 @@ class AiPropertiesTest {
     assertThat(bound.priceOutputPerMillionUsd()).isNull();
     assertThat(bound.embeddingDimensions()).isEqualTo(768);
     assertThat(bound.timeout()).isEqualTo(Duration.ofSeconds(60));
+  }
+
+  /**
+   * The deploy sets the cap as the environment variable {@code MM_AI_MONTHLY_CAP_USD} (release.yml,
+   * from the GitHub variable AI_MONTHLY_CAP_USD). Spring drops the hyphens of the property name in
+   * environment variables, so this test fails if the name in release.yml ever stops matching.
+   */
+  @Test
+  void theMonthlyCapCanBeSetFromTheEnvironmentVariableTheDeployUses() {
+    var environment =
+        new SystemEnvironmentPropertySource("env", Map.of("MM_AI_MONTHLY_CAP_USD", "6"));
+    var bound =
+        new Binder(ConfigurationPropertySources.from(environment))
+            .bindOrCreate("mm.ai", AiProperties.class);
+
+    assertThat(bound.monthlyCapUsd()).isEqualByComparingTo("6");
   }
 
   @Test

@@ -217,9 +217,10 @@ key: the Cloud Run runtime account `mm-runtime` calls Vertex AI with its own ide
    | `AI_EMBEDDING_LOCATION` | `europe-west3` (this model is not offered in the `eu` multi-region; leave unset to use `AI_LOCATION`) |
    | `AI_PRICE_IN` | USD per million input tokens of the chat model, for example `1.65` |
    | `AI_PRICE_OUT` | USD per million output tokens, for example `9.90` |
+   | `AI_MONTHLY_CAP_USD` | optional: the monthly cap per household in USD, for example `5`; unset keeps the app's default of `5.00`. Read at deploy time, so a change takes effect with the next release |
 
-   The project is `GCP_PROJECT_ID`; the monthly cap per household is `mm.ai.monthly-cap-usd`
-   (default `5.00`; set `MM_AI_MONTHLY_CAP_USD` only if you add it to the deploy).
+   The project is `GCP_PROJECT_ID`. The monthly cap per household is `mm.ai.monthly-cap-usd` (default
+   `5.00`); the `AI_MONTHLY_CAP_USD` variable sets it for the deployed service, as `MM_AI_MONTHLY_CAP_USD`.
 
    **3a. Run the eval before you switch it on (your own login, costs money).** On your machine, after
    `gcloud auth application-default login`, run `task ai:eval -- --models <model>,<second model>` with
