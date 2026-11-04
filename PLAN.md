@@ -1,6 +1,6 @@
 # Plan: Meal Magician v1 — household meal planner
 
-Status: **Phases 0–5 done; v1.0.0 released 2026-11-03. Phase 6 (hardening) is next, in the order set in §3 (backups, the AI assistant, the repo audit, then the rest). R9, the owner's walk-through (#57), is still open.** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
+Status: **Phases 0–5 done; v1.0.0 released 2026-11-03. Phase 6 (hardening) is next, in the order set in §3 (the AI assistant, then the backups, the repo audit and the rest; backups moved behind the assistant on 2026-11-04). R9, the owner's walk-through (#57), is still open.** · Phase 0 done (owner checks #16, #18 closed 2026-11-02) · Started: 2026-10-31 · Owner: @LasterBergamot
 
 This file is the working plan for building Meal Magician from an empty repo to a v1 that the
 household uses every day, plus the later AI assistant. Pick it up at any point: every phase lists
@@ -74,7 +74,7 @@ after a server.
 | D29 | **Print and release (planned 2026-11-03).** Print is a dedicated light-theme page (`/plan/print?week=`, with slot notes, members only) built from the same fragment as the share page, not a print stylesheet bolted onto the shell. Lighthouse on a phone, the PWA installed on a real phone and the share-link walk-through are owner-only (#134). **v1.0.0** is cut by a manual `release.yml` run (`version=1.0.0`) once #134 passes, because the last Phase 5 PR is docs-only and does not release itself; the coordinator needs the owner's OK to trigger it. | Decided (2026-11-03; #131, #134) |
 | D30 | **Lunch is the main slot (2026-11-03).** The week page shows **Lunch** every day by default. Breakfast, dinner and snack are optional: they show when they hold a meal, and otherwise sit behind an "Other meals" disclosure on the day card (phone) or a "Show all meals" checkbox (desktop table). The backend still has all four `SlotType`s, so copying, templates, occasions and ratings are unchanged. The print and share pages list only slot types that hold a meal. | Decided (owner chose design A 2026-11-03; #127) |
 | D31 | **Ingredients (planned 2026-11-03, owner interview).** Each household has its own list of ingredients, **names only** (no amounts, no categories), linked many-to-many to meals the way tags are (`ingredient`, `meal_ingredient`, Flyway V12). Names are trimmed, at most 60 characters, at most 30 per meal; the key folds case **and accents**, so "tojas" finds and equals "tojás". A name that is not in the list is created by typing it. A global read-only table `ingredient_seed` holds about 150 common Hungarian names (the only table without `household_id`); picking one copies it into the household on first use. The picker is a new searchable combobox (a dropdown with a search bar); tags stay a text field. Creating a tag or ingredient is race-safe (a `REQUIRES_NEW` writer that re-reads after a conflict), which also fixes the old tag race. A shopping list and amounts stay parked. | Decided (owner, 2026-11-03; #155, #156) |
-| D32 | **Assistant rules (planned 2026-11-03, owner interview).** *Provider:* Gemini on Vertex AI through Spring AI's Google GenAI starter, using the runtime service account, so there is no API key (the owner wants a dedicated client, not a personal subscription; Spring AI's Anthropic module cannot use Vertex). *Scope:* library meals first, plus up to 5 "ideas" per draft that become library meals only when a person adds them; never planned by themselves. *Surfaces:* week draft, one slot, a chat page limited to food and the plan (a prompt file, widenable later), occasion menus. *Data:* meal names, tags, ingredients, dates, slot types and ratings with comments, members as "member N"; no dietary rules or allergies stored (the UI says so). *Language:* the member's. *Memory:* the chat lives in the session only. *Seasons:* the model decides from the date and "Hungary". *Cap:* $5 a month per household in the app. *Index:* custom `meal_embedding` table, synced lazily per request by content hash (no events, no scheduler). *Off by default* (`mm.ai.enabled`). The model id, EU region and embedding size are fixed by #157's spike. | Decided (owner, 2026-11-03; #157 to #162) |
+| D32 | **Assistant rules (planned 2026-11-03, owner interview).** *Provider:* Gemini on Vertex AI through Spring AI's Google GenAI starter, using the runtime service account, so there is no API key (the owner wants a dedicated client, not a personal subscription; Spring AI's Anthropic module cannot use Vertex). *Scope:* library meals first, plus up to 5 "ideas" per draft that become library meals only when a person adds them; never planned by themselves. *Surfaces:* week draft, one slot, a chat page limited to food and the plan (a prompt file, widenable later), occasion menus. *Data:* meal names, tags, ingredients, dates, slot types and ratings with comments, members as "member N"; no dietary rules or allergies stored *(Amended 2026-11-04: the UI no longer says so; was "the UI says so")*. *Language:* the member's. *Memory:* the chat lives in the session only. *Seasons:* the model decides from the date and "Hungary". *Cap:* $5 a month per household in the app. *Index:* custom `meal_embedding` table, synced lazily per request by content hash (no events, no scheduler). *Off by default* (`mm.ai.enabled`). The model id, EU region and embedding size are fixed by #157's spike. | Decided (owner, 2026-11-03; #157 to #162) |
 | D33 | **Which Gemini model to use, and its prices.** Chosen from the eval report (#162) by the owner. | Pending (#162) |
 
 ---
@@ -293,6 +293,11 @@ owner's manual steps. Agents write the code, tests and docs. Google Cloud and Ne
 owner's OK first (§9). *(Amended 2026-11-03, owner interview; 6b-0 added. Issues filed: backups #62 and
 #154; ingredients #155 and #156; assistant #157 to #162. Planned by a Sonnet session at the owner's
 request, not Opus (D25), the same exception as Phase 5; the briefs say what to do on a gap.)*
+*(Amended 2026-11-04, owner: **6a is done after 6b**, not before it. The code for 6a is merged except the
+workflow (#62, PR #166), which stays open and green until the owner has done the setup in
+`documentation/Backup-and-Restore.md`: it makes every release wait for a backup, so merging it before the
+setup would stop all releases. Until then only Neon's ~6-hour restore window protects the data, and the
+assistant's migrations (V13 to V15) deploy without a pre-release backup.)*
 
 - [ ] **6a Backups (#62 workflow and scripts; #154 setup script, restore and guide).** *(Owner, 2026-11-01:
       after the last regular feature and before the AI assistant; Neon Free's own restore window is only
@@ -355,7 +360,7 @@ request, not Opus (D25), the same exception as Phase 5; the briefs say what to d
 - [ ] **6b-0 Ingredients on meals (#155 backend with Flyway V12; #156 picker)** *(added 2026-11-03, owner
       request: the assistant should suggest seasonal meals and ingredients; was in "Later ideas")*. See D31.
       Done before the assistant, because the assistant reads ingredients.
-- [ ] **6b AI assistant:** Phase 7 below (#157–#162), built after 6a and 6b-0.
+- [ ] **6b AI assistant:** Phase 7 below (#157–#162), built after 6b-0 *(amended 2026-11-04; was: after 6a and 6b-0)*.
 - [ ] **6c `repo-audit`:** run the skill on the whole repo and reconcile its findings with the issues and
       the board. Known gaps for it to check: the rating history limit (accepted by the owner, check it is
       documented), the `share.limit` message that hard-codes "10", the tag race in B2 (two people creating
@@ -376,7 +381,8 @@ request, not Opus (D25), the same exception as Phase 5; the briefs say what to d
       move to native. **Owner:** read the bill.
 
 ### Phase 7 — AI assistant (`M3 – Assistant`, epic #8)
-*Built as stage 6b, after the backups (#62) and before the repo audit (amended 2026-11-03).*
+*Built as stage 6b, before the backups (#62) and the repo audit (amended 2026-11-03; amended 2026-11-04,
+owner: the backups come after the assistant, not before it).*
 - [ ] **Before any code** *(amended 2026-11-03)*: Spring AI 2.0 GA (2026-06-12) targets Boot 4.0/4.1 per
       its release notes; #157 proves it with a real call (the spike). **Owner:** provider and tier are
       decided (D19, D32): Gemini on Vertex AI, no API key. Left for the owner: enable the Vertex AI API and
@@ -433,7 +439,9 @@ request, not Opus (D25), the same exception as Phase 5; the briefs say what to d
     rating comments**; members appear as "member 1", "member 2", never by name or email. A comment can
     still contain a name a member typed; the privacy note says so. Vertex does not train on customer data
     by default (#157 quotes the current terms). **No dietary rules or allergies are stored** (owner's
-    choice); the UI says so and the prompt forbids claiming a meal is safe for an allergy. The chat is
+    choice); the prompt forbids claiming a meal is safe for an allergy. *(Amended 2026-11-04, owner: the
+    UI no longer says so; was "the UI says so". The prompt rule stays: it is invisible and costs nothing.)*
+    The chat is
     kept in the session only and discarded afterwards. Drafts keep the request text until purged.
   - **Spend cap** *(amended 2026-11-03; was a cap set by the owner later)*. $5 a month per household,
     kept in `assistant_usage` (V13), checked before every call and added to atomically after it; over the
@@ -686,8 +694,9 @@ meal-magician/
      *(Done 2026-11-02, PR #108.)*
    - **Then** Phase 5 (ratings, sharing, PWA polish; planned in item 9) → **v1.0.0** (done 2026-11-03), then
      Phase 6 in the order set in §3 *(Amended 2026-11-03; was: backups, Phase 6 hardening and Phase 7 in no
-     fixed order)*: backups (#62), the AI assistant (Phase 7), the repo audit, then GDPR basics, security
-     hardening and the cost review. #27 stays parked.
+     fixed order; amended 2026-11-04: the assistant now comes before the backups)*: the AI assistant (Phase 7),
+     backups (#62, #154), the repo audit, then GDPR basics, security hardening and the cost review. #27
+     stays parked.
 
 9. **Next up (2026-11-03, Phase 5; D24/D25 apply).** Planned into eleven issues under epic #6,
    with the briefs in the issues. A Sonnet planner wrote them because Opus's budget was used up
@@ -796,3 +805,5 @@ meal-magician/
 | 2026-11-03 | **Assistant UI designed** (owner): `plan-ui-redesign.md` UI-D12 and Appendix D give #160 and #161 their look, states and copy. The assistant is "Varázsló / Wizard" in the UI, marked by the `wand` icon, never gold; ideas are dashed cards; the chat page is a plain-text thread. Phase 7's Surfaces item points there. Docs only. | #160, #161 |
 | 2026-11-04 | **Assistant design brought into the plan** (the owner's design, PR #167). Phase 7's Surfaces item now carries the rules from Appendix D that change the backend (the 1 000-character limits, the quick-request hints, what Cancel does, the empty-week hint), and the owner's phone check in step 5 includes the chat page's two gold marks. The briefs of #159 to #161 were checked against Appendix D and amended: #160 now says where the quick-request hints are expanded (the controller, four known values only), adds the empty-week hint and a delay setting for the fake model; #159 widens `assistant_draft.request_text` to 1 200 characters (typed text 1 000 plus up to four hint phrases) and refuses longer requests; #161's brief had the `SPARKLES` nav icon and lacked `app.js` for the chat composer. One open design question for the owner: Appendix D.1 says every place a member types a request shows the allergy and Gemini notice, but the refine form (D.3) has neither. Docs only. | #159, #160, #161, #167 |
 | 2026-11-04 | **Backups are no longer encrypted** (owner). The `age` layer is dropped from the design: the data is low-sensitivity, the bucket is private with a create-only writer, and the owner does not want a key to store or lose. Dumps are plain `*.dump` files; a restore needs only the owner's Google login. Amended §3 (6a: the Encryption, Restore and owner-steps items; 6d: the privacy note says the dumps are unencrypted) and §9 item 10. The setup list loses its first step (the key pair and `BACKUP_AGE_RECIPIENT`). Code and docs follow in PRs: the restore script, test and guide on `main`, and the workflow on #166. | #62, #154, #166 |
+| 2026-11-04 | **The allergy and diet notice is dropped from the assistant's UI** (owner: "not needed"). It answers the open design question in the row above. `plan-ui-redesign.md` Appendix D.1, D.3, D.7 lose the `assistant.notice.allergy` alert and key and the second sentence of `assistant.chat.footnote`; the Gemini notice stays on the request step and the chat page, and the refine form (same sheet) does not repeat it. D32 and Phase 7's Privacy item are amended. The prompt rule that forbids claiming a meal is safe for an allergy stays (it is invisible). Issue #160 was updated to match (its Proposal line, its key list and its Amendment). Docs only. | #160, #161 |
+| 2026-11-04 | **Backup setup postponed until after the assistant** (owner). Stage 6a now follows 6b. What is merged stays: the restore script and the guide (#154, PR #165, #169). The backup workflow (#62, PR #166) is rebased on `main`, green and open, and is **not merged**, because it makes every release wait for a backup that cannot succeed before the owner's setup (the Neon role and secret, the Google Cloud script, `BACKUP_BUCKET`). The step-by-step is in `documentation/Backup-and-Restore.md`. Risk accepted by the owner: until then only Neon's ~6-hour restore window protects the data, and the assistant's migrations (V13 to V15) deploy without a pre-release backup. Amended the Status line, §3 (Phase 6 order, 6b, Phase 7) and §9 item 10. Docs only. | #62, #154, #166 |

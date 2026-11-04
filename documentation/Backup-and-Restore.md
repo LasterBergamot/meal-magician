@@ -101,50 +101,145 @@ gcloud storage ls gs://meal-magician-backups/release/
 ## One-time setup (the owner's steps)
 
 Do this once, after Hosting Setup parts 1 to 6. Agents write the code and run the commands you
-approve; the passwords are yours alone. Your three steps are: create the Neon read-only role and
-its secret, set the `BACKUP_BUCKET` variable, and run the setup script with an agent.
+approve; the passwords are yours alone. Your steps are: create the Neon read-only role and its
+secret, run the setup script, set the `BACKUP_BUCKET` variable, check that the writer is
+create-only, and run the first backup.
+
+**Do them in this order.** The nightly workflow (`db-backup.yml`) is also called by `release.yml`
+before every deploy, so a release waits for a backup. Merge the workflow into `main` only after
+steps 1 to 5, otherwise every release stops at a backup job that cannot succeed yet. Do the steps in
+your own terminal: the script asks `y/N` before every Google Cloud change, and the database password
+must never reach a chat or a file.
+
+`<project id>`, `<project number>` and `<app role>` below are yours: the first two are the
+`GCP_PROJECT_ID` and `GCP_PROJECT_NUMBER` GitHub variables, and `<app role>` is the database role
+the app connects as (the `DB_USERNAME` variable).
 
 ### 1. Give the backup a read-only database role
 
 The dump logs in to Neon as a role that can only read, so even a leaked backup password cannot
-change or delete data. The setup script (step 3) prints the exact SQL to run in the Neon SQL
-editor and the command that stores the new password in Secret Manager as `backup-db-password`.
-You type the password yourself, hidden; it is never shown to an agent or written to a file.
+change or delete data.
 
-### 2. Set the GitHub variable
+1. Generate a password and copy it: `openssl rand -base64 24`. You will paste it twice (here and in
+   step 2). Do not save it in a file; if you lose it, create the role again with a new one.
+2. In the Neon console open the project, its **SQL Editor**, database `mealmagician`, and run:
 
-Repo → Settings → Secrets and variables → Actions → Variables ([[Hosting Setup]] part 6):
+   ```sql
+   CREATE ROLE mm_backup LOGIN PASSWORD '<the password>';
+   GRANT CONNECT ON DATABASE mealmagician TO mm_backup;
+   GRANT USAGE ON SCHEMA public TO mm_backup;
+   GRANT SELECT ON ALL TABLES IN SCHEMA public TO mm_backup;
+   GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO mm_backup;
+   ALTER DEFAULT PRIVILEGES FOR ROLE "<app role>" IN SCHEMA public GRANT SELECT ON TABLES TO mm_backup;
+   ALTER DEFAULT PRIVILEGES FOR ROLE "<app role>" IN SCHEMA public GRANT SELECT ON SEQUENCES TO mm_backup;
+   ```
+
+   The last two lines are why this role keeps working: tables that Flyway adds in later migrations
+   become readable too, without anyone coming back here.
+3. **If an `ALTER DEFAULT PRIVILEGES` line says "permission denied",** the editor is connected as a
+   different role than the one that owns the tables. Connect as `<app role>` with `psql` (use that
+   role's connection string from the Neon dashboard) and run just those two lines there.
+4. Optional check: `psql -h <host from DB_URL> -U mm_backup -d mealmagician` and type the password at
+   the prompt. `select count(*) from app_user;` must work, and `create table x(a int);` must be
+   refused.
+
+### 2. Store the password in Secret Manager
+
+Run this in your own terminal. It asks for the password hidden, so paste the one from step 1:
+
+```bash
+read -rsp 'mm_backup password: ' S && echo && \
+  printf '%s' "$S" | gcloud secrets create backup-db-password --project=<project id> --data-file=- && unset S
+```
+
+The setup script also pauses for exactly this (and the SQL above) if the secret does not exist yet,
+so doing it first only saves a pause.
+
+### 3. Set the GitHub variable
+
+Repo → Settings → Secrets and variables → Actions → Variables ([[Hosting Setup]] part 6), or:
+
+```bash
+gh variable set BACKUP_BUCKET --body meal-magician-backups --repo LasterBergamot/meal-magician
+```
 
 - `BACKUP_BUCKET`: `meal-magician-backups`.
 
-### 3. Run the Google Cloud setup script
+The workflow also reads `DB_URL`, which must be Neon's **direct** endpoint (no `-pooler` in the
+host name): the dump takes an exported snapshot, and a pooled connection cannot share one.
+
+### 4. Run the Google Cloud setup script
 
 `scripts/backup-gcp-setup.sh` creates the bucket and its clean-up rules, the `mm-backup-writer`
 account with exactly the rights above, the link that lets this repository's workflows (and no
 other) use that account, and an alert e-mail. Every change is a "step": it shows the command,
 asks `Run this? [y/N]`, and runs it only on `y`. Anything already created is skipped, so running
-it twice is safe. Ask an agent to run it in your terminal (or run it yourself in Cloud Shell):
+it twice is safe. Run it in your terminal from the repository root (or in Cloud Shell):
 
 ```bash
 PROJECT_ID=<project id> PROJECT_NUMBER=<project number> ALERT_EMAIL=<your e-mail> \
   bash scripts/backup-gcp-setup.sh
 ```
 
-Read each command before you answer `y`; Google Cloud changes are yours to approve.
+`ALERT_EMAIL` is where the "no backup for two days" alert goes. In order, the script:
 
-### 4. Check that the writer really is create-only
+1. turns on the Cloud Storage and Cloud Monitoring APIs;
+2. creates the private bucket `gs://meal-magician-backups` in `europe-west3` (uniform access,
+   public access prevention) and applies the clean-up rules (`daily/` 7 days, `monthly/` 190 days,
+   `release/` 14 days);
+3. creates the `mm-backup-writer` service account and lets it create objects in that bucket, and
+   nothing else;
+4. checks that the secret from step 2 exists (if not, it prints the SQL and the command and waits),
+   then lets the writer read that one secret;
+5. lets this repository's GitHub Actions act as the writer (Workload Identity Federation);
+6. creates the e-mail channel and the alert policy.
+
+Read each command before you answer `y`; Google Cloud changes are yours to approve. If you skip a
+step, the script ends with exit code 3 and lists what is left: run it again to do those.
+
+### 5. Check that the writer really is create-only
 
 The script ends by printing four commands. Run them once: the first uploads a test file as the
 writer and must succeed; reading, overwriting and deleting that file as the writer must each be
 refused with HTTP 403. Then delete the test file as yourself. This is the check that the
 "cannot destroy backups" promise is true, not just intended.
 
-### 5. Run the first backup and look at it
+- **Token Creator.** `--impersonate-service-account` needs the role Service Account Token Creator
+  on the writer. If the first command says you cannot impersonate it, give yourself the role for
+  the check and take it away afterwards:
 
-Actions tab → `db-backup.yml` → Run workflow. When it is green, `gcloud storage ls
-gs://meal-magician-backups/daily/` shows one file. Then do the optional 15-minute check below
-once, and look at the bucket's cost after the first month (expect cents; the budget alert from
-Hosting Setup covers it).
+  ```bash
+  W=mm-backup-writer@<project id>.iam.gserviceaccount.com
+  gcloud iam service-accounts add-iam-policy-binding $W --project=<project id> \
+    --member=user:<your e-mail> --role=roles/iam.serviceAccountTokenCreator
+  # ... run the four commands, delete the test file as yourself, then:
+  gcloud iam service-accounts remove-iam-policy-binding $W --project=<project id> \
+    --member=user:<your e-mail> --role=roles/iam.serviceAccountTokenCreator
+  ```
+
+- **If the first command (the upload) fails with 403 naming `storage.objects.get`,** stop. That is
+  the known risk of a create-only role: `gcloud storage cp` may look at the destination first. The
+  fix is one step in `db-backup.yml`: upload with a `curl` call to the JSON API using
+  `ifGenerationMatch=0` (create only if the object does not exist) instead of `gcloud storage cp`.
+  Nothing else changes. Ask an agent to make that change before the first backup.
+
+### 6. Run the first backup and look at it
+
+Merge the workflow pull request. The merge starts a release, and the release now begins with a
+backup (`kind: release`), so it is already the first live test; look at its "Back up the database"
+job in the Actions tab. Then run the nightly path by hand: Actions tab → `db-backup.yml` → Run
+workflow. When it is green, `gcloud storage ls gs://meal-magician-backups/daily/` and
+`.../release/` each show a `.dump` file.
+
+Then:
+
+- **Check the alert's filter once.** In Monitoring → Metrics Explorer choose the metric
+  `storage.googleapis.com/api/request_count`, resource Cloud Storage Bucket, group by `method`. The
+  upload must show up as `InsertObject` or `WriteObject`; the alert counts exactly those. If it is
+  named differently, change the filter in the alert policy.
+- **Check the budget.** In Billing → Budgets the budget must cover the whole project, not one
+  service, so the bucket is counted (expect cents a month).
+- Do the optional 15-minute restore check below once.
 
 ## Restore recipes
 
@@ -213,7 +308,7 @@ backup: the broken data stays on the original until you switch.
 2. Restore exactly like recipe B, step 2, with `--target neon-project` and the new project's URL.
 3. Everything that named the old database now needs the new one: `DB_URL`, `DB_USERNAME`, the
    `db-password` secret, then redeploy. The read-only role `mm_backup` does not exist in the new
-   project (roles are not in a dump): create it again with the SQL from the setup script's step 4,
+   project (roles are not in a dump): create it again with the SQL from step 1 of "One-time setup" above,
    store its new password in `backup-db-password` (same `gcloud secrets versions add`
    pattern as "Rotating a secret"), and point the backup job at the new host before the next
    nightly run.
