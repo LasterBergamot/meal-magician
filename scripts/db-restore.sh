@@ -1,25 +1,27 @@
 #!/usr/bin/env bash
 # Restore a database backup (`task db:restore -- <file-or-gs://object> --target ...`, issue #154).
 #
-# The nightly backup (db-backup.yml, #62) is a `pg_dump --format=custom` file encrypted with `age`.
-# This script turns such a file back into a running database in three steps:
-#   1. fetch    a `gs://` object is copied with gcloud (a local file is used where it is);
-#   2. decrypt  `age --decrypt` with YOUR private key file (only a name ending in `.age` is decrypted;
-#               any other file is taken to be a plain dump already);
-#   3. restore  `pg_restore --clean --if-exists --no-owner --no-privileges` into the chosen target.
-# The decrypted dump is the whole database in clear text, so it only ever lives in a private
-# (mode 700) temporary directory that a trap removes on every way out, including a failure or Ctrl-C.
-# Nothing here prints the key, a password or a connection string; only the host and database name
-# of a Neon target are shown, so you can see where the data is about to go.
+# The nightly backup (db-backup.yml, #62) is a plain `pg_dump --format=custom` file named `*.dump`.
+# It is not encrypted: see documentation/Backup-and-Restore.md, "Why the backups are not encrypted".
+# This script turns such a file back into a running database in two steps:
+#   1. fetch    a `gs://` object is copied with gcloud (sign in first with your own Google login);
+#               a local file is used where it is and is never deleted;
+#   2. restore  `pg_restore --clean --if-exists --no-owner --no-privileges` into the chosen target.
+# A dump is the whole database in clear text (e-mail addresses, meals, rating comments). A copy this
+# script fetches lives only in a private (mode 700) temporary directory that a trap removes on every
+# way out, including a failure or Ctrl-C. A dump YOU downloaded yourself and pass as a file stays
+# where it is: delete it after the restore. Nothing here prints a password or a connection string;
+# only the host and database name of a Neon target are shown, so you can see where the data is about
+# to go.
 #
 # Usage:
-#   scripts/db-restore.sh <source> --target local|neon-branch|neon-project [--key FILE] [--yes]
+#   scripts/db-restore.sh <source> --target local|neon-branch|neon-project [--yes]
 #
-#   <source>   a file on disk or a gs://meal-magician-backups/... object
+#   <source>   a file on disk or a gs://meal-magician-backups/... object (a name ending in `.age` is
+#              refused: backups made before the encryption was dropped must be decrypted first)
 #   --target   local          the compose Postgres (`task up`), database mealmagician
 #              neon-branch    a NEW Neon branch you created for this, URL in RESTORE_DB_URL
 #              neon-project   a NEW Neon project you created for this, URL in RESTORE_DB_URL
-#   --key      the age private key file (or set AGE_KEY_FILE); needed for `.age` sources
 #   --yes      do not ask: restore into a local database that already has tables, or into a Neon
 #              URL without asking you to confirm it
 #
@@ -28,23 +30,21 @@
 # that is not empty. Never point RESTORE_DB_URL at the live database by accident: the confirmation
 # shows the host and database name, read it.
 #
-# Environment (optional): PG_RESTORE, AGE and GCLOUD name the programs to run (the tests put fakes
-# there); RESTORE_DB_URL is the postgresql:// URL of a Neon target; AGE_KEY_FILE is the key path.
-# Exit status: 0 restored, 1 a step failed (fetch, decrypt or pg_restore), 2 nothing was done
-# because the request was wrong or you declined (bad usage, missing key or URL, not confirmed).
+# Environment (optional): PG_RESTORE and GCLOUD name the programs to run (the tests put fakes
+# there); RESTORE_DB_URL is the postgresql:// URL of a Neon target.
+# Exit status: 0 restored, 1 a step failed (fetch or pg_restore), 2 nothing was done because the
+# request was wrong or you declined (bad usage, a `.age` source, missing URL, not confirmed).
 set -euo pipefail
 
 PG_RESTORE=${PG_RESTORE:-pg_restore}
-AGE=${AGE:-age}
 GCLOUD=${GCLOUD:-gcloud}
 
 usage() {
   cat >&2 <<'EOF'
-usage: db-restore.sh <file-or-gs://object> --target local|neon-branch|neon-project [--key FILE] [--yes]
+usage: db-restore.sh <file-or-gs://object> --target local|neon-branch|neon-project [--yes]
   --target local          restore into the compose Postgres (run `task up` first)
   --target neon-branch    restore into a new Neon branch; set RESTORE_DB_URL to its postgresql:// URL
   --target neon-project   restore into a new Neon project; set RESTORE_DB_URL to its postgresql:// URL
-  --key FILE              the age private key (or set AGE_KEY_FILE); needed when the source ends in .age
   --yes                   do not ask before overwriting
 exit status: 0 restored, 1 a step failed, 2 bad usage or not confirmed
 EOF
@@ -58,18 +58,12 @@ die_usage() {
 
 source_arg=""
 target=""
-key=${AGE_KEY_FILE:-}
 assume_yes=0
 while (($#)); do
   case $1 in
     --target)
       (($# >= 2)) || die_usage "--target needs a value"
       target=$2
-      shift 2
-      ;;
-    --key)
-      (($# >= 2)) || die_usage "--key needs a file name"
-      key=$2
       shift 2
       ;;
     --yes | -y)
@@ -96,13 +90,8 @@ case $target in
   *) die_usage "unknown target '$target' (want local, neon-branch or neon-project)" ;;
 esac
 
-encrypted=0
-[[ ${source_arg##*/} == *.age ]] && encrypted=1
-if [[ -n $key && ! -f $key ]]; then
-  die_usage "the key file '$key' does not exist"
-fi
-if ((encrypted)) && [[ -z $key ]]; then
-  die_usage "${source_arg##*/} is encrypted: give the age private key with --key FILE (or AGE_KEY_FILE)"
+if [[ ${source_arg##*/} == *.age ]]; then
+  die_usage "${source_arg##*/} ends in .age: backups are no longer encrypted. An old .age file must be decrypted with age first ('age --decrypt -i KEYFILE -o backup.dump ${source_arg##*/}'), then pass the .dump file."
 fi
 if [[ $source_arg != gs://* && ! -f $source_arg ]]; then
   die_usage "'$source_arg' is not a file (a Cloud Storage object starts with gs://)"
@@ -138,19 +127,7 @@ if [[ $source_arg == gs://* ]]; then
   fi
 fi
 
-# --- 2. decrypt --------------------------------------------------------------------------------
-dump=$input
-if ((encrypted)); then
-  dump="$work/dump"
-  echo "Decrypting with the key file you gave (not shown) ..."
-  if ! "$AGE" --decrypt -i "$key" -o "$dump" "$input"; then
-    echo "db-restore: age could not decrypt the file: the key is not the one the backup was made for, or the file is damaged." >&2
-    echo "            Check that 'age-keygen -y <key file>' prints the public key stored in BACKUP_AGE_RECIPIENT." >&2
-    exit 1
-  fi
-fi
-
-# --- 3. confirm and restore --------------------------------------------------------------------
+# --- 2. confirm and restore --------------------------------------------------------------------
 if [[ $target == local ]]; then
   if ! tables=$(docker compose exec -T postgres psql -U mealmagician -d mealmagician -tA \
     -c "select count(*) from information_schema.tables where table_schema = 'public'"); then
@@ -177,7 +154,7 @@ fi
 echo "Restoring into $target_label ..."
 if [[ $target == local ]]; then
   if ! docker compose exec -T postgres pg_restore --clean --if-exists --no-owner --no-privileges \
-    -U mealmagician -d mealmagician <"$dump"; then
+    -U mealmagician -d mealmagician <"$input"; then
     echo "db-restore: pg_restore failed (read its messages above)." >&2
     exit 1
   fi
@@ -189,7 +166,7 @@ else
   # The URL is on the command line, so other users of this machine could see it in `ps`; fine on
   # a personal laptop, do not run this on a shared host.
   if ! "$PG_RESTORE" --clean --if-exists --no-owner --no-privileges \
-    -d "$RESTORE_DB_URL" "$dump"; then
+    -d "$RESTORE_DB_URL" "$input"; then
     echo "db-restore: pg_restore failed (read its messages above)." >&2
     exit 1
   fi

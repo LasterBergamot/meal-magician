@@ -71,10 +71,10 @@ tasks:
     cmd: bash scripts/smoke.sh {{.CLI_ARGS}}
 
   "db:restore":
-    desc: "Restore a database backup: `task db:restore -- <file-or-gs://object> --target local|neon-branch|neon-project [--key FILE] [--yes]`"
-    # Fetch (gs://), decrypt with your age private key file, pg_restore into the chosen target.
-    # See scripts/db-restore.sh and the wiki page "Backup and Restore". The key is a file you
-    # point to; nothing is printed or stored.
+    desc: "Restore a database backup: `task db:restore -- <file-or-gs://object> --target local|neon-branch|neon-project [--yes]`"
+    # Fetch (gs://, with your own gcloud login), pg_restore into the chosen target. Backups are
+    # plain dumps, not encrypted. See scripts/db-restore.sh and the wiki page "Backup and Restore".
+    # Delete a dump you downloaded yourself after the restore.
     cmd: bash scripts/db-restore.sh {{.CLI_ARGS}}
 
   build:

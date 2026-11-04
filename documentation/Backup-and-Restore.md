@@ -19,9 +19,35 @@ Two design choices shape everything below:
   (`mm-backup-writer`) may create objects in the bucket and read one secret, nothing more. It
   cannot read, overwrite or delete a backup. If someone stole the workflow's access, they could
   fill the bucket with junk but not destroy or read your data.
-- **Backups are encrypted so that only you can read them.** The workflow encrypts each dump with
-  your *public* `age` key, which is safe to keep in a GitHub variable. The matching *private* key
-  lives only in your password manager. CI can write backups; nothing in CI can open one.
+- **The bucket is private, and the files in it are plain.** Public access is blocked at the
+  bucket level and only you can read it, with your own Google login. The files are not
+  encrypted by us; see "Why the backups are not encrypted" below for the reasons and the
+  trade-off.
+
+## Why the backups are not encrypted
+
+An earlier design encrypted every dump with a tool called `age`, which would have meant you
+keeping a private key forever. It was dropped on purpose:
+
+- **The data is not very sensitive.** It is household e-mail addresses, display names, meal
+  plans and rating comments. No payment data, no passwords (sign-in is through Google).
+- **The bucket is already locked down.** It is private with public access prevention on, the
+  CI account can only create objects (it cannot read any), and Google encrypts everything at
+  rest on its own disks.
+- **A key is a risk of its own.** A private key you must store and never lose is one more thing
+  that can go wrong on the worst day: if the key is lost or does not match, every backup is
+  useless and nobody notices until a restore is needed. With plain dumps, restoring needs only
+  your Google login.
+
+The trade-off, stated plainly: anyone who can read the bucket can read a dump. That means your
+Google account and the owners of the Google Cloud project. And a dump you download to restore
+is plain text on your laptop, so **delete it as soon as the restore is done**. If the data ever
+becomes more sensitive, encryption can be added back later (a small change to the workflow and
+to `scripts/db-restore.sh`).
+
+A backup made before this decision may still be a `.age` file. The restore tool refuses those
+with a clear message: decrypt them first with `age` and your old key, then restore the result.
+The bucket's clean-up rules delete such files within about six months.
 
 ## What is backed up and what is not
 
@@ -44,13 +70,13 @@ Two design choices shape everything below:
   project means a new role and password, which you then give the app.
 - **The container images.** They are rebuilt by the release workflow from the code.
 
-The backup also contains personal data (e-mail addresses). That is the other reason it is
-encrypted, and why old backups are deleted on a schedule.
+The backup also contains personal data (e-mail addresses). That is one reason old backups are
+deleted on a schedule and the bucket stays private.
 
 ## Where the backups are
 
 Bucket `meal-magician-backups` in Google Cloud, region `europe-west3`, private (public access is
-blocked at the bucket level). Object names carry the date and time, so no backup ever replaces
+blocked at the bucket level). Object names carry the date and time and end in `.dump`, so no backup ever replaces
 another. Three folders, each with its own automatic clean-up (a Google-run lifecycle rule, not
 anything the writer does):
 
@@ -64,7 +90,7 @@ So the oldest thing you can get back is about six months old, and the newest is 
 (plus whatever happened since the last run). Anything older is gone; that limit is deliberate, to
 keep the bill at cents and old personal data from piling up.
 
-List what exists (you need to be signed in to `gcloud` as the project owner):
+List what exists (you need to be signed in to `gcloud` with your own Google account, the project owner; the first time, run `gcloud auth login`):
 
 ```bash
 gcloud storage ls gs://meal-magician-backups/daily/
@@ -75,52 +101,23 @@ gcloud storage ls gs://meal-magician-backups/release/
 ## One-time setup (the owner's steps)
 
 Do this once, after Hosting Setup parts 1 to 6. Agents write the code and run the commands you
-approve; the key and the passwords are yours alone.
+approve; the passwords are yours alone. Your three steps are: create the Neon read-only role and
+its secret, set the `BACKUP_BUCKET` variable, and run the setup script with an agent.
 
-### 1. Make the `age` key and check it
-
-On your own machine (install `age`: Arch `pacman -S age`, macOS `brew install age`):
-
-```bash
-age-keygen -o mm-backup-key.txt
-```
-
-It prints `Public key: age1...`. The file `mm-backup-key.txt` holds the private key.
-
-1. Put the **whole file** into your password manager (a secure note). That is the only copy:
-   there is no paper copy and no second key, by choice. Losing it makes the backups unreadable
-   but never touches the live database.
-2. **Check the public key.** Run
-
-   ```bash
-   age-keygen -y mm-backup-key.txt
-   ```
-
-   and compare what it prints, character by character, with the public key you are about to
-   store as the GitHub variable. They must be identical. Why this matters: the nightly job
-   proves the dump can be restored, but it cannot prove that *your* private key matches the
-   public key in the variable. If you pasted the wrong key into the variable, every backup would
-   look healthy and none could ever be opened by you. This one command is the only way to find
-   out now instead of on the worst day.
-3. Delete the file from the disk (`shred -u mm-backup-key.txt`, or `rm` on a machine without
-   `shred`) once it is in the password manager and you have opened the stored copy once to see
-   it is complete.
-
-### 2. Set the GitHub variables
-
-Repo → Settings → Secrets and variables → Actions → Variables ([[Hosting Setup]] part 6):
-
-- `BACKUP_AGE_RECIPIENT`: the public key (`age1...`) from step 1.
-- `BACKUP_BUCKET`: `meal-magician-backups`.
-
-### 3. Give the backup a read-only database role
+### 1. Give the backup a read-only database role
 
 The dump logs in to Neon as a role that can only read, so even a leaked backup password cannot
-change or delete data. The setup script (next step) prints the exact SQL to run in the Neon SQL
+change or delete data. The setup script (step 3) prints the exact SQL to run in the Neon SQL
 editor and the command that stores the new password in Secret Manager as `backup-db-password`.
 You type the password yourself, hidden; it is never shown to an agent or written to a file.
 
-### 4. Run the Google Cloud setup script
+### 2. Set the GitHub variable
+
+Repo → Settings → Secrets and variables → Actions → Variables ([[Hosting Setup]] part 6):
+
+- `BACKUP_BUCKET`: `meal-magician-backups`.
+
+### 3. Run the Google Cloud setup script
 
 `scripts/backup-gcp-setup.sh` creates the bucket and its clean-up rules, the `mm-backup-writer`
 account with exactly the rights above, the link that lets this repository's workflows (and no
@@ -135,14 +132,14 @@ PROJECT_ID=<project id> PROJECT_NUMBER=<project number> ALERT_EMAIL=<your e-mail
 
 Read each command before you answer `y`; Google Cloud changes are yours to approve.
 
-### 5. Check that the writer really is create-only
+### 4. Check that the writer really is create-only
 
 The script ends by printing four commands. Run them once: the first uploads a test file as the
 writer and must succeed; reading, overwriting and deleting that file as the writer must each be
 refused with HTTP 403. Then delete the test file as yourself. This is the check that the
 "cannot destroy backups" promise is true, not just intended.
 
-### 6. Run the first backup and look at it
+### 5. Run the first backup and look at it
 
 Actions tab → `db-backup.yml` → Run workflow. When it is green, `gcloud storage ls
 gs://meal-magician-backups/daily/` shows one file. Then do the optional 15-minute check below
@@ -153,20 +150,15 @@ Hosting Setup covers it).
 
 All three start the same way: pick a backup, then pick where to restore it.
 
-Get your private key out of the password manager into a temporary file only you can read, and
-remove it when you are done:
+Sign in to Google Cloud with your own account once (`gcloud auth login`); that login is the only
+"key" a restore needs.
 
-```bash
-umask 077
-cat > /tmp/mm-key.txt        # paste the key, then press Ctrl-D
-```
-
-The tool is `task db:restore` (it runs `scripts/db-restore.sh`). It does three things: fetches
-the backup (a `gs://` name is copied with `gcloud`; a file on disk is used as is), decrypts it
-with `age --decrypt` using the key file you point to, and runs `pg_restore` into the target. The
-decrypted copy exists only in a private temporary folder that is deleted when the tool ends,
-even if it fails. It needs `age` and, for the Neon targets, `pg_restore` of PostgreSQL 17 on your
-machine.
+The tool is `task db:restore` (it runs `scripts/db-restore.sh`). It does two things: fetches the
+backup (a `gs://` name is copied with `gcloud`; a file on disk is used as is) and runs
+`pg_restore` into the target. A copy it fetched itself exists only in a private temporary folder
+that is deleted when the tool ends, even if it fails. A file you downloaded yourself stays where
+it is, and it is the whole database in plain text: **delete it after the restore**. For the Neon
+targets you need `pg_restore` of PostgreSQL 17 on your machine.
 
 `pg_restore` is run with `--clean --if-exists`: it **drops** each table in the backup before
 recreating it. That is right for an empty or throw-away target and exactly why the tool asks
@@ -180,13 +172,12 @@ Use this to check a backup, or to work on a copy of production data. It never to
 ```bash
 docker compose down --volumes     # throws away the local database
 task up                           # a fresh, empty Postgres (waits until healthy)
-task db:restore -- gs://meal-magician-backups/daily/<object-name> --target local --key /tmp/mm-key.txt
+task db:restore -- gs://meal-magician-backups/daily/<object-name> --target local
 task serve:pg                     # starts the app on the restored data
 ```
 
 Sign in with Google on <http://localhost:8080/> with an account on the allowlist and look at a
 few plans. If the local database already holds tables, the tool refuses and asks for `--yes`.
-When done: `rm /tmp/mm-key.txt`.
 
 ### Recipe B: into a new Neon branch (production data damaged, database still there)
 
@@ -202,7 +193,7 @@ backup: the broken data stays on the original until you switch.
 
    ```bash
    read -rsp 'Neon branch URL: ' RESTORE_DB_URL && echo && export RESTORE_DB_URL
-   task db:restore -- gs://meal-magician-backups/release/<object-name> --target neon-branch --key /tmp/mm-key.txt
+   task db:restore -- gs://meal-magician-backups/release/<object-name> --target neon-branch
    ```
 
    The tool shows the host and database and waits for you to type `yes`. Read the host: it must
@@ -213,7 +204,7 @@ backup: the broken data stays on the original until you switch.
    by running the release workflow.
 4. Sign in and check the data. Once happy, make the branch the project's main one in Neon (or
    keep using it) and keep the old branch for a few days before deleting it.
-5. `unset RESTORE_DB_URL; rm /tmp/mm-key.txt`
+5. `unset RESTORE_DB_URL`, and delete any dump file you downloaded.
 
 ### Recipe C: into a new Neon project (the project itself is gone or unusable)
 
@@ -240,7 +231,6 @@ you through GitHub. So a green night means: the dump is complete and `pg_restore
 
 | Gap | Why the job cannot see it | What covers it |
 |---|---|---|
-| Your private key matches the public key in `BACKUP_AGE_RECIPIENT` | The job only ever has the public key | The `age-keygen -y` comparison in setup step 1, done once |
 | The app starts and works on the restored data | The job checks tables and counts, not the application | The optional check below |
 | The job keeps running | A job that never starts leaves no failed run | The "no backup for two days" alert |
 
@@ -250,7 +240,7 @@ database:
 
 1. Recipe A with the newest `daily/` backup.
 2. `task serve:pg`, sign in, open this week's plan and a template.
-3. If it works, delete the key file and you are done; if not, treat it as a failed backup and
+3. If it works, you are done; if not, treat it as a failed backup and
    open an issue.
 
 ## If the alert fires

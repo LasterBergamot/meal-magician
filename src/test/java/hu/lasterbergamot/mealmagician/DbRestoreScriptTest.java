@@ -16,15 +16,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * {@code scripts/db-restore.sh} (the engine of {@code task db:restore}, issue #154) turns an
- * encrypted backup back into a database. A mistake in it shows up on the worst day, so it runs here
- * for real, in a bash process, against fake {@code age}, {@code pg_restore}, {@code docker} and
- * {@code gcloud} programs that sit first on the {@code PATH} and write what they were asked to do
- * into a log file. No real key, database or cloud is touched.
+ * {@code scripts/db-restore.sh} (the engine of {@code task db:restore}, issue #154) turns a plain
+ * backup file back into a database. A mistake in it shows up on the worst day, so it runs here for
+ * real, in a bash process, against fake {@code pg_restore}, {@code docker} and {@code gcloud}
+ * programs that sit first on the {@code PATH} and write what they were asked to do into a log file.
+ * No real database or cloud is touched.
  *
  * <p>Besides the exit codes (0 restored, 1 a step failed, 2 nothing done), the tests check the part
- * that matters for security: the decrypted dump lives in a temporary directory that is empty again
- * after every run, successful or not, and no secret is ever printed.
+ * that matters for security: a dump fetched from the bucket lives in a temporary directory that is
+ * empty again after every run, successful or not, a file the user gave is never deleted, and no
+ * secret is ever printed.
  */
 class DbRestoreScriptTest {
 
@@ -38,7 +39,6 @@ class DbRestoreScriptTest {
   private Path bin;
   private Path scratch;
   private Path log;
-  private Path key;
   private Path backup;
 
   @BeforeEach
@@ -47,22 +47,9 @@ class DbRestoreScriptTest {
     scratch = Files.createDirectories(dir.resolve("tmp"));
     log = dir.resolve("calls.log");
     Files.writeString(log, "");
-    key = dir.resolve("key.txt");
-    Files.writeString(key, "AGE-SECRET-KEY-NOT-A-REAL-KEY\n");
-    backup = dir.resolve("backup.dump.age");
-    Files.writeString(backup, "ENCRYPTED");
+    backup = dir.resolve("backup.dump");
+    Files.writeString(backup, "PLAINTEXT-DUMP");
 
-    // age: record the call, fail on request, otherwise "decrypt" by writing the file after -o.
-    fake(
-        "age",
-        """
-        echo "age $*" >> "$FAKE_LOG"
-        [[ ${FAKE_AGE_FAIL:-} == 1 ]] && exit 1
-        out=""
-        while (($#)); do [[ $1 == -o ]] && out=$2; shift; done
-        echo PLAINTEXT-DUMP > "$out"
-        exit 0
-        """);
     // pg_restore on the host (the Neon targets): record the call and whether the dump file existed.
     fake(
         "pg_restore",
@@ -92,13 +79,13 @@ class DbRestoreScriptTest {
         esac
         exit 0
         """);
-    // gcloud storage cp SRC DST: record and write an "encrypted" file, or fail on request.
+    // gcloud storage cp SRC DST: record and write a dump file, or fail on request.
     fake(
         "gcloud",
         """
         echo "gcloud $*" >> "$FAKE_LOG"
         [[ ${FAKE_GCLOUD_FAIL:-} == 1 ]] && exit 1
-        echo ENCRYPTED > "${@: -1}"
+        echo PLAINTEXT-DUMP > "${@: -1}"
         exit 0
         """);
   }
@@ -124,7 +111,6 @@ class DbRestoreScriptTest {
     assertThat(run(List.of(backup.toString()), Map.of(), "").exit()).isEqualTo(2);
     assertThat(run(List.of("--target", "local"), Map.of(), "").exit()).isEqualTo(2);
     assertThat(run(List.of(backup.toString(), "--target"), Map.of(), "").exit()).isEqualTo(2);
-    assertThat(run(List.of(backup.toString(), "--key"), Map.of(), "").exit()).isEqualTo(2);
     assertThat(run(List.of(backup.toString(), "other", "--target", "local"), Map.of(), "").exit())
         .isEqualTo(2);
     assertThat(run(List.of(backup.toString(), "--bogus"), Map.of(), "").exit()).isEqualTo(2);
@@ -139,17 +125,16 @@ class DbRestoreScriptTest {
   }
 
   @Test
-  void restoresAnEncryptedBackupIntoTheLocalDatabaseAndRemovesTheDecryptedCopy() throws Exception {
+  void restoresAPlainBackupIntoTheLocalDatabaseAndKeepsTheFileTheUserGave() throws Exception {
     Result result = run(local(), Map.of(), "");
 
     assertThat(result.exit()).as(result.output()).isZero();
     assertThat(result.calls())
-        .contains("age --decrypt -i " + key + " -o ")
         .contains("pg_restore --clean --if-exists --no-owner --no-privileges -U mealmagician")
         .contains("-d mealmagician")
         .contains("dump-on-stdin");
     assertThat(result.output()).contains("task serve:pg").contains("Newest Flyway migration");
-    assertThat(result.output()).doesNotContain("AGE-SECRET-KEY");
+    assertThat(Files.readString(backup)).isEqualTo("PLAINTEXT-DUMP");
     assertThat(scratchFiles()).isEmpty();
   }
 
@@ -180,7 +165,7 @@ class DbRestoreScriptTest {
   }
 
   @Test
-  void aFailingPgRestoreExitsOneAndStillRemovesTheDecryptedCopy() throws Exception {
+  void aFailingPgRestoreExitsOneAndStillRemovesTheTempDirectory() throws Exception {
     Result local = run(local(), Map.of("FAKE_PG_FAIL", "1"), "");
     assertThat(local.exit()).isEqualTo(1);
     assertThat(local.output()).contains("pg_restore failed");
@@ -196,46 +181,21 @@ class DbRestoreScriptTest {
   }
 
   @Test
-  void aKeyThatCannotDecryptExitsOneAndPointsAtTheKeyCheck() throws Exception {
-    Result result = run(local(), Map.of("FAKE_AGE_FAIL", "1"), "");
+  void anOldAgeFileIsRefusedWithAnExplanation() throws Exception {
+    Path old = dir.resolve("old.dump.age");
+    Files.writeString(old, "ENCRYPTED");
 
-    assertThat(result.exit()).isEqualTo(1);
-    assertThat(result.output()).contains("could not decrypt").contains("age-keygen -y");
-    assertThat(result.calls()).doesNotContain("pg_restore");
-    assertThat(scratchFiles()).isEmpty();
-  }
+    Result local = run(List.of(old.toString(), "--target", "local"), Map.of(), "");
+    assertThat(local.exit()).isEqualTo(2);
+    assertThat(local.output()).contains("no longer encrypted").contains("decrypted with age first");
 
-  @Test
-  void aKeyFileThatDoesNotExistIsRefused() throws Exception {
-    Result result =
+    Result bucket =
         run(
-            List.of(
-                backup.toString(), "--target", "local", "--key", dir.resolve("nope").toString()),
+            List.of("gs://meal-magician-backups/daily/2026-10-01.dump.age", "--target", "local"),
             Map.of(),
             "");
-
-    assertThat(result.exit()).isEqualTo(2);
-    assertThat(result.output()).contains("does not exist");
-    assertThat(result.calls()).isEmpty();
-  }
-
-  @Test
-  void anEncryptedBackupNeedsAKey() throws Exception {
-    Result result = run(List.of(backup.toString(), "--target", "local"), Map.of(), "");
-
-    assertThat(result.exit()).isEqualTo(2);
-    assertThat(result.output()).contains("--key FILE");
-  }
-
-  @Test
-  void theKeyCanComeFromTheEnvironment() throws Exception {
-    Result result =
-        run(
-            List.of(backup.toString(), "--target", "local"),
-            Map.of("AGE_KEY_FILE", key.toString()),
-            "");
-
-    assertThat(result.exit()).as(result.output()).isZero();
+    assertThat(bucket.exit()).isEqualTo(2);
+    assertThat(bucket.calls()).isEmpty();
   }
 
   @Test
@@ -300,14 +260,15 @@ class DbRestoreScriptTest {
   }
 
   @Test
-  void fetchesAGsObjectBeforeDecryptingIt() throws Exception {
-    String object = "gs://meal-magician-backups/daily/2026-11-03T02-17.dump.age";
+  void fetchesAGsObjectIntoATempFileAndRemovesItAfterwards() throws Exception {
+    String object = "gs://meal-magician-backups/daily/2026-11-03T02-17.dump";
 
-    Result result =
-        run(List.of(object, "--target", "local", "--key", key.toString()), Map.of(), "");
+    Result result = run(List.of(object, "--target", "local"), Map.of(), "");
 
     assertThat(result.exit()).as(result.output()).isZero();
-    assertThat(result.calls()).contains("gcloud storage cp " + object).contains("age --decrypt");
+    assertThat(result.calls())
+        .contains("gcloud storage cp " + object + " " + scratch)
+        .contains("dump-on-stdin");
     assertThat(scratchFiles()).isEmpty();
   }
 
@@ -315,12 +276,7 @@ class DbRestoreScriptTest {
   void aFailedFetchExitsOne() throws Exception {
     Result result =
         run(
-            List.of(
-                "gs://meal-magician-backups/daily/x.age",
-                "--target",
-                "local",
-                "--key",
-                key.toString()),
+            List.of("gs://meal-magician-backups/daily/x.dump", "--target", "local"),
             Map.of("FAKE_GCLOUD_FAIL", "1"),
             "");
 
@@ -329,22 +285,10 @@ class DbRestoreScriptTest {
     assertThat(scratchFiles()).isEmpty();
   }
 
-  @Test
-  void aFileWithoutTheAgeSuffixIsTakenAsAPlainDump() throws Exception {
-    Path plain = dir.resolve("backup.dump");
-    Files.writeString(plain, "PLAINTEXT-DUMP");
-
-    Result result = run(List.of(plain.toString(), "--target", "local"), Map.of(), "");
-
-    assertThat(result.exit()).as(result.output()).isZero();
-    assertThat(result.calls()).doesNotContain("age ").contains("dump-on-stdin");
-    assertThat(Files.readString(plain)).isEqualTo("PLAINTEXT-DUMP");
-  }
-
   // ------------------------------------------------------------------------------------------
 
   private List<String> local() {
-    return List.of(backup.toString(), "--target", "local", "--key", key.toString());
+    return List.of(backup.toString(), "--target", "local");
   }
 
   private List<String> neon(String target, String... extra) {
@@ -377,7 +321,6 @@ class DbRestoreScriptTest {
     environment.put("TMPDIR", scratch.toString());
     environment.put("FAKE_LOG", log.toString());
     environment.remove("RESTORE_DB_URL");
-    environment.remove("AGE_KEY_FILE");
     environment.putAll(new HashMap<>(env));
     Process process = builder.start();
     process.getOutputStream().write(stdin.getBytes());
