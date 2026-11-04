@@ -167,6 +167,19 @@ final class MealRules {
   }
 
   /**
+   * The key the Tags field's suggestions match on: like {@link #tagKey} but with accents removed
+   * too, so typing "vegan" finds the tag "Vegán". It is only for searching. A tag's identity (the
+   * stored {@code name_key}) stays {@link #tagKey}, which keeps accents, so "vegan" and "vegán"
+   * remain two tags and picking a suggestion is how the person avoids a near-duplicate.
+   *
+   * @param text a tag name or the text typed so far, not {@code null}
+   * @return the accent-free, lower-case, cleaned text
+   */
+  static String tagSearchKey(String text) {
+    return ingredientKey(text);
+  }
+
+  /**
    * Cleans a list of ingredient names into the ingredients a meal should carry. Like {@link #tags}
    * but the identity ignores accents too: "Tojás", "tojas" and " TOJÁS " are one ingredient and the
    * first spelling is kept.
