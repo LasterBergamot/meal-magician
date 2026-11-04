@@ -8,7 +8,7 @@ when they land.
   ([[Hosting Setup]]); sign in on a phone on the deployed v0.1.0 and check scale to zero (#18; the release itself is done, see [[Current State: Everything Else]]).
 - **Phase 6, in this order:**
   1. **Backups** (#62, #154): a nightly `db-backup.yml` dumps the Neon database (without the login
-     sessions), checks that the dump restores, encrypts it with `age` and keeps it in a Cloud Storage
+     sessions), checks that the dump restores and keeps it (plain, not encrypted) in a private Cloud Storage
      bucket in Frankfurt (under a cent a month). Daily copies are kept 7 days, monthly copies about 6
      months, and a copy taken before each release 14 days. A failed run opens a `Backup failed` issue,
      and a Google Cloud alert tells the owner if no backup arrives for two days (for example when GitHub

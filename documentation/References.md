@@ -95,7 +95,6 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | `gcloud run deploy` | https://cloud.google.com/sdk/gcloud/reference/run/deploy |
 | Secret Manager | https://cloud.google.com/secret-manager/docs |
 | Neon | https://neon.com/docs |
-| `age` (file encryption; `age-keygen -y` prints the public key of a private key) | https://github.com/FiloSottile/age · https://age-encryption.org/ |
 | Cloud Storage object lifecycle (`matchesPrefix`, `age`) | https://cloud.google.com/storage/docs/lifecycle · https://cloud.google.com/storage/docs/managing-lifecycles |
 | `pg_dump` and `pg_restore` (custom format, `--clean --if-exists`) | https://www.postgresql.org/docs/17/app-pgdump.html · https://www.postgresql.org/docs/17/app-pgrestore.html |
 | Cloud Monitoring alerting policies (threshold conditions, missing data, notification channels) | https://cloud.google.com/monitoring/alerts · https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.alertPolicies |
