@@ -28,6 +28,7 @@ repositories {
 dependencies {
     implementation(platform(libs.spring.boot.bom))
     implementation(platform(libs.spring.modulith.bom))
+    implementation(platform(libs.spring.ai.bom))
 
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.actuator)
@@ -38,6 +39,9 @@ dependencies {
     implementation(libs.flyway.postgresql)
     implementation(libs.spring.modulith.starter.core)
     implementation(libs.jte.spring.boot.starter)
+    // The assistant (#157): Gemini on Vertex AI. Inert unless mm.ai.enabled=true (application.yml).
+    implementation(libs.spring.ai.starter.model.google.genai)
+    implementation(libs.spring.ai.starter.model.google.genai.embedding)
 
     // Annotation processor configurations don't see the BOM above, so it is repeated for them.
     annotationProcessor(platform(libs.spring.boot.bom))

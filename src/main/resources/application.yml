@@ -20,6 +20,35 @@ spring:
             # at Google. ProductionConfigGuard rejects them under the prod profile.
             client-id: ${GOOGLE_CLIENT_ID:not-configured}
             client-secret: ${GOOGLE_CLIENT_SECRET:not-configured}
+  # Spring AI (#157). The assistant is off by default and must then be completely inert: Spring AI's
+  # Google starter would otherwise open a Vertex client at startup and fail without credentials.
+  # The switch is mm.ai.enabled alone: the nested placeholder picks "google-genai" or "none" for
+  # each model type from mm.ai-provider above, so the two can never disagree.
+  ai:
+    model:
+      chat: ${mm.ai-provider.${mm.ai.enabled}}
+      embedding:
+        text: ${mm.ai-provider.${mm.ai.enabled}}
+    google:
+      genai:
+        # Vertex AI mode: no api-key is ever set, the runtime service account is used.
+        project-id: ${AI_PROJECT_ID:}
+        location: ${AI_LOCATION:}
+        chat:
+          model: ${AI_CHAT_MODEL:}
+        embedding:
+          project-id: ${AI_PROJECT_ID:}
+          # Its own variable because a chat model and an embedding model can live in different
+          # regions or in the "eu" multi-region; it defaults to the chat location.
+          location: ${AI_EMBEDDING_LOCATION:${AI_LOCATION:}}
+          text:
+            model: ${AI_EMBEDDING_MODEL:}
+            dimensions: ${mm.ai.embedding-dimensions}
+  autoconfigure:
+    exclude:
+      # Has no off switch and opens a Google client at startup; AiConfig builds the same bean
+      # when mm.ai.enabled=true instead.
+      - org.springframework.ai.model.google.genai.autoconfigure.embedding.GoogleGenAiEmbeddingConnectionAutoConfiguration
   session:
     # A phone should stay signed in for a month (the household app is not a bank).
     timeout: 30d
@@ -41,6 +70,23 @@ spring:
 # relaxed binding (underscores), so the variable is wired in explicitly.
 mm:
   admin-emails: ${MM_ADMIN_EMAILS:}
+  ai:
+    # The assistant's master switch (#157, PLAN.md D32). Off: no Google client is created, no
+    # credentials are needed, nothing calls out. MM_AI_ENABLED=true turns it on (release.yml does
+    # that only when the GitHub variable AI_ENABLED is 'true').
+    enabled: false
+    monthly-cap-usd: 5.00
+    # USD per million tokens of the chosen chat model (no defaults: they must match the model).
+    # ProductionConfigGuard requires both when the assistant is on.
+    price-input-per-million-usd: ${AI_PRICE_IN:}
+    price-output-per-million-usd: ${AI_PRICE_OUT:}
+    embedding-dimensions: 768
+    timeout: 60s
+  # Looked up by spring.ai.model.* below: the Spring AI provider to use for each value of
+  # mm.ai.enabled. Quoted keys, because a bare true/false would be read as a boolean.
+  ai-provider:
+    "true": google-genai
+    "false": none
 server:
   shutdown: graceful
   servlet:

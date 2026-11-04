@@ -51,12 +51,8 @@ class DocsToolingTests {
    */
   private static final Set<String> NOT_YET =
       Set.of(
-          // The first JPA entity arrives with Phase 1; identity uses plain JDBC records so far.
-          "src/main/java/**/internal/*Entity.java",
-          "**/internal/*Entity.java",
           // No configuration package yet; configuration lives next to the module that owns it.
-          "src/main/java/**/config/**",
-          "**/config/**");
+          "src/main/java/**/config/**", "**/config/**");
 
   // ---- the guards over the real repository ----
 

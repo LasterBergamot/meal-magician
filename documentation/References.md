@@ -13,6 +13,13 @@ Official documentation for everything Meal Magician uses. Add a row when you ado
 | Spring Session JDBC | https://docs.spring.io/spring-session/reference/ |
 | Google Cloud Console (OAuth clients) | https://console.cloud.google.com/auth/clients |
 | Spring AI (Phase 7) | https://docs.spring.io/spring-ai/reference/ |
+| Spring AI Google GenAI chat and embeddings (Vertex mode) | https://docs.spring.io/spring-ai/reference/api/chat/google-genai-chat.html · https://docs.spring.io/spring-ai/reference/api/embeddings/google-genai-embeddings-text.html |
+| Spring AI 2.0 upgrade notes (tool loop moved to `ChatClient`) | https://docs.spring.io/spring-ai/reference/upgrade-notes.html |
+| Vertex AI: models by location (which Gemini and embedding model is in which EU region) | https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/locations |
+| Vertex AI: model versions and retirement dates | https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions |
+| Vertex AI: pricing (per million tokens) | https://cloud.google.com/vertex-ai/generative-ai/pricing |
+| Gemini 3.5 Flash on Vertex AI | https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-5-flash |
+| Google Gen AI Java SDK (`eu` and `us` multi-region endpoints) | https://github.com/googleapis/java-genai |
 | Flyway | https://documentation.red-gate.com/flyway |
 | Lombok | https://projectlombok.org/features/ |
 | Spring Modulith `ApplicationModule` / `Documenter` | https://docs.spring.io/spring-modulith/reference/fundamentals.html |

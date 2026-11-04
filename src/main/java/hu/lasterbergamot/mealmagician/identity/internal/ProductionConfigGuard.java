@@ -1,7 +1,9 @@
 package hu.lasterbergamot.mealmagician.identity.internal;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.annotation.Profile;
@@ -29,6 +31,14 @@ class ProductionConfigGuard implements BeanFactoryPostProcessor {
   static final String NOT_CONFIGURED = "not-configured";
 
   private static final String CLIENT = "spring.security.oauth2.client.registration.google.";
+
+  /**
+   * What the assistant needs when {@code mm.ai.enabled=true} (#157): the property to look at, and
+   * how to say it in the error. Every one has to be set by the deploy, because the application.yml
+   * placeholders default to empty on purpose: a model id or a price guessed here would silently
+   * bill the wrong model.
+   */
+  private static final Map<String, String> ASSISTANT_SETTINGS = assistantSettings();
 
   /**
    * Checks the environment before any other bean exists.
@@ -72,7 +82,27 @@ class ProductionConfigGuard implements BeanFactoryPostProcessor {
       problems.add(
           "server.forward-headers-strategy must be 'framework' (the hosting proxy terminates TLS)");
     }
+    if (environment.getProperty("mm.ai.enabled", Boolean.class, false)) {
+      ASSISTANT_SETTINGS.forEach((property, message) -> {
+        if (isMissing(environment.getProperty(property))) {
+          problems.add(message + " (" + property + ") is not set but mm.ai.enabled=true");
+        }
+      });
+    }
     return problems;
+  }
+
+  private static Map<String, String> assistantSettings() {
+    var settings = new LinkedHashMap<String, String>();
+    settings.put("spring.ai.google.genai.project-id", "AI_PROJECT_ID");
+    settings.put("spring.ai.google.genai.location", "AI_LOCATION");
+    settings.put("spring.ai.google.genai.chat.model", "AI_CHAT_MODEL");
+    settings.put(
+        "spring.ai.google.genai.embedding.location", "AI_EMBEDDING_LOCATION or AI_LOCATION");
+    settings.put("spring.ai.google.genai.embedding.text.model", "AI_EMBEDDING_MODEL");
+    settings.put("mm.ai.price-input-per-million-usd", "AI_PRICE_IN");
+    settings.put("mm.ai.price-output-per-million-usd", "AI_PRICE_OUT");
+    return settings;
   }
 
   private static boolean isMissing(String value) {

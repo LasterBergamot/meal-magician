@@ -194,6 +194,15 @@ jobs:
           MM_ADMIN_EMAILS: ${{ vars.MM_ADMIN_EMAILS }}
           DB_URL: ${{ vars.DB_URL }}
           DB_USERNAME: ${{ vars.DB_USERNAME }}
+          # The AI assistant (#157, documentation/Hosting-Setup.md part 9). Only used when
+          # AI_ENABLED is exactly 'true'; otherwise none of them reaches Cloud Run.
+          AI_ENABLED: ${{ vars.AI_ENABLED }}
+          AI_LOCATION: ${{ vars.AI_LOCATION }}
+          AI_CHAT_MODEL: ${{ vars.AI_CHAT_MODEL }}
+          AI_EMBEDDING_MODEL: ${{ vars.AI_EMBEDDING_MODEL }}
+          AI_EMBEDDING_LOCATION: ${{ vars.AI_EMBEDDING_LOCATION }}
+          AI_PRICE_IN: ${{ vars.AI_PRICE_IN }}
+          AI_PRICE_OUT: ${{ vars.AI_PRICE_OUT }}
         run: |
           set -euo pipefail
           image="$REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_REPO/$IMAGE_NAME:$VERSION"
@@ -203,6 +212,18 @@ jobs:
           environment+="|GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID"
           environment+="|MM_ADMIN_EMAILS=$MM_ADMIN_EMAILS"
           environment+="|JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75"
+          # No key: the runtime service account calls Vertex AI. A missing value is passed through
+          # empty on purpose, so ProductionConfigGuard fails the start and names it.
+          if [[ "${AI_ENABLED:-}" == "true" ]]; then
+            environment+="|MM_AI_ENABLED=true"
+            environment+="|AI_PROJECT_ID=$PROJECT_ID"
+            environment+="|AI_LOCATION=${AI_LOCATION:-}"
+            environment+="|AI_CHAT_MODEL=${AI_CHAT_MODEL:-}"
+            environment+="|AI_EMBEDDING_MODEL=${AI_EMBEDDING_MODEL:-}"
+            environment+="|AI_EMBEDDING_LOCATION=${AI_EMBEDDING_LOCATION:-${AI_LOCATION:-}}"
+            environment+="|AI_PRICE_IN=${AI_PRICE_IN:-}"
+            environment+="|AI_PRICE_OUT=${AI_PRICE_OUT:-}"
+          fi
           gcloud run deploy "$SERVICE" \
             --project "$PROJECT_ID" \
             --region "$REGION" \

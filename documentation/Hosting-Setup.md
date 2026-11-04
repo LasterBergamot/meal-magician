@@ -194,6 +194,44 @@ install the Google Cloud CLI (Arch: `google-cloud-cli` from the AUR), then in Cl
 `! gcloud auth login` and `! gcloud config set project <project id>`. The agent still asks before
 any change (CLAUDE.md); it uses this for reading logs and status.
 
+## Part 9 (optional, #157): the AI assistant
+
+The assistant (Gemini on Vertex AI, PLAN.md D32) is **off** until you do this. Off, the app needs
+no Google AI setup at all, and `release.yml` passes no AI settings to Cloud Run. There is no API
+key: the Cloud Run runtime account `mm-runtime` calls Vertex AI with its own identity.
+
+1. **Enable the API** (once): `gcloud services enable aiplatform.googleapis.com --project <project id>`.
+2. **Let the runtime account call it** (once):
+   `gcloud projects add-iam-policy-binding <project id> --member serviceAccount:mm-runtime@<project id>.iam.gserviceaccount.com --role roles/aiplatform.user`.
+3. **Set the GitHub variables** (Settings, Secrets and variables, Actions, Variables). The values
+   below are what the spike of #157 verified with real calls on 2026-11-04; the final chat model is
+   chosen in D33 after the eval, and Gemini model ids and prices change, so check the sources in
+   [[References]] before you copy them.
+
+   | Name | Value |
+   |---|---|
+   | `AI_ENABLED` | `true` (anything else, or unset, keeps the assistant off) |
+   | `AI_LOCATION` | `eu` (the EU multi-region: Google keeps the processing inside the EU) |
+   | `AI_CHAT_MODEL` | `gemini-3.5-flash` (or `gemini-3.5-flash-lite`, about a fifth of the price) |
+   | `AI_EMBEDDING_MODEL` | `gemini-embedding-001` |
+   | `AI_EMBEDDING_LOCATION` | `europe-west3` (this model is not offered in the `eu` multi-region; leave unset to use `AI_LOCATION`) |
+   | `AI_PRICE_IN` | USD per million input tokens of the chat model, for example `1.65` |
+   | `AI_PRICE_OUT` | USD per million output tokens, for example `9.90` |
+
+   The project is `GCP_PROJECT_ID`; the monthly cap per household is `mm.ai.monthly-cap-usd`
+   (default `5.00`; set `MM_AI_MONTHLY_CAP_USD` only if you add it to the deploy).
+4. **Deploy.** With `AI_ENABLED=true` and a setting missing, the app **refuses to start** and the
+   error names the missing variable (`ProductionConfigGuard`). Setting `AI_ENABLED` back to anything
+   else and releasing again switches the assistant off.
+5. **Where to read what it costs:** the app's own tally is the `assistant_usage` table (tokens and
+   micro-USD per household and month). Google's bill is in the Cloud Console under Billing, report
+   filtered to the service "Vertex AI". The cap is the app's guard only: **Vertex AI has no hard
+   billing cap**, so keep the budget alert from part 1 and a low cap.
+
+Run it locally once to see it work: `gcloud auth application-default login`, then start the app with
+`MM_AI_ENABLED=true AI_PROJECT_ID=<project id> AI_LOCATION=eu AI_CHAT_MODEL=... AI_EMBEDDING_MODEL=...
+AI_EMBEDDING_LOCATION=europe-west3 AI_PRICE_IN=... AI_PRICE_OUT=...` (see `.env.example`).
+
 ## When you are done
 
 Tell the agent "setup done" plus the result of part 7 (no values). Nothing else is needed from you
