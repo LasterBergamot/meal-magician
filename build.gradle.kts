@@ -183,6 +183,18 @@ tasks.test {
     }
 }
 
+// The assistant eval (#162, PLAN.md D33): a plain main in the test source set that runs the eval
+// cases against real Gemini models. Never part of `test`, `check` or CI: it costs money and needs
+// the owner's own Google login. Use `task ai:eval -- --models <id,id>`.
+tasks.register<JavaExec>("aiEval") {
+    group = "verification"
+    description = "Runs the assistant eval against real models (use `task ai:eval -- --models <id,id>`)."
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass = "hu.lasterbergamot.mealmagician.assistant.eval.EvalRunner"
+    // The report is written to build/eval, and a run is never "up to date".
+    outputs.upToDateWhen { false }
+}
+
 jacoco {
     toolVersion = libs.versions.jacoco.get()
 }

@@ -22,9 +22,6 @@ Planned UI work (JTE + htmx + Alpine + Tailwind), by `PLAN.md` phase. Move items
 - **Phase 6:** the ingredient picker on the meal form (#156): a dropdown with a search bar, where a
   name that is not in the list can be typed and added. It is a new, reusable component (tags are still
   a text field). Built: see [[Current State: Frontend]].
-- **Phase 7:** "Suggest my week" with follow-ups, accept and discard (#160), a one-slot helper, an
-  Assistant page for food questions and menu help on an occasion (#161). The plan page loads these as
-  small fragments, which are empty when the assistant is switched off. In the UI the assistant is
-  called **Varázsló / Wizard** and is marked by the wand icon; its ideas are dashed cards until a
-  member adds them, and it gets a fifth tab when it is on. The screens, states and copy are in
-  `plan-ui-redesign.md` (UI-D12, Appendix D).
+- **Phase 7:** done (#160, #161), see [[Current State: Frontend]]. What is left is the owner's check of
+  the drafts and the chat page on a phone, in both themes (two gold marks on the chat page), once the
+  assistant is switched on.

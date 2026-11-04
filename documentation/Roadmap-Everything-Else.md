@@ -9,10 +9,9 @@ when they land.
 - **Phase 6, in this order:**
   1. **Ingredients** on meals (#155, #156): a per-household ingredient list with a starter list of common
      Hungarian ingredients and a searchable dropdown where a missing ingredient can be typed.
-  2. **The AI assistant** (#157 to #162): Gemini on Vertex AI (no API key), suggestions from your own
-     meals plus new ideas, seasonal hints, a week draft, a one-slot helper, a food-and-plan chat and
-     occasion menu help, with a monthly spend cap per household. See [[Roadmap: Backend]] and
-     [[Roadmap: Frontend]].
+  2. **Switching the AI assistant on** (built in #157 to #162, see [[AI Assistant]]): the owner runs the model
+     eval (`task ai:eval`), reviews the report and signs off the chat model (D33), then sets the GitHub
+     variables of Hosting Setup, Part 9, and tries the drafts on a phone.
   3. **Backups** (#62, #154), moved behind the assistant on 2026-11-04 at the owner's request: a nightly `db-backup.yml` dumps the Neon database (without the login
      sessions), checks that the dump restores and keeps it (plain, not encrypted) in a private Cloud Storage
      bucket in Frankfurt (under a cent a month). Daily copies are kept 7 days, monthly copies about 6

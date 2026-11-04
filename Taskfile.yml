@@ -50,6 +50,11 @@ tasks:
     desc: Tests without the @Tag("integration") ones, no Docker and no coverage gate (inner loop only)
     cmd: ./gradlew test -Pfast
 
+  "ai:eval":
+    desc: "Assistant eval against REAL Gemini models, costs money: `task ai:eval -- --models <id,id> [--runs 3]` (--help needs no login; needs Docker and `gcloud auth application-default login`)"
+    # Never in `task test` or CI. Writes build/eval/<timestamp>.md; the owner reviews it (D33).
+    cmd: ./gradlew aiEval {{if .CLI_ARGS}}--args='{{.CLI_ARGS}}'{{end}} --console=plain --quiet
+
   test-e2e:
     desc: Build the image, start compose.e2e.yml (app + Postgres + stub OIDC), run the Playwright tests, tear down
     cmds:

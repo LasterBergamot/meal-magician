@@ -14,10 +14,9 @@ Planned backend work, by `PLAN.md` phase. Move items to [[Current State: Backend
   share links with the public page and the print view, are in [[Current State: Backend]]. What is
   left for Phase 5 is the owner's phone checks (#134), not code.
 - **Phase 6:** first the backup scripts and workflow (#62, #154, see [[Roadmap: Everything Else]]) and
-  ingredients in `catalog` (#155, the backend is done and described in [[Current State: Backend]];
-  the picker UI is #156). Later: data export/delete, rate limits, audit fixes.
-- **Phase 7:** `assistant` module (#157 to #162). Built: the Vertex AI connection and the monthly
-  spend cap (#157), the meal search index (#158), and the read-only tools, the anonymised prompts, the
-  stored drafts and `PlanningService.applyDraft` / `RatingService.recent` (#159); see
-  [[Current State: Backend]]. Still to come: the week and one-slot pages (#160), the chat page and
-  occasion menus (#161) and the evaluation that settles the model (#162).
+  ingredients in `catalog` (#155 and #156, done and described in [[Current State: Backend]]
+  and [[Current State: Frontend]]). Later: data export/delete, rate limits, audit fixes.
+- **Phase 7:** the `assistant` module is built (#157 to #162) and described in
+  [[Current State: Backend]] and [[AI Assistant]]. What is left is not code: the owner runs the eval
+  (`task ai:eval`), reads the report and signs off the chat model (D33), then sets the GitHub variables to
+  switch the assistant on (Hosting Setup, Part 9).

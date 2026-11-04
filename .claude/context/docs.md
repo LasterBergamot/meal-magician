@@ -25,6 +25,7 @@ this file says which docs this repo has and the steps that are specific to it.
 | `References.md` | Official docs for every library, tool, service and spec |
 | `Auth-Setup.md` | Google Cloud OAuth client runbook |
 | `Hosting-Setup.md` | owner's one-session setup: Google Cloud (Cloud Run, Artifact Registry, WIF, secrets), Neon, GitHub variables; deploys, scale to zero, backups |
+| `AI-Assistant.md` | The optional assistant: what it does, what data it sees, costs and caps, how to turn it off, how to widen the chat scope, how to run the eval (the owner reviews it and signs off the model) |
 | `Current-State-Backend.md` | Modules, data model, endpoints as they exist today |
 | `Current-State-Frontend.md` | Templates, htmx/Alpine patterns, i18n, PWA as they exist today |
 | `Current-State-Everything-Else.md` | Container, hosting, CI, dev workflow, conventions |
