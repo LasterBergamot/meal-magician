@@ -1,4 +1,4 @@
-# The database backup (PLAN.md §3 stage 6a, #62): dump -> test-restore -> encrypt -> upload.
+# The database backup (PLAN.md §3 stage 6a, #62): dump -> test-restore -> upload.
 #
 # Runs every night, by hand ("Run workflow"), and is called by release.yml before each deploy
 # (`kind: release`), because the Flyway migration that runs when the new revision starts is the most
@@ -9,10 +9,11 @@
 #      the Flyway version and row counts are read in that same snapshot.
 #   2. The dump is restored into a throw-away pgvector Postgres and compared with those recorded
 #      values. A dump that does not restore fails the run.
-#   3. Encrypted with `age` to the public key in the variable BACKUP_AGE_RECIPIENT. The private key
-#      is the owner's and never reaches CI.
-#   4. Uploaded to the Cloud Storage bucket by a service account that can only create objects, so a
-#      broken or hijacked workflow cannot read, overwrite or delete earlier backups.
+#   3. The plain dump file is uploaded to the private Cloud Storage bucket (public access prevented,
+#      encrypted at rest by Google) by a service account that can only create objects, so a broken or
+#      hijacked workflow cannot read, overwrite or delete earlier backups. There is no extra
+#      encryption layer and so no key for the owner to keep (owner decision, 2026-11-04); reading a
+#      backup needs the owner's own Google login.
 #   A failed run opens (or comments on) one issue titled "Backup failed"; the next green run closes it.
 #
 # THE REPOSITORY IS PUBLIC, so every log line is public. Nothing from the dump, no host name and no
@@ -21,8 +22,8 @@
 # `env:` (container.md).
 #
 # Setup it needs (done once by the owner, #154, runbook: documentation/Backup-and-Restore.md): the
-# variables BACKUP_BUCKET and BACKUP_AGE_RECIPIENT next to the ones release.yml uses (DB_URL is read
-# for the host and database name: it must be the direct endpoint, no `-pooler`), the service account
+# variable BACKUP_BUCKET next to the ones release.yml uses (DB_URL is read for the host and
+# database name: it must be the direct endpoint, no `-pooler`), the service account
 # `mm-backup-writer` with the Workload Identity Federation binding (pool `github`, provider
 # `github-repo`), its `objectCreator` role on the bucket, `secretAccessor` on the secret
 # `backup-db-password` only, and the Neon role `mm_backup`.
@@ -63,7 +64,7 @@ permissions:
 
 jobs:
   backup:
-    name: Dump, test-restore, encrypt, upload
+    name: Dump, test-restore, upload
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -95,12 +96,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install age
-        run: |
-          set -euo pipefail
-          bash scripts/install-age.sh
-          echo "$HOME/.local/bin" >>"$GITHUB_PATH"
-
       - name: Sign in to Google Cloud (Workload Identity Federation, no key)
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
@@ -118,7 +113,6 @@ jobs:
           KIND: ${{ inputs.kind }}
           DB_URL: ${{ vars.DB_URL }}
           BUCKET: ${{ vars.BACKUP_BUCKET }}
-          RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
         run: |
           set -euo pipefail
           kind="${KIND:-daily}"
@@ -129,7 +123,7 @@ jobs:
               exit 1
               ;;
           esac
-          for name in BUCKET RECIPIENT DB_URL; do
+          for name in BUCKET DB_URL; do
             if [[ -z "${!name}" ]]; then
               echo "::error::The repository variable for $name is not set (see the backup setup in documentation/Backup-and-Restore.md)"
               exit 1
@@ -149,15 +143,15 @@ jobs:
             name="$name-${GITHUB_SHA::7}"
           fi
           {
-            # Where the dump and its encrypted copy live on the runner; removed at the end.
+            # Where the dump and its row counts live on the runner; removed at the end.
             echo "WORK_DIR=$RUNNER_TEMP/backup"
             echo "BACKUP_KIND=$kind"
-            echo "BACKUP_OBJECT=$name.dump.age"
+            echo "BACKUP_OBJECT=$name.dump"
             echo "BACKUP_DB_HOST=$host"
             echo "BACKUP_DB_PORT=$port"
             echo "BACKUP_DB_NAME=$database"
           } >>"$GITHUB_ENV"
-          echo "Backup kind: $kind, object: $kind/$name.dump.age"
+          echo "Backup kind: $kind, object: $kind/$name.dump"
 
       # The password stays in Secret Manager; it is masked before it is stored anywhere.
       - name: Read the backup role's password
@@ -215,31 +209,26 @@ jobs:
             -e TGT_HOST -e TGT_PORT -e TGT_DB -e TGT_USER -e TGT_PASSWORD -e TGT_SSLMODE \
             "$POSTGRES_CLIENT_IMAGE" /scripts/backup_verify.sh
 
-      - name: Encrypt with age
-        env:
-          RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
-        run: |
-          set -euo pipefail
-          age --recipient "$RECIPIENT" --output "$WORK_DIR/$BACKUP_OBJECT" "$WORK_DIR/mealmagician.dump"
-          # An age file starts with this line; anything else must never be uploaded.
-          head -n 1 "$WORK_DIR/$BACKUP_OBJECT" | grep --quiet --line-regexp 'age-encryption.org/v1'
-          rm -f "$WORK_DIR/mealmagician.dump" "$WORK_DIR/mealmagician.dump.counts"
-          echo "Encrypted: $(wc -c <"$WORK_DIR/$BACKUP_OBJECT") bytes"
-
       # The service account may only create objects (no read, list, overwrite or delete), so this
       # is the one call it makes. On the 1st of the month a nightly run also writes the monthly copy.
+      # Caveat, untested until the first live run: `gcloud storage cp` may look the destination up
+      # (storage.objects.get), which a create-only role does not have. If the run fails with
+      # "permission denied" here, the fallback is a curl JSON-API upload with ifGenerationMatch=0
+      # (create only, never overwrite) using `gcloud auth print-access-token`.
       - name: Upload to Cloud Storage
         env:
           BUCKET: ${{ vars.BACKUP_BUCKET }}
         run: |
           set -euo pipefail
-          gcloud storage cp "$WORK_DIR/$BACKUP_OBJECT" "gs://$BUCKET/$BACKUP_KIND/$BACKUP_OBJECT"
+          gcloud storage cp "$WORK_DIR/mealmagician.dump" "gs://$BUCKET/$BACKUP_KIND/$BACKUP_OBJECT"
           if [[ "$BACKUP_KIND" == daily && "$(date -u +%d)" == "01" ]]; then
-            gcloud storage cp "$WORK_DIR/$BACKUP_OBJECT" "gs://$BUCKET/monthly/$BACKUP_OBJECT"
+            gcloud storage cp "$WORK_DIR/mealmagician.dump" "gs://$BUCKET/monthly/$BACKUP_OBJECT"
           fi
           echo "Uploaded $BACKUP_KIND/$BACKUP_OBJECT"
 
-      - name: Remove the files from the runner
+      # The plain dump and its counts file hold the household's data. The runner is destroyed after
+      # the job anyway; this removes them as soon as they are no longer needed, success or not.
+      - name: Remove the dump and the counts from the runner
         if: always()
         run: rm -rf "$WORK_DIR"
 

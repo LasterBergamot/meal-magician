@@ -140,8 +140,8 @@ Not yet confirmed: sign-in on a phone and scale to zero — see [[Roadmap: Every
 ## Backups (#62)
 
 The household's data lives only in Neon, whose Free plan restores just the last ~6 hours, so
-`db-backup.yml` takes a backup every night. The setup it needs (bucket, service account, Neon role,
-`age` key) and the restore guide are issue #154.
+`db-backup.yml` takes a backup every night. The setup it needs (bucket, service account, Neon role)
+and the restore guide are issue #154.
 
 - **What runs when.** A nightly cron (02:17 UTC), "Run workflow" by hand, and `release.yml`, whose
   `backup` job (`kind: release`) must pass before the `release` job starts, so a migration that
@@ -156,12 +156,16 @@ The household's data lives only in Neon, whose Free plan restores just the last 
   script retries for a minute, because Neon wakes on the first connection. (2)
   `scripts/backup_verify.sh` restores the dump into a throw-away `pgvector/pgvector:pg17` service
   container and compares the restore with the recorded Flyway version and counts; it never contacts
-  Neon. A dump that does not restore, or differs, fails the run. (3) `age` encrypts it to the public
-  key in the variable `BACKUP_AGE_RECIPIENT` (`scripts/install-age.sh` installs a pinned, checksummed
-  `age`); the private key never reaches CI. (4) `gcloud storage cp` uploads to `BACKUP_BUCKET` through
-  Workload Identity Federation as `mm-backup-writer`, which can only create objects. A pooled Neon
-  endpoint cannot share a snapshot, so `DB_URL` must be the direct one (it already must be, for Flyway).
-- **Names and retention.** `<prefix>/mealmagician-<UTC timestamp>[-<sha7>].dump.age`: `daily/` kept
+  Neon. A dump that does not restore, or differs, fails the run. (3) `gcloud storage cp` uploads the
+  plain dump to `BACKUP_BUCKET` through Workload Identity Federation as `mm-backup-writer`, which can
+  only create objects. The data is protected by the private bucket (public access prevented, Google
+  encrypts at rest) and by who may read it, not by a second encryption layer: the owner decided
+  (2026-11-04) not to keep an `age` key, so reading a backup needs only the owner's own Google login.
+  A pooled Neon endpoint cannot share a snapshot, so `DB_URL` must be the direct one (it already must
+  be, for Flyway). Caveat until the first live run: `gcloud storage cp` may need `storage.objects.get`
+  on the destination, which a create-only role lacks; if the run fails with permission denied, the
+  fallback is a `curl` JSON-API upload with `ifGenerationMatch=0`.
+- **Names and retention.** `<prefix>/mealmagician-<UTC timestamp>[-<sha7>].dump`: `daily/` kept
   7 days, `monthly/` (a second copy of the run on the 1st) ~190 days, `release/` (with the commit)
   14 days. The deletion is a bucket lifecycle rule, not part of the workflow. A deleted account stays
   in the backups for up to 6 months.
@@ -173,6 +177,5 @@ The household's data lives only in Neon, whose Free plan restores just the last 
   `Backup failed`; the next green run closes it.
 - **Not covered.** If GitHub disables the schedule (60 days without repo activity) the workflow cannot
   say so; the Cloud Monitoring alert on the bucket (#154) does. The nightly test restore proves the
-  dump restores, not that the owner's private key matches the public one (check with `age-keygen -y`
-  when the key is made) nor that the app boots on restored data. The first live run waits for the
+  dump restores, not that the app boots on restored data. The first live run waits for the
   setup of #154.
