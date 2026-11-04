@@ -4,6 +4,8 @@
 [versions]
 spring-boot = "4.1.2"
 spring-modulith = "2.1.2"
+# Spring AI 2.0.2 (2026-10-23), the newest 2.0.x; 2.0 is built for Spring Boot 4.0 and 4.1. #157
+spring-ai = "2.0.2"
 jte = "3.2.4"
 spotless = "8.10.4"
 google-java-format = "2.0.0"
@@ -14,6 +16,11 @@ playwright = "1.64.0"
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
 spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
+spring-ai-bom = { module = "org.springframework.ai:spring-ai-bom", version.ref = "spring-ai" }
+# Chat only: the connection and the model only start when spring.ai.model.chat is google-genai.
+spring-ai-starter-model-google-genai = { module = "org.springframework.ai:spring-ai-starter-model-google-genai" }
+# Embeddings: its connection auto-configuration is excluded in application.yml and AiConfig builds it.
+spring-ai-starter-model-google-genai-embedding = { module = "org.springframework.ai:spring-ai-starter-model-google-genai-embedding" }
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }

@@ -5,13 +5,13 @@ What exists in `main` today: the build skeleton, the database, the `identity` mo
 library, #66 and #88), the `planning` module (the weekly plan, reuse, occasions and their templates,
 and the week page, `planning/internal/PlanController`), the `feedback` module (ratings and the meal
 history, #124, #128, #132) and the `sharing` module (share links, the print view and the public
-share page, #125, #129, #131). Phases 0 to 5 are built; the `assistant` module (Phase 7) is still to
-come.
+share page, #125, #129, #131). Phases 0 to 5 are built; the `assistant` module (Phase 7) has its
+foundation (#157, below) and the features are still to come.
 
 - **Application class** `MealMagicianApplication` starts Spring Boot; everything lives below its
   package `hu.lasterbergamot.mealmagician`.
 - **Modules** (Spring Modulith): `identity`, `household`, `catalog`, `planning`, `feedback`,
-  `sharing` and the open shared kernel `shared`. Each has a `package-info.java` that says what the
+  `sharing`, `assistant` and the open shared kernel `shared`. Each has a `package-info.java` that says what the
   module owns; `catalog` and `planning` have their services, `catalog` also has the meal pages and `planning` the week
   page;
   `feedback` has the ratings backend and `sharing` the share links with their public page (both
@@ -19,6 +19,29 @@ come.
   everything else goes in `internal/` and other modules may not import it.
   `ModularityTests` fails the build on a violation and writes module docs to
   `build/spring-modulith-docs`.
+- **Assistant foundation (#157), module `assistant`:** nothing a person can use yet; it is the
+  base the later issues build on. It is **off by default** (`mm.ai.enabled=false`): then no Google
+  client exists, no credentials are needed and the app starts as fast as before.
+  - **Spring AI on Vertex AI.** `spring-ai-starter-model-google-genai` (chat) and
+    `...-embedding`, Spring AI 2.0.2 (BOM in `gradle/libs.versions.toml`), connect to Gemini with the
+    Cloud Run runtime account, so there is no API key. `application.yml` switches Spring AI's
+    models off through one nested placeholder driven only by `mm.ai.enabled`, and excludes the
+    embedding starter's connection auto-configuration (it has no switch and would open a Google
+    client at startup); `AiConfig` builds that one bean when the assistant is on.
+  - **`ModelGateway`** is the only class that calls Spring AI's `ChatModel` and `EmbeddingModel`,
+    and the only place household data could leave the app. Every call: cap checked first, a
+    timeout (`mm.ai.timeout`), usage read from the provider (thinking tokens count as output) and
+    added to the ledger. It logs nothing, and its failures name only the kind of error, because a
+    provider's message can echo the prompt.
+  - **Spend cap.** `UsageLedger` keeps `assistant_usage` (V13): tokens and micro-USD per household
+    and calendar month (Europe/Budapest, so a new month starts at zero by itself). A household at
+    or over `mm.ai.monthly-cap-usd` (default 5.00) gets `SpendCapExceededException` and no call is
+    made. Usage is added with one `UPDATE x = x + n` (row created with `ON CONFLICT DO NOTHING`
+    first) in a transaction of its own, so concurrent calls lose nothing. Cost is rounded up per
+    call. The check is before the call, so two simultaneous calls can overshoot the cap by one call.
+  - **Public API:** `AssistantService.enabled()` and `usageThisMonth(userId, householdId)` (members
+    only; 404 while off). `ProductionConfigGuard` fails a `prod` start with the assistant on and a
+    project, location, model id or price missing.
 - **Guard tests (#14)** enforce the conventions so nobody has to remember them:
   `EveryEndpointNeedsSignInTests` calls every mapped controller endpoint anonymously and fails if
   one outside `SecurityConfig.PUBLIC_PATHS` answers with anything but a redirect to the login page
