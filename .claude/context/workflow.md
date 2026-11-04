@@ -49,6 +49,7 @@ client id/secret; use a separate dev OAuth client (`documentation/Auth-Setup.md`
 | `MM_ADMIN_EMAILS` | comma-separated bootstrap instance admins (always allowlisted) |
 | `MM_AI_ENABLED` | `true` turns the AI assistant on (default off: no Google client, no credentials needed); release.yml sets it only when the GitHub variable `AI_ENABLED` is `true` |
 | `AI_PROJECT_ID` / `AI_LOCATION` / `AI_CHAT_MODEL` / `AI_EMBEDDING_MODEL` / `AI_EMBEDDING_LOCATION` | Vertex AI connection and model ids (no API key, the runtime account is used); required when the assistant is on, else `ProductionConfigGuard` fails the start |
+| `SPRING_PROFILES_ACTIVE=...,fake-ai` / `MM_AI_FAKE_DELAY` | the scripted assistant model (#160): switches the assistant on with no Google at all, for tests, `compose.e2e.yml` and a local look at the wizard (`MM_AI_FAKE_DELAY=8s` makes the waiting state visible). `ProductionConfigGuard` refuses it under `prod` |
 | `AI_PRICE_IN` / `AI_PRICE_OUT` | USD per million input / output tokens of the chat model, for the spend cap (`mm.ai.monthly-cap-usd`, default 5.00 per household and month) |
 | `JAVA_TOOL_OPTIONS` | memory flags on Cloud Run (`-XX:MaxRAMPercentage=75`) |
 

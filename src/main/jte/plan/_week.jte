@@ -27,6 +27,7 @@
     @template.ui._icon(name = IconName.COPY, size = 20, filled = false)
     <span>${ctx.t("plan.reuse.week.open")}</span>
   </a>
+  <div id="plan-assistant-entry" hx-get="/assistant/entry?week=${page.week().code()}" hx-trigger="load" hx-swap="outerHTML" class="contents"></div>
 </div>
 @template.plan._occasions(ctx = ctx, page = page)
 <div class="flex flex-col gap-4 lg:hidden">

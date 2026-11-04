@@ -1,0 +1,14 @@
+# The scripted assistant (#160): the real assistant code with a made-up model, for tests, browser
+# tests and a local look at the screens. Never for production (ProductionConfigGuard refuses it).
+mm:
+  ai:
+    enabled: true
+    price-input-per-million-usd: 1.00
+    price-output-per-million-usd: 1.00
+spring:
+  ai:
+    model:
+      # No Google client at all: assistant/internal/FakeAiConfig supplies the models.
+      chat: none
+      embedding:
+        text: none

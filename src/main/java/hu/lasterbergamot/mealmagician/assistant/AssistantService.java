@@ -5,7 +5,9 @@ import hu.lasterbergamot.mealmagician.assistant.internal.DraftService;
 import hu.lasterbergamot.mealmagician.assistant.internal.UsageLedger;
 import hu.lasterbergamot.mealmagician.household.HouseholdService;
 import hu.lasterbergamot.mealmagician.planning.CopyMode;
+import hu.lasterbergamot.mealmagician.planning.SlotType;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Locale;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
@@ -18,7 +20,7 @@ import org.springframework.stereotype.Service;
  * <p>Drafts belong to the household and any member may use them. Every draft method checks
  * membership first (a stranger gets 404, like for a draft of another household), refuses to work
  * while the assistant is off, and never takes anything from the model on trust. The one-slot
- * suggestions and the chat come with #160 and #161.
+ * suggestions (#160) are here too; the chat comes with #161.
  */
 @Service
 public class AssistantService {
@@ -96,6 +98,28 @@ public class AssistantService {
   public DraftView draftWeek(
       long userId, long householdId, Locale locale, LocalDate anyDayInWeek, String request) {
     return draftLogic().draftWeek(userId, householdId, locale, anyDayInWeek, request);
+  }
+
+  /**
+   * Suggests up to three library meals for one slot. Nothing is stored; planning one of them is the
+   * planner's normal "add to slot".
+   *
+   * @param userId the {@code app_user} id of the person asking
+   * @param householdId the household
+   * @param locale the person's language; the reasons are written in it
+   * @param date the day of the slot
+   * @param slotType the slot type
+   * @return at most three suggestions, best first; empty when nothing fits
+   * @throws AssistantDisabledException if the assistant is switched off
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member
+   * @throws SpendCapExceededException if the household's monthly allowance is used up
+   * @throws ModelUnavailableException if the model failed or timed out
+   * @throws DraftGenerationException if the model's answer was not JSON, even after one retry
+   */
+  public List<SlotSuggestion> suggestSlot(
+      long userId, long householdId, Locale locale, LocalDate date, SlotType slotType) {
+    return draftLogic().suggestSlot(userId, householdId, locale, date, slotType);
   }
 
   /**

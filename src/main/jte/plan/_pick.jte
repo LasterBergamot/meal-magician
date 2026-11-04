@@ -9,7 +9,8 @@
 <%-- The content of the pick sheet (and of the no-JavaScript page): which meal goes on this day and
      slot type. The search box refetches this same fragment and swaps only #pick-results
      (hx-select), so the box keeps focus while typing; #pick-params carries the day and slot type it
-     needs. Each library meal is a one-button form that posts to /plan/slots; below the list the
+     needs. #pick-assistant is the wizard's row (#160): the assistant module fills it over htmx, and it
+     stays empty (and hidden) while the assistant is off. Each library meal is a one-button form that posts to /plan/slots; below the list the
      "Create and add" form makes a new meal. --%>
 <div class="flex flex-col gap-4">
   <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -22,6 +23,7 @@
   </div>
   @template.ui._search(id = "pick-q", name = "q", label = ctx.t("plan.pick.search.label"), value = page.query(), placeholder = ctx.t("plan.pick.search.placeholder"), disabled = false,
     attrs = Map.of("hx-get", "/plan/pick", "hx-trigger", "input changed delay:300ms, search", "hx-target", "#pick-results", "hx-select", "#pick-results", "hx-swap", "outerHTML", "hx-include", "#pick-params", "hx-sync", "this:replace"))
+  <div id="pick-assistant" hx-get="/assistant/slot?date=${page.dateValue()}&amp;slotType=${page.slotName()}" hx-trigger="load" hx-swap="innerHTML" class="empty:hidden"></div>
   <div id="pick-results" class="flex flex-col gap-2">
     @if(page.libraryEmpty())
       <p class="text-sm text-ink-muted">${ctx.t("plan.pick.empty")}</p>

@@ -3,9 +3,12 @@ package hu.lasterbergamot.mealmagician.tenant;
 import static hu.lasterbergamot.mealmagician.household.HouseholdTestSupport.signedInAs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doReturn;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 
+import hu.lasterbergamot.mealmagician.assistant.internal.UsageLedger;
 import hu.lasterbergamot.mealmagician.catalog.MealService;
 import hu.lasterbergamot.mealmagician.catalog.OccasionType;
 import hu.lasterbergamot.mealmagician.household.CurrentHousehold;
@@ -31,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -40,6 +44,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpMethod;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -61,7 +66,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("dev")
+@ActiveProfiles({"dev", "fake-ai"})
 @Transactional
 class TenantIsolationTests {
 
@@ -76,6 +81,19 @@ class TenantIsolationTests {
   @Autowired private OccasionTemplateService occasionTemplates;
   @Autowired private ShareLinkService shareLinks;
   @Autowired private JdbcTemplate jdbc;
+
+  /**
+   * The spend ledger writes in a transaction of its own (so spent money is never rolled back),
+   * which cannot see the households of this test's still-open transaction and fails on the foreign
+   * key. Recording usage is not what this guard checks, so it is switched off here; the cap check
+   * and everything else stay real.
+   */
+  @MockitoSpyBean private UsageLedger ledger;
+
+  @BeforeEach
+  void doNotRecordUsage() {
+    doReturn(0L).when(ledger).record(anyLong(), anyLong(), anyLong());
+  }
 
   static Stream<TenantEndpoint> registered() {
     return TenantEndpoints.ALL.stream();
@@ -300,7 +318,7 @@ class TenantIsolationTests {
   }
 
   private static TenantWorld world() {
-    return new TenantWorld(1, 2, 10, 11, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120);
+    return new TenantWorld(1, 2, 10, 11, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130);
   }
 
   /** "METHOD /pattern" of every mapped handler that works on a household. */
@@ -393,7 +411,8 @@ class TenantIsolationTests {
             .create(homeOwner, homeId, LocalDate.of(2026, 11, 2), ShareExpiry.DAYS_7)
             .link()
             .id();
-    // Inserted with SQL: the assistant is off in this context, so its draft service does not exist.
+    // Inserted with SQL: the draft belongs to the home household and has one library meal and one
+    // idea, so accept, remove and "add idea" all have something real to work on.
     jdbc.update(
         "insert into assistant_draft (household_id, created_by, week_start, status, request_text,"
             + " conversation, created_at) values (?, ?, ?, 'OPEN', 'plan', '[]', ?)",
@@ -404,6 +423,24 @@ class TenantIsolationTests {
     long draftId =
         jdbc.queryForObject(
             "select id from assistant_draft where household_id = ?", Long.class, homeId);
+    jdbc.update(
+        "insert into assistant_draft_item (draft_id, household_id, day_date, slot_type, position,"
+            + " meal_id) values (?, ?, ?, 'LUNCH', 0, ?)",
+        draftId,
+        homeId,
+        LocalDate.of(2026, 11, 3),
+        mealId);
+    jdbc.update(
+        "insert into assistant_draft_item (draft_id, household_id, day_date, slot_type, position,"
+            + " idea_name) values (?, ?, ?, 'DINNER', 0, 'Pumpkin soup')",
+        draftId,
+        homeId,
+        LocalDate.of(2026, 11, 3));
+    long draftItemId =
+        jdbc.queryForObject(
+            "select id from assistant_draft_item where draft_id = ? and idea_name is not null",
+            Long.class,
+            draftId);
     currentWorld =
         new TenantWorld(
             homeId,
@@ -420,7 +457,8 @@ class TenantIsolationTests {
             occasionItemId,
             occasionTemplateId,
             shareLinkId,
-            draftId);
+            draftId,
+            draftItemId);
     return currentWorld;
   }
 }

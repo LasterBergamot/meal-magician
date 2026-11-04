@@ -13,7 +13,9 @@
 // (PwaAssetsTest fails if it could match /share/).
 // v4 (#130): the heading font changed to Baloo 2; a new name drops the v3 cache.
 // v5 (#156): app.js gained the combobox component; a new name drops the v4 cache.
-const CACHE = 'mm-static-v6';
+// v7 (#160): app.js gained the wizard's abort-on-close, assistant-close and focus handlers; a new
+// name drops the v6 cache.
+const CACHE = 'mm-static-v7';
 const STATIC_PATHS = /^\/(css|js|icons|fonts)\/|^\/manifest\.webmanifest$/;
 
 self.addEventListener('install', () => self.skipWaiting());

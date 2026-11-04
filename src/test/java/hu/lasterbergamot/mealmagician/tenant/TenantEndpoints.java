@@ -175,5 +175,27 @@ public final class TenantEndpoints {
           TenantEndpoint.forMembers(
               POST, "/meals/{mealId}/archive", w -> Map.of("mealId", w.homeMealId())),
           TenantEndpoint.forMembers(
-              POST, "/meals/{mealId}/restore", w -> Map.of("mealId", w.homeMealId())));
+              POST, "/meals/{mealId}/restore", w -> Map.of("mealId", w.homeMealId())),
+          // the wizard (#160): every member may use it; the draft ids are the home household's
+          TenantEndpoint.forMembers(GET, "/assistant/entry", w -> NONE),
+          TenantEndpoint.forMembers(GET, "/assistant/week", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/assistant/drafts", w -> NONE),
+          TenantEndpoint.forMembers(
+              GET, "/assistant/drafts/{id}", w -> Map.of("id", w.homeDraftId())),
+          TenantEndpoint.forMembers(
+              POST, "/assistant/drafts/{id}/refine", w -> Map.of("id", w.homeDraftId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/assistant/drafts/{id}/items/{itemId}/remove",
+              w -> Map.of("id", w.homeDraftId(), "itemId", w.homeDraftItemId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/assistant/drafts/{id}/items/{itemId}/idea",
+              w -> Map.of("id", w.homeDraftId(), "itemId", w.homeDraftItemId())),
+          TenantEndpoint.forMembers(
+              POST, "/assistant/drafts/{id}/accept", w -> Map.of("id", w.homeDraftId())),
+          TenantEndpoint.forMembers(
+              POST, "/assistant/drafts/{id}/discard", w -> Map.of("id", w.homeDraftId())),
+          TenantEndpoint.forMembers(GET, "/assistant/slot", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/assistant/slot", w -> NONE));
 }

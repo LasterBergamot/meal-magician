@@ -13,6 +13,8 @@ public class DraftClosedException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
+  private final long draftId;
+
   /**
    * Creates the exception.
    *
@@ -20,5 +22,15 @@ public class DraftClosedException extends RuntimeException {
    */
   public DraftClosedException(long draftId) {
     super("Draft " + draftId + " is no longer open");
+    this.draftId = draftId;
+  }
+
+  /**
+   * The draft that is no longer open, so a page can find the week it belongs to.
+   *
+   * @return the draft's id
+   */
+  public long draftId() {
+    return draftId;
   }
 }

@@ -2,6 +2,7 @@ package hu.lasterbergamot.mealmagician.assistant.internal;
 
 import hu.lasterbergamot.mealmagician.assistant.DraftGenerationException;
 import hu.lasterbergamot.mealmagician.assistant.DraftView;
+import hu.lasterbergamot.mealmagician.assistant.SlotSuggestion;
 import hu.lasterbergamot.mealmagician.catalog.MealSearch;
 import hu.lasterbergamot.mealmagician.catalog.MealService;
 import hu.lasterbergamot.mealmagician.catalog.MealView;
@@ -9,11 +10,14 @@ import hu.lasterbergamot.mealmagician.feedback.RatingService;
 import hu.lasterbergamot.mealmagician.household.MemberService;
 import hu.lasterbergamot.mealmagician.planning.OccasionService;
 import hu.lasterbergamot.mealmagician.planning.PlanningService;
+import hu.lasterbergamot.mealmagician.planning.SlotType;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -45,6 +49,9 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(prefix = "mm.ai", name = "enabled", havingValue = "true")
 public class DraftGenerator {
+
+  /** The most suggestions one slot request returns. */
+  static final int MAX_SLOT_SUGGESTIONS = 3;
 
   private final ModelGateway gateway;
   private final PromptBuilder prompts;
@@ -128,18 +135,7 @@ public class DraftGenerator {
         meals.search(userId, householdId, new MealSearch("", null, null, false)).stream()
             .map(MealView::id)
             .collect(Collectors.toSet());
-    AssistantTools tools =
-        new AssistantTools(
-            userId,
-            householdId,
-            Pseudonyms.of(members.list(householdId, userId)),
-            planning,
-            meals,
-            ratings,
-            occasions,
-            index,
-            clock);
-    var options = ToolCallingChatOptions.builder().toolCallbacks(ToolCallbacks.from(tools)).build();
+    var options = toolOptions(userId, householdId);
     var converter = new BeanOutputConverter<>(DraftProposal.class);
     List<Message> messages =
         prompts.build(
@@ -164,6 +160,108 @@ public class DraftGenerator {
       messages = new ArrayList<>(messages);
       messages.add(new AssistantMessage(reply));
       messages.add(new UserMessage(complaint));
+    }
+  }
+
+  /**
+   * Suggests up to three library meals for one slot. Same rules as {@link #generate}: the cap and
+   * the timeout are the gateway's, no transaction is open, the model's ids are checked against the
+   * household's active meals, and the model is asked once more when its answer was not JSON or
+   * named ids that do not exist. After that second try the ids that are real are kept, so an answer
+   * that is only partly wrong still helps, and an empty list is a valid result.
+   *
+   * @param userId the {@code app_user} id of the member who asked; the tools run as them
+   * @param householdId the household
+   * @param locale the member's language, which the reasons are written in
+   * @param date the day of the slot
+   * @param slotType the slot type
+   * @return at most three suggestions, best first, each a real active meal; may be empty
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member
+   * @throws hu.lasterbergamot.mealmagician.assistant.SpendCapExceededException if the household has
+   *     used up its allowance; no model call was made
+   * @throws hu.lasterbergamot.mealmagician.assistant.ModelUnavailableException if the model failed
+   * @throws DraftGenerationException if the answer was not JSON twice in a row
+   */
+  List<SlotSuggestion> suggestSlot(
+      long userId, long householdId, Locale locale, LocalDate date, SlotType slotType) {
+    Map<Long, String> names =
+        meals.search(userId, householdId, new MealSearch("", null, null, false)).stream()
+            .collect(Collectors.toMap(MealView::id, MealView::name));
+    var options = toolOptions(userId, householdId);
+    var converter = new BeanOutputConverter<>(SlotProposal.class);
+    List<Message> messages =
+        prompts.buildSlot(
+            locale, LocalDate.now(clock), date, slotType.name(), converter.getFormat());
+
+    for (int attempt = 0; ; attempt++) {
+      String reply = gateway.complete(householdId, new Prompt(messages, options)).text();
+      SlotProposal proposal = parseSlot(converter, reply);
+      if (proposal == null && attempt > 0) {
+        throw new DraftGenerationException("the answer was not valid JSON");
+      }
+      if (proposal != null && (attempt > 0 || !hasUnknownIds(proposal, names))) {
+        return usable(proposal, names);
+      }
+      messages = new ArrayList<>(messages);
+      messages.add(new AssistantMessage(reply));
+      messages.add(
+          new UserMessage(
+              proposal == null
+                  ? "Your last answer was not valid JSON in the required format. Answer again"
+                      + " with only the JSON."
+                  : "Some meal ids are not in the library. Use only ids returned by the tools."));
+    }
+  }
+
+  private static boolean hasUnknownIds(SlotProposal proposal, Map<Long, String> names) {
+    return proposal.picks() != null
+        && proposal.picks().stream()
+            .anyMatch(
+                pick -> pick != null && pick.mealId() != null && !names.containsKey(pick.mealId()));
+  }
+
+  private static List<SlotSuggestion> usable(SlotProposal proposal, Map<Long, String> names) {
+    if (proposal.picks() == null) {
+      return List.of();
+    }
+    Set<Long> seen = new LinkedHashSet<>();
+    List<SlotSuggestion> result = new ArrayList<>();
+    for (SlotProposal.Pick pick : proposal.picks()) {
+      if (pick == null || pick.mealId() == null || !names.containsKey(pick.mealId())) {
+        continue;
+      }
+      if (seen.add(pick.mealId()) && result.size() < MAX_SLOT_SUGGESTIONS) {
+        String reason = DraftValidator.clean(pick.reason(), DraftValidator.REASON_MAX);
+        result.add(
+            new SlotSuggestion(
+                pick.mealId(), names.get(pick.mealId()), reason.isEmpty() ? null : reason));
+      }
+    }
+    return result;
+  }
+
+  private ToolCallingChatOptions toolOptions(long userId, long householdId) {
+    AssistantTools tools =
+        new AssistantTools(
+            userId,
+            householdId,
+            Pseudonyms.of(members.list(householdId, userId)),
+            planning,
+            meals,
+            ratings,
+            occasions,
+            index,
+            clock);
+    return ToolCallingChatOptions.builder().toolCallbacks(ToolCallbacks.from(tools)).build();
+  }
+
+  private static SlotProposal parseSlot(BeanOutputConverter<SlotProposal> converter, String reply) {
+    try {
+      return converter.convert(reply);
+    } catch (RuntimeException notJson) {
+      // The text is not logged or kept in the exception: it may echo the prompt.
+      return null;
     }
   }
 

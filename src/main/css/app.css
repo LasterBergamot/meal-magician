@@ -299,6 +299,19 @@
   .slot-lunch { --slot: var(--mm-slot-lunch); --slot-soft: var(--mm-slot-lunch-soft); --slot-ink: var(--mm-slot-lunch-ink); }
   .slot-dinner { --slot: var(--mm-slot-dinner); --slot-soft: var(--mm-slot-dinner-soft); --slot-ink: var(--mm-slot-dinner-ink); }
   .slot-snack { --slot: var(--mm-slot-snack); --slot-soft: var(--mm-slot-snack-soft); --slot-ink: var(--mm-slot-snack-ink); }
+
+  /* The wizard's wand while it works (plan-ui-redesign.md D.3): it breathes. The text beside it
+     says the same thing, so the motion is only a cue and is off under prefers-reduced-motion. */
+  .mm-twinkle { animation: mm-twinkle 1.2s ease-in-out infinite; }
+}
+
+@keyframes mm-twinkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-twinkle { animation: none; }
 }
 
 @layer base {

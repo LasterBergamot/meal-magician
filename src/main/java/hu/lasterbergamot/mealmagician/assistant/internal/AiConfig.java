@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * Wires the assistant's settings and, only when the assistant is on, the Google connection of the
@@ -29,9 +30,13 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(AiProperties.class)
 class AiConfig {
 
-  /** The embedding connection, present only while {@code mm.ai.enabled=true}. */
+  /**
+   * The embedding connection, present only while {@code mm.ai.enabled=true} and not in the {@code
+   * fake-ai} profile (the scripted assistant of #160 opens no Google client).
+   */
   @Configuration(proxyBeanMethods = false)
   @ConditionalOnProperty(prefix = "mm.ai", name = "enabled", havingValue = "true")
+  @Profile("!fake-ai")
   @EnableConfigurationProperties(GoogleGenAiEmbeddingConnectionProperties.class)
   static class EmbeddingConnection {
 

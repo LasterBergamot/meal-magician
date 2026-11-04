@@ -268,3 +268,22 @@ paths:
   empty `#meal-history` section that loads `GET /feedback/meals/{id}` on `load` (the same reason as
   the prompt: `catalog` may not import `feedback`). The fragment swaps only `#meal-history-body`, so
   the heading stays in the meal page. It shows no e-mail address and no rating form.
+- **Entry fragments, the wizard on the plan page (#160), `assistant/`:** a module that other pages
+  must not depend on adds its UI to them with an empty loader and `hx-trigger="load"`, never with an
+  import. `plan/_week.jte` holds `#plan-assistant-entry` (`hx-get="/assistant/entry?week=…"`,
+  `hx-swap="outerHTML"`), `plan/week.jte` holds `#assistant-notice` and `plan/_pick.jte` holds
+  `#pick-assistant`. While `mm.ai.enabled` is false `AssistantGate` (one `HandlerInterceptor`, not a
+  check per handler) answers those GETs with **204 and no body**, so the loader swaps in nothing and
+  the page shows no button, no hint and not even a closed dialog; every other `/assistant/**` route is
+  404. The entry fragment brings its own page-level `ui/_sheet` (`assistant-sheet`, `side = true`: a
+  right-hand panel from `md` up) beside the button; `sheetOpener` only needs the dialog's id to exist.
+  Rules for such fragments: a `secondary` button with the `wand` icon (never gold); the waiting state
+  is CSS on htmx's `htmx-request` class (`[.htmx-request_&]:hidden`), so it needs no script; a form that
+  can take seconds carries `data-abort-on-close`, and the `sheet` component aborts the request when the
+  sheet closes (that is Cancel); an error alert sits inside the form it belongs to, so the typed text
+  stays and "Try again" is the same submit button; a draft that was accepted meanwhile is a 409 into
+  `#plan-conflict`, like any stale edit. The quick-request chips (`ui/_check_chip`) send `hint` values
+  and the **controller** turns the four known ones into text; write each chip's translation key out in
+  full (`assistant/_hint_chips.jte`), because `UiGuardTest` cannot see a key built as `"assistant.hint."
+  + key`. Whatever the model wrote (summary, names, reasons, ingredients) is untrusted: it is only
+  ever output with `${}`.
