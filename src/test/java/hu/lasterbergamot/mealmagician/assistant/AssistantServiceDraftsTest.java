@@ -37,9 +37,20 @@ class AssistantServiceDraftsTest {
   private AssistantService service() {
     var properties =
         new AiProperties(
-            true, new BigDecimal("5"), BigDecimal.ONE, BigDecimal.ONE, 768, Duration.ofSeconds(1));
+            true,
+            new BigDecimal("5"),
+            BigDecimal.ONE,
+            BigDecimal.ONE,
+            768,
+            Duration.ofSeconds(1),
+            "food-and-plan");
     return new AssistantService(
-        properties, mock(UsageLedger.class), mock(HouseholdService.class), provider);
+        properties,
+        mock(UsageLedger.class),
+        mock(HouseholdService.class),
+        provider,
+        mock(ObjectProvider.class),
+        mock(ObjectProvider.class));
   }
 
   @Test

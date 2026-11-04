@@ -19,7 +19,7 @@
 
   <nav aria-label="${ctx.t("nav.primary")}" class="flex flex-col gap-1">
     <p class="px-3 pb-1 text-xs font-bold tracking-wide text-ink-muted [.is-collapsed_&]:sr-only">${ctx.t("nav.section")}</p>
-    @for(NavDestination destination : NavDestination.visible())
+    @for(NavDestination destination : NavDestination.visible(ctx.assistant()))
       @if(destination == ctx.active())
         <a href="${destination.path()}" aria-current="page" title="${ctx.t(destination.labelKey())}"
            class="flex min-h-11 items-center gap-3 rounded-md border-2 border-outline bg-brand px-3 text-sm font-extrabold text-on-brand shadow-sticker-1">

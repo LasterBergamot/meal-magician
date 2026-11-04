@@ -39,7 +39,7 @@ final class DraftValidator {
   /** A meal has at most this many ingredients in the catalog. */
   static final int INGREDIENTS_PER_MEAL = 30;
 
-  private static final int TAGS_PER_IDEA = 5;
+  static final int TAGS_PER_IDEA = 5;
   private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
   private DraftValidator() {}

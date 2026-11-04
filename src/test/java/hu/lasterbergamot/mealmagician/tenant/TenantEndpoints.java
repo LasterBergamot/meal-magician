@@ -197,5 +197,22 @@ public final class TenantEndpoints {
           TenantEndpoint.forMembers(
               POST, "/assistant/drafts/{id}/discard", w -> Map.of("id", w.homeDraftId())),
           TenantEndpoint.forMembers(GET, "/assistant/slot", w -> NONE),
-          TenantEndpoint.forMembers(POST, "/assistant/slot", w -> NONE));
+          TenantEndpoint.forMembers(POST, "/assistant/slot", w -> NONE),
+          // the chat (#161): every member may ask; the messages live in the session, not a table.
+          // "New conversation" takes no household, so it is not registered.
+          TenantEndpoint.forMembers(GET, "/assistant", w -> NONE),
+          TenantEndpoint.forMembers(POST, "/assistant/chat", w -> NONE),
+          // the occasion's menu suggestions (#161): the occasion must be the home household's
+          TenantEndpoint.forMembers(
+              GET,
+              "/assistant/occasions/{occasionId}/entry",
+              w -> Map.of("occasionId", w.homeOccasionId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/assistant/occasions/{occasionId}/menu",
+              w -> Map.of("occasionId", w.homeOccasionId())),
+          TenantEndpoint.forMembers(
+              POST,
+              "/assistant/occasions/{occasionId}/ideas",
+              w -> Map.of("occasionId", w.homeOccasionId())));
 }

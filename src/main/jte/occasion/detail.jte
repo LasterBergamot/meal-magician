@@ -40,6 +40,8 @@
       @template.occasion._menu(ctx = ctx, page = page)
     </section>
 
+    <div id="occasion-menu-suggestions-slot" hx-get="/assistant/occasions/${page.id()}/entry" hx-trigger="load" hx-swap="outerHTML"></div>
+
     @if(page.canSave())
       @template.occasion._save_template(ctx = ctx, page = page)
     @endif

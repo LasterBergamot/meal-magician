@@ -15,7 +15,9 @@
 // v5 (#156): app.js gained the combobox component; a new name drops the v4 cache.
 // v7 (#160): app.js gained the wizard's abort-on-close, assistant-close and focus handlers; a new
 // name drops the v6 cache.
-const CACHE = 'mm-static-v7';
+// v8 (#161): app.js gained the chat composer's counter and Ctrl/Cmd + Enter send; a new name drops
+// the v7 cache.
+const CACHE = 'mm-static-v8';
 const STATIC_PATHS = /^\/(css|js|icons|fonts)\/|^\/manifest\.webmanifest$/;
 
 self.addEventListener('install', () => self.skipWaiting());

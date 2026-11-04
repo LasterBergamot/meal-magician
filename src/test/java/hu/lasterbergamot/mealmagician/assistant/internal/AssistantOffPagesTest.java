@@ -106,4 +106,38 @@ class AssistantOffPagesTest {
 
     assertThat(page).doesNotContain("id=\"assistant-sheet\"").doesNotContain("Heti javaslat");
   }
+
+  @Test
+  void theChatAndTheOccasionRoutesAreOffToo() throws Exception {
+    mvc.perform(signed(get("/assistant"))).andExpect(status().isNotFound());
+    mvc.perform(signed(post("/assistant/chat").param("message", "x")))
+        .andExpect(status().isNotFound());
+    mvc.perform(signed(post("/assistant/chat/reset"))).andExpect(status().isNotFound());
+    mvc.perform(signed(post("/assistant/occasions/1/menu"))).andExpect(status().isNotFound());
+    mvc.perform(signed(post("/assistant/occasions/1/ideas").param("name", "x")))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void theOccasionLoaderAnswersNoContentWhileTheAssistantIsOff() throws Exception {
+    var response =
+        mvc.perform(signed(get("/assistant/occasions/1/entry")))
+            .andExpect(status().isNoContent())
+            .andReturn()
+            .getResponse();
+
+    assertThat(response.getContentAsString()).isEmpty();
+  }
+
+  @Test
+  void theNavigationHasNoWizardWhileTheAssistantIsOff() throws Exception {
+    String page =
+        mvc.perform(signed(get("/plan")))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    assertThat(page).doesNotContain("href=\"/assistant\"");
+  }
 }

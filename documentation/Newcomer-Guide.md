@@ -72,6 +72,14 @@ allowlisted emails get in; households are shared through email-bound invite link
 - **Draft:** what the assistant ("Varázsló" / Wizard) proposes for a week or an occasion: a saved list
   of items per day and slot type that is *not* in the plan yet. The member can remove items, ask for
   changes, and then Accept (the library meals are written to the plan) or Discard. See `assistant/`.
+- **Chat:** the Wizard's question-and-answer page (`/assistant`, #161). The conversation lives in the
+  session only: it is gone after "New conversation", a sign-out or an expired session. The wizard
+  answers about food, ingredients, the season in Hungary, menus and the household's own history, and
+  politely declines anything else (the topic policy in `assistant/chat-policy-food.txt`).
+- **Menu suggestion:** on an occasion's page, "Menüjavaslat" asks the Wizard for up to six library
+  meals and three new ideas, based on the occasion's kind and the menus of earlier occasions of that
+  kind. Nothing is added by itself: a library meal goes on the menu with its own button, and an idea
+  goes into the library first.
 - **Idea:** an item in a draft that is not a meal of the household's library yet (a name, a reason and
   some ingredients the model made up). It is drawn as a dashed card; "Add to meals" puts it in the
   library, and an accepted draft leaves out the ideas that were not added.
@@ -144,6 +152,24 @@ When the page has loaded, htmx asks the assistant module for that fragment:
    a third placeholder, `#assistant-notice`, loads the "x meals added" note.
 
 In tests the model is `ScriptedChatModel` (profile `fake-ai`), so no test calls Google.
+
+### Asking the wizard: the chat (#161)
+
+The chat is a plain page with htmx in front of it. Take one message, "Mi van most szezonban?" ("What is in season now?"):
+
+1. `POST /assistant/chat` meets `AssistantGate` first, then `CurrentHousehold` (a person in no household
+   gets 404). A blank message is answered with 204, so nothing happens.
+2. `ChatController.send` reads the conversation from the session (`ChatSession`, at most 20 turns) and
+   calls `AssistantService.chat`. `ChatService` checks the length (over 1 000 characters is a 422 and
+   no model call), builds the prompt (the system prompt, the topic policy, the stored turns, the new
+   message as a quoted string) and calls the one `ModelGateway`, which checks the monthly cap first.
+3. The answer is stripped and returned. Only now does the controller add both turns to the session. A
+   failed call leaves the session as it was, and the text stays in the field.
+4. The reply is `assistant/_chat_reply.jte`: the new bubbles for the thread, a hidden empty state, and
+   the composer again (cleared), all in one response. htmx appends and swaps as the attributes say.
+
+In tests the model is `ScriptedChatModel`; `AssistantChatPagesTest` carries the session cookie from
+request to request, the way a browser does.
 
 ### A request with no sign-in: `GET /share/{token}`
 

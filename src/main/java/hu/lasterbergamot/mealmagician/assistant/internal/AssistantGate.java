@@ -5,6 +5,7 @@ import hu.lasterbergamot.mealmagician.assistant.AssistantService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -27,6 +28,10 @@ class AssistantGate implements WebMvcConfigurer {
   /** The routes a host page loads by itself; they answer 204 while the assistant is off. */
   private static final Set<String> QUIET_GET_PATHS =
       Set.of("/assistant/entry", "/assistant/slot", "/assistant/notice");
+
+  /** The occasion page's "Suggest a menu" loader (#161), which is quiet too. */
+  private static final Pattern QUIET_OCCASION_ENTRY =
+      Pattern.compile("/assistant/occasions/\\d+/entry");
 
   private final AssistantService assistant;
 
@@ -53,11 +58,15 @@ class AssistantGate implements WebMvcConfigurer {
       if (assistant.enabled()) {
         return true;
       }
-      if ("GET".equals(request.getMethod()) && QUIET_GET_PATHS.contains(request.getRequestURI())) {
+      if ("GET".equals(request.getMethod()) && isQuiet(request.getRequestURI())) {
         response.setStatus(HttpServletResponse.SC_NO_CONTENT);
         return false;
       }
       throw new AssistantDisabledException();
+    }
+
+    private boolean isQuiet(String path) {
+      return QUIET_GET_PATHS.contains(path) || QUIET_OCCASION_ENTRY.matcher(path).matches();
     }
   }
 }

@@ -59,7 +59,8 @@ class ModelGatewayTest {
         new BigDecimal("1.65"),
         new BigDecimal("9.90"),
         DIMENSIONS,
-        timeout);
+        timeout,
+        "food-and-plan");
   }
 
   @BeforeEach

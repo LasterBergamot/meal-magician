@@ -31,7 +31,7 @@ class ViewContextAdviceTest {
 
   @Test
   void anAnonymousRequestGetsNoShellDataAndNoHighlight() {
-    var advice = new ViewContextAdvice(messages, absent(), absent(), absent());
+    var advice = new ViewContextAdvice(messages, absent(), absent(), absent(), absent());
 
     ViewContext ctx = advice.viewContext(new MockHttpServletRequest("GET", "/login"));
 
@@ -54,7 +54,8 @@ class ViewContextAdviceTest {
             messages,
             present((CsrfMetaSource) request -> csrf),
             present((HouseholdNavSource) request -> household),
-            present((ShellUserSource) request -> shellUser));
+            present((ShellUserSource) request -> shellUser),
+            absent());
 
     ViewContext ctx = advice.viewContext(new MockHttpServletRequest("GET", "/households"));
 
@@ -66,7 +67,7 @@ class ViewContextAdviceTest {
 
   @Test
   void theThemeComesFromTheThemeCookie() {
-    var advice = new ViewContextAdvice(messages, absent(), absent(), absent());
+    var advice = new ViewContextAdvice(messages, absent(), absent(), absent(), absent());
     var request = new MockHttpServletRequest("GET", "/");
     request.setCookies(new Cookie("other", "x"), new Cookie(Theme.COOKIE_NAME, "dark"));
 
@@ -75,7 +76,7 @@ class ViewContextAdviceTest {
 
   @Test
   void anUnknownThemeCookieMeansSystem() {
-    var advice = new ViewContextAdvice(messages, absent(), absent(), absent());
+    var advice = new ViewContextAdvice(messages, absent(), absent(), absent(), absent());
     var request = new MockHttpServletRequest("GET", "/");
     request.setCookies(new Cookie(Theme.COOKIE_NAME, "purple"));
 
@@ -84,10 +85,26 @@ class ViewContextAdviceTest {
 
   @Test
   void requestsWithOtherCookiesOnlyGetTheDefaultTheme() {
-    var advice = new ViewContextAdvice(messages, absent(), absent(), absent());
+    var advice = new ViewContextAdvice(messages, absent(), absent(), absent(), absent());
     var request = new MockHttpServletRequest("GET", "/");
     request.setCookies(new Cookie("mm_lang", "en"));
 
     assertThat(advice.viewContext(request).theme()).isEqualTo(Theme.SYSTEM);
+  }
+
+  @Test
+  void theAssistantFlagFollowsTheSwitchSourceAndIsOffWithoutOne() {
+    var on =
+        new ViewContextAdvice(
+            messages, absent(), absent(), absent(), present((AssistantSwitchSource) () -> true));
+    var off =
+        new ViewContextAdvice(
+            messages, absent(), absent(), absent(), present((AssistantSwitchSource) () -> false));
+    var missing = new ViewContextAdvice(messages, absent(), absent(), absent(), absent());
+
+    assertThat(on.viewContext(new MockHttpServletRequest("GET", "/plan")).assistant()).isTrue();
+    assertThat(off.viewContext(new MockHttpServletRequest("GET", "/plan")).assistant()).isFalse();
+    assertThat(missing.viewContext(new MockHttpServletRequest("GET", "/plan")).assistant())
+        .isFalse();
   }
 }

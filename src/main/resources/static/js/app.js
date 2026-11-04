@@ -199,6 +199,35 @@
       },
     }));
 
+    // The chat composer of the Wizard page (assistant/chat.jte, plan-ui-redesign.md Appendix D.6).
+    // It counts the characters and shows the count from 800 (the server allows 1 000); the bundle's
+    // count text has "#" where the number goes, so only that character is swapped here. Ctrl or Cmd
+    // with Enter sends, a plain Enter starts a new line as in any text area. The form posts with
+    // htmx, so the component never sends anything itself. Every handler is a named method because
+    // the CSP build of Alpine cannot evaluate expressions.
+    const CHAT_COUNT_FROM = 800;
+    window.Alpine.data('chatComposer', () => ({
+      length: 0,
+      label: '',
+      showCount: false,
+      format: '#',
+      init() {
+        this.format = this.$refs.count.dataset.format;
+        this.count();
+      },
+      count() {
+        this.length = this.$refs.message.value.length;
+        this.label = this.format.replace('#', String(this.length));
+        this.showCount = this.length >= CHAT_COUNT_FROM;
+      },
+      send(event) {
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          this.$refs.form.requestSubmit();
+        }
+      },
+    }));
+
     // The combobox (ui/_combobox.jte, issue #156): a multi-select with chips, a search input and a
     // list that htmx fills. It follows the WAI-ARIA Authoring Practices "Combobox with listbox
     // popup" pattern (https://www.w3.org/WAI/ARIA/apg/patterns/combobox/): DOM focus stays on the

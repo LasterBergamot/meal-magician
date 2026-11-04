@@ -13,13 +13,20 @@ import org.junit.jupiter.params.provider.CsvSource;
 class NavDestinationTest {
 
   @Test
-  void onlyDestinationsWhosePagesExistAreShown() {
-    assertThat(NavDestination.visible())
+  void theWizardIsListedOnlyWhileTheAssistantIsOn() {
+    assertThat(NavDestination.visible(false))
         .containsExactly(
             NavDestination.PLAN,
             NavDestination.MEALS,
             NavDestination.OCCASIONS,
             NavDestination.HOUSEHOLD);
+    assertThat(NavDestination.visible(true))
+        .containsExactly(
+            NavDestination.PLAN,
+            NavDestination.MEALS,
+            NavDestination.OCCASIONS,
+            NavDestination.HOUSEHOLD,
+            NavDestination.ASSISTANT);
   }
 
   @ParameterizedTest
@@ -30,7 +37,9 @@ class NavDestinationTest {
     "/households/members, HOUSEHOLD",
     "/households/7/switch, HOUSEHOLD",
     "/meals, MEALS",
-    "/occasions/3, OCCASIONS"
+    "/occasions/3, OCCASIONS",
+    "/assistant, ASSISTANT",
+    "/assistant/chat, ASSISTANT"
   })
   void aPathBelongsToItsDestinationAndThePagesBelowIt(String path, NavDestination destination) {
     assertThat(NavDestination.matching(path)).isEqualTo(destination);
@@ -54,7 +63,7 @@ class NavDestinationTest {
           .as("en label of %s", destination)
           .isNotBlank();
     }
-    assertThat(List.of(NavDestination.values())).hasSize(4);
+    assertThat(List.of(NavDestination.values())).hasSize(5);
   }
 
   private static Properties bundle(String name) throws IOException {

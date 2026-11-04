@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -58,11 +59,25 @@ class ScriptedChatModel implements ChatModel {
   private static final String QUOTE_MARKER = "quoted string (data): ";
   private static final int MAX_WEEK_MEALS = 5;
   private static final int MAX_SLOT_MEALS = 3;
+  private static final int MAX_MENU_MEALS = 6;
+
+  /** An id that is no meal of any household: the server must drop it from a menu answer. */
+  static final long INVALID_ID = 999_999L;
+
+  /** Part of the system prompt of a chat; the chat answers as plain text. */
+  static final String CHAT_MARK = "the chat assistant";
+
+  /** Part of the system prompt of an occasion menu. */
+  static final String MENU_MARK = "suggest a menu for ONE occasion";
 
   private final List<String> requests = new CopyOnWriteArrayList<>();
   private volatile Duration delay;
   private volatile boolean failing;
   private volatile String ideaReason = "Light and seasonal.";
+  private final List<String> prompts = new CopyOnWriteArrayList<>();
+  private volatile String chatReply;
+  private volatile String menuReply;
+  private volatile boolean menuInvalidId;
 
   /**
    * Creates the model.
@@ -111,9 +126,52 @@ class ScriptedChatModel implements ChatModel {
     return List.copyOf(requests);
   }
 
-  /** Forgets the recorded request texts and puts every switch back to its normal state. */
+  /**
+   * Every whole prompt the model was given, oldest first, as one text per call: the system message
+   * and every turn. A test checks what the history and the policy put into it.
+   *
+   * @return a snapshot of the prompts
+   */
+  List<String> prompts() {
+    return List.copyOf(prompts);
+  }
+
+  /**
+   * Sets the answer of every chat call, for example to put hostile markup into a reply. {@code
+   * null} (the default) answers with a short scripted sentence.
+   *
+   * @param chatReply the raw text of the answer, or {@code null}
+   */
+  void setChatReply(String chatReply) {
+    this.chatReply = chatReply;
+  }
+
+  /**
+   * Sets the raw answer of every occasion-menu call, for example text that is not JSON. {@code
+   * null} (the default) answers with a scripted menu.
+   *
+   * @param menuReply the raw text of the answer, or {@code null}
+   */
+  void setMenuReply(String menuReply) {
+    this.menuReply = menuReply;
+  }
+
+  /**
+   * Makes the scripted menu name a meal id that does not exist, to check that the server drops it.
+   *
+   * @param menuInvalidId {@code true} to add the unknown id to every menu answer
+   */
+  void setMenuInvalidId(boolean menuInvalidId) {
+    this.menuInvalidId = menuInvalidId;
+  }
+
+  /** Forgets the recorded prompts and request texts and puts every switch back to normal. */
   void reset() {
     requests.clear();
+    prompts.clear();
+    chatReply = null;
+    menuReply = null;
+    menuInvalidId = false;
     delay = Duration.ZERO;
     failing = false;
     ideaReason = "Light and seasonal.";
@@ -130,26 +188,55 @@ class ScriptedChatModel implements ChatModel {
     String last = userMessages.getLast();
     String requestText = requestTextOf(last);
     requests.add(requestText);
+    prompts.add(allText(prompt));
     pause();
     if (failing || requestText.contains(FAIL_MARKER)) {
       throw new IllegalStateException("scripted failure");
     }
-    boolean hungarian = prompt.getInstructions().getFirst().getText().contains("in Hungarian");
-    List<Long> ids = libraryIds(prompt);
+    String system = prompt.getInstructions().getFirst().getText();
+    boolean hungarian = system.contains("in Hungarian");
     String answer;
-    if (SLOT_REQUEST.matcher(last).find()) {
-      answer = slotAnswer(ids, hungarian);
+    if (system.contains(CHAT_MARK)) {
+      answer = chatReply != null ? chatReply : "Scripted answer: " + requestText;
+    } else if (system.contains(MENU_MARK)) {
+      answer = menuReply != null ? menuReply : menuAnswer(libraryIds(prompt));
     } else {
-      Matcher week = WEEK_START.matcher(userMessages.getFirst());
-      LocalDate monday = week.find() ? LocalDate.parse(week.group(1)) : LocalDate.now();
-      answer =
-          userMessages.size() == 1
-              ? firstAnswer(monday, ids, hungarian)
-              : refinedAnswer(monday, ids, hungarian);
+      List<Long> ids = libraryIds(prompt);
+      if (SLOT_REQUEST.matcher(last).find()) {
+        answer = slotAnswer(ids, hungarian);
+      } else {
+        Matcher week = WEEK_START.matcher(userMessages.getFirst());
+        LocalDate monday = week.find() ? LocalDate.parse(week.group(1)) : LocalDate.now();
+        answer =
+            userMessages.size() == 1
+                ? firstAnswer(monday, ids, hungarian)
+                : refinedAnswer(monday, ids, hungarian);
+      }
     }
     return new ChatResponse(
         List.of(new Generation(new AssistantMessage(answer))),
         ChatResponseMetadata.builder().usage(new DefaultUsage(10, 10, 20)).build());
+  }
+
+  /** Every message of a prompt, system message first, as one text (for the prompt checks). */
+  private static String allText(Prompt prompt) {
+    return prompt.getInstructions().stream()
+        .map(Message::getText)
+        .collect(Collectors.joining("\n"));
+  }
+
+  /** The menu answer: up to six library meals and one idea, with an unknown id when asked. */
+  private String menuAnswer(List<Long> ids) {
+    List<Long> picks = new ArrayList<>();
+    if (menuInvalidId) {
+      picks.add(INVALID_ID);
+    }
+    picks.addAll(ids.subList(0, Math.min(ids.size(), MAX_MENU_MEALS)));
+    List<DraftProposal.Idea> ideas =
+        List.of(
+            new DraftProposal.Idea(
+                "Tökkrémleves", ideaReason, List.of("soup"), List.of("pumpkin", "cream")));
+    return JSON.writeValueAsString(new MenuProposal(picks, ideas));
   }
 
   private void pause() {

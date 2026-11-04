@@ -99,10 +99,11 @@ class AppShellE2ETest {
       Locator current = page.locator(NAV + ":visible a[aria-current='page']");
       assertThat(current.count()).as("one tab is current on %s", device).isEqualTo(1);
       assertThat(current.getAttribute("href")).isEqualTo("/households");
-      // All four destinations have pages now.
+      // All four destinations have pages, and the E2E profile (fake-ai) switches the assistant on,
+      // so its Wizard tab is the fifth one listed.
       assertThat(page.locator(NAV + ":visible a").count())
-          .as("Plan, Meals, Occasions and Household are listed")
-          .isEqualTo(4);
+          .as("Plan, Meals, Occasions, Household and the assistant are listed")
+          .isEqualTo(5);
     }
   }
 

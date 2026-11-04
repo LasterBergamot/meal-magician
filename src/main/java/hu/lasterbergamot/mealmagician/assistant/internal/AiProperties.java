@@ -29,6 +29,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  *     so the gateway refuses a model that answers with another size (default 768)
  * @param timeout how long one call to the model may take before it is abandoned (default 60
  *     seconds)
+ * @param chatScope the topics the chat wizard may answer, {@code food-and-plan} by default (#161);
+ *     an unknown name fails the start-up, because the policy is a choice the owner makes
  */
 @ConfigurationProperties(prefix = "mm.ai")
 public record AiProperties(
@@ -37,9 +39,19 @@ public record AiProperties(
     BigDecimal priceInputPerMillionUsd,
     BigDecimal priceOutputPerMillionUsd,
     @DefaultValue("768") int embeddingDimensions,
-    @DefaultValue("60s") Duration timeout) {
+    @DefaultValue("60s") Duration timeout,
+    @DefaultValue("food-and-plan") String chatScope) {
 
   private static final BigDecimal MICRO = BigDecimal.valueOf(1_000_000L);
+
+  /**
+   * Checks the settings that can be wrong in a way the application must not start with.
+   *
+   * @throws IllegalArgumentException if {@code chatScope} names no known topic policy
+   */
+  public AiProperties {
+    ChatScope.of(chatScope);
+  }
 
   /**
    * The monthly allowance in micro-USD.

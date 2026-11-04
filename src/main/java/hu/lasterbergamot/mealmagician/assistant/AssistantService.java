@@ -1,7 +1,9 @@
 package hu.lasterbergamot.mealmagician.assistant;
 
 import hu.lasterbergamot.mealmagician.assistant.internal.AiProperties;
+import hu.lasterbergamot.mealmagician.assistant.internal.ChatService;
 import hu.lasterbergamot.mealmagician.assistant.internal.DraftService;
+import hu.lasterbergamot.mealmagician.assistant.internal.MenuSuggester;
 import hu.lasterbergamot.mealmagician.assistant.internal.UsageLedger;
 import hu.lasterbergamot.mealmagician.household.HouseholdService;
 import hu.lasterbergamot.mealmagician.planning.CopyMode;
@@ -20,7 +22,9 @@ import org.springframework.stereotype.Service;
  * <p>Drafts belong to the household and any member may use them. Every draft method checks
  * membership first (a stranger gets 404, like for a draft of another household), refuses to work
  * while the assistant is off, and never takes anything from the model on trust. The one-slot
- * suggestions (#160) are here too; the chat comes with #161.
+ * suggestions (#160) are here too, and so are the chat (#161) and the occasion menu suggestions
+ * (#161). The chat keeps no state here: the caller passes the conversation so far, and the
+ * controller stores the new turns in the session.
  */
 @Service
 public class AssistantService {
@@ -29,6 +33,8 @@ public class AssistantService {
   private final UsageLedger ledger;
   private final HouseholdService households;
   private final ObjectProvider<DraftService> drafts;
+  private final ObjectProvider<ChatService> chats;
+  private final ObjectProvider<MenuSuggester> menus;
 
   /**
    * Creates the service.
@@ -37,16 +43,22 @@ public class AssistantService {
    * @param ledger the spend ledger
    * @param households does the membership check
    * @param drafts the draft logic, which exists only while the assistant is on
+   * @param chats the chat logic, which exists only while the assistant is on
+   * @param menus the occasion menu logic, which exists only while the assistant is on
    */
   public AssistantService(
       AiProperties properties,
       UsageLedger ledger,
       HouseholdService households,
-      ObjectProvider<DraftService> drafts) {
+      ObjectProvider<DraftService> drafts,
+      ObjectProvider<ChatService> chats,
+      ObjectProvider<MenuSuggester> menus) {
     this.properties = properties;
     this.ledger = ledger;
     this.households = households;
     this.drafts = drafts;
+    this.chats = chats;
+    this.menus = menus;
   }
 
   /**
@@ -235,6 +247,97 @@ public class AssistantService {
    */
   public DraftView draft(long userId, long householdId, long draftId) {
     return draftLogic().draft(userId, householdId, draftId);
+  }
+
+  /**
+   * Answers one message of the chat page (#161). The answer is plain text, written in the member's
+   * language, about food and the household's meal plan only (the topic policy of {@code
+   * mm.ai.chat-scope}).
+   *
+   * @param userId the {@code app_user} id of the person asking
+   * @param householdId the household
+   * @param locale the person's language
+   * @param history the conversation so far, oldest first; empty for a new one. The caller keeps it
+   *     in the session and it is not stored here
+   * @param message the new message, at most 1 000 characters
+   * @return the answer's plain text
+   * @throws AssistantDisabledException if the assistant is switched off
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member
+   * @throws InvalidRequestException if the message is longer than 1 000 characters; no model call
+   *     was made
+   * @throws SpendCapExceededException if the household's monthly allowance is used up; no model
+   *     call was made
+   * @throws ModelUnavailableException if the model failed or timed out
+   * @throws DraftGenerationException if the model answered with nothing
+   */
+  public String chat(
+      long userId, long householdId, Locale locale, List<ChatTurn> history, String message) {
+    ChatService logic = chats.getIfAvailable();
+    if (logic == null) {
+      throw new AssistantDisabledException();
+    }
+    return logic.reply(userId, householdId, locale, history, message);
+  }
+
+  /**
+   * Suggests library meals and new ideas for an occasion's menu (#161, Appendix D.5). Nothing is
+   * stored and the menu is not changed; a member adds a suggestion.
+   *
+   * @param userId the {@code app_user} id of the person asking
+   * @param householdId the household
+   * @param locale the person's language, in which the reasons are written
+   * @param occasionId the occasion
+   * @return up to six library meals and three ideas
+   * @throws AssistantDisabledException if the assistant is switched off
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member
+   * @throws hu.lasterbergamot.mealmagician.planning.OccasionNotFoundException if the occasion is
+   *     not in this household (a 404, before any model call)
+   * @throws SpendCapExceededException if the household's monthly allowance is used up; no model
+   *     call was made
+   * @throws ModelUnavailableException if the model failed or timed out
+   * @throws DraftGenerationException if the model's answer was not JSON
+   */
+  public MenuSuggestions suggestMenu(
+      long userId, long householdId, Locale locale, long occasionId) {
+    return menuLogic().suggest(userId, householdId, locale, occasionId);
+  }
+
+  /**
+   * Adds one idea of an occasion's menu to the meal library (#161). The meal is not put on the
+   * menu.
+   *
+   * @param userId the {@code app_user} id of the person adding it
+   * @param householdId the household
+   * @param occasionId the occasion the idea came from; it must be this household's
+   * @param name the idea's name
+   * @param tags the idea's tags
+   * @param ingredients the idea's ingredients
+   * @return the name the meal was created with, after cleaning
+   * @throws AssistantDisabledException if the assistant is switched off
+   * @throws hu.lasterbergamot.mealmagician.household.HouseholdNotFoundException if the person is
+   *     not a member
+   * @throws hu.lasterbergamot.mealmagician.planning.OccasionNotFoundException if the occasion is
+   *     not in this household
+   */
+  public String addMenuIdea(
+      long userId,
+      long householdId,
+      long occasionId,
+      String name,
+      List<String> tags,
+      List<String> ingredients) {
+    return menuLogic().addIdea(userId, householdId, occasionId, name, tags, ingredients);
+  }
+
+  /** The occasion menu logic, which only exists while the assistant is on. */
+  private MenuSuggester menuLogic() {
+    MenuSuggester logic = menus.getIfAvailable();
+    if (logic == null) {
+      throw new AssistantDisabledException();
+    }
+    return logic;
   }
 
   /** The draft logic, which only exists while the assistant is on. */

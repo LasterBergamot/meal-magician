@@ -241,7 +241,15 @@ public class DraftGenerator {
     return result;
   }
 
-  private ToolCallingChatOptions toolOptions(long userId, long householdId) {
+  /**
+   * The read-only tools, bound to one member and household. The chat and the occasion menu (#161)
+   * use the same tools as the week drafts, so they can read the household and nothing else.
+   *
+   * @param userId the member the tools run as
+   * @param householdId the household the tools are bound to
+   * @return the chat options carrying the tool callbacks
+   */
+  ToolCallingChatOptions toolOptions(long userId, long householdId) {
     AssistantTools tools =
         new AssistantTools(
             userId,

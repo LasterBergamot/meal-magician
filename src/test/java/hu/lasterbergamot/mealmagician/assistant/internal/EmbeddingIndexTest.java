@@ -72,7 +72,8 @@ class EmbeddingIndexTest {
             new BigDecimal("1.65"),
             new BigDecimal("9.90"),
             DIMENSIONS,
-            Duration.ofSeconds(60));
+            Duration.ofSeconds(60),
+            "food-and-plan");
     return new EmbeddingIndex(meals, households, gateway, store, properties, model);
   }
 
@@ -162,7 +163,8 @@ class EmbeddingIndexTest {
                 new BigDecimal("1.65"),
                 new BigDecimal("9.90"),
                 DIMENSIONS + 1,
-                Duration.ofSeconds(60)),
+                Duration.ofSeconds(60),
+                "food-and-plan"),
             "m");
 
     assertThat(wider.sync(USER, HOME)).isEqualTo(1);
