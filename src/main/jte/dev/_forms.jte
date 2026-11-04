@@ -99,6 +99,22 @@
   </div>
 
   <div class="flex flex-col gap-4">
+    <h3 class="font-display text-xl font-semibold text-ink">${ctx.t("dev.forms.suggest.heading")}</h3>
+    <div class="grid gap-6 md:grid-cols-2">
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-ink-muted">${ctx.t("dev.ui.state.default")}</span>
+        @template.ui._suggest_field(id = "demo-suggest-default", name = "tags-default", label = ctx.t("dev.forms.suggest.label"), hint = ctx.t("dev.forms.suggest.hint"),
+          value = "", error = null, searchUrl = "/meals/tags", listLabel = ctx.t("dev.forms.suggest.list"))
+      </div>
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-ink-muted">${ctx.t("dev.forms.state.error")}</span>
+        @template.ui._suggest_field(id = "demo-suggest-error", name = "tags-error", label = ctx.t("dev.forms.suggest.label"), hint = null,
+          value = ctx.t("dev.forms.suggest.sample"), error = ctx.t("dev.forms.suggest.error"), searchUrl = "/meals/tags", listLabel = ctx.t("dev.forms.suggest.list"))
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4">
     <h3 class="font-display text-xl font-semibold text-ink">${ctx.t("dev.forms.segmented.heading")}</h3>
     <div class="flex flex-col gap-2">
       <span class="text-xs font-bold text-ink-muted">${ctx.t("dev.forms.segmented.count", 2)}</span>

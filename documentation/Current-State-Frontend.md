@@ -129,6 +129,14 @@ behaviour is in [[Current State: Backend]].
   list has a second chip row, "Filter by ingredient", shown when some meal has an ingredient; it
   uses the `ingredient` URL parameter and, like the tag row, one at a time. The row lists the
   ingredients of the whole library, so it does not shrink while one is chosen.
+- **Tag suggestions (#174):** the Tags field is still one text input named `tags` with
+  comma-separated values (the post, the 422 re-render and the controllers are unchanged), now drawn
+  by `ui/_suggest_field` (below). `GET /meals/tags?q=` (`TagOptionsController`, member-only,
+  registered in `TenantEndpoints`) answers with the rows only (`meal/_tag_options.jte`): the
+  household's tags that are on a meal and contain the text, ignoring case and accents, most used
+  first, at most 10. There is no "Add" row and no "none" row (the field is free text), and an empty
+  answer hides the list. The new keys are `meal.form.tags.suggestions` and the changed
+  `meal.form.tags.hint`.
 - **Occasion types** are checkboxes on the form and badges on the meal's page. The labels come from
   the `meal.occasion.*` keys.
 - **Templates:** `meal/list.jte` (the page) and `meal/_results.jte` (the part htmx swaps),
@@ -686,7 +694,8 @@ are all on `/dev/ui` in `dev/_forms.jte`, in every state.
 
 `ui/_combobox.jte` is a multi-select with removable chips, a search input and a list that htmx
 loads. It follows the WAI-ARIA "Combobox with listbox popup" pattern. The meal form uses it for
-ingredients; the style guide shows it empty, with chips and with an error. Tags could use it later.
+ingredients; the style guide shows it empty, with chips and with an error. The Tags field does not
+use it: it has no chips (see "Suggesting text field" below).
 - **Parameters:** `id` (the input's id; the list is `<id>-listbox`), `name` (the form field of the
   chips), `label`, `hint`, `placeholder`, `chosenLabel` (names the chip list), `removeLabel` (a text
   with `{0}` for the chip, for example `ctx.t("meal.form.ingredients.remove", "{0}")`), `searchUrl`,
@@ -711,6 +720,28 @@ ingredients; the style guide shows it empty, with chips and with an error. Tags 
 - **Tests:** `FormComponentsPageTest` (the ARIA wiring and the states), `IngredientOptionsPageTest`
   (the list and the form), and the browser test `IngredientPickerE2ETest` (pick, search, add, save
   at phone and desktop size).
+
+### Suggesting text field (#174)
+
+`ui/_suggest_field.jte` is a plain text input that holds a comma-separated string and offers the
+household's existing values in a listbox. The meal form uses it for Tags; the style guide shows it
+empty and with an error. It only suggests: nothing is blocked and nothing becomes a chip.
+- **Parameters:** `id`, `name`, `label`, `hint`, `value`, `error`, `searchUrl` and `listLabel` (names
+  the listbox). The component carries no text of its own.
+- **ARIA:** the same pattern and tokens as the combobox: `role="combobox"` with `aria-expanded`,
+  `aria-controls`, `aria-autocomplete="list"` and `aria-activedescendant`, a `role="listbox"` of
+  `role="option"` rows, `aria-selected` on the highlighted row, focus staying in the input.
+- **Keyboard:** ArrowDown and ArrowUp move the highlight, Enter picks it (with no row highlighted
+  Enter submits the form as usual), Escape closes the list, Tab closes it.
+- **Current segment:** the Alpine `tagSuggest` component (`app.js`, named methods only) works on the
+  text between the commas around the caret. An `htmx:configRequest` listener replaces the request's
+  `tags` parameter with `q` = that segment, so the server never sees the whole field. Picking a row
+  replaces that segment with the tag's exact spelling and adds ", ", keeps the other segments, and
+  closes the list; setting the value in script fires no input event, so no new search starts until
+  the person types. Tags already in the other segments are hidden from the list.
+- **Tests:** `TagOptionsPageTest` (the rows, the tenant rule, the ARIA wiring on the form),
+  `MealServiceTest` (ordering, folding, the cap of 10), and the browser test
+  `TagSuggestionsE2ETest` (pick by tap and by keyboard, type a new tag, save, at 390 and 1280 px).
 
 ### Sheet and confirm dialog (R3, #75)
 

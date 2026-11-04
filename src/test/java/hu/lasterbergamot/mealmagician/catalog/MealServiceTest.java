@@ -291,6 +291,78 @@ class MealServiceTest {
   }
 
   @Test
+  void tagSuggestionsListTheMostUsedTagFirstThenAlphabetically() {
+    addWithTags("Stew", "vegan", "quick", "soup");
+    addWithTags("Curry", "vegan", "soup");
+    addWithTags("Salad", "vegan");
+
+    assertThat(meals.tagSuggestions(anna, annasHome, "")).containsExactly("vegan", "soup", "quick");
+    assertThat(meals.tagSuggestions(anna, annasHome, null))
+        .containsExactly("vegan", "soup", "quick");
+    assertThat(meals.tagSuggestions(anna, annasHome, "  ")).hasSize(3);
+  }
+
+  @Test
+  void tagSuggestionsMatchTextAnywhereInTheNameIgnoringCaseAndAccents() {
+    addWithTags("Stew", "Vegán", "Gluten free");
+    addWithTags("Pasta", "Vegetarian");
+
+    assertThat(meals.tagSuggestions(anna, annasHome, "vegan")).containsExactly("Vegán");
+    assertThat(meals.tagSuggestions(anna, annasHome, "VEGÁN")).containsExactly("Vegán");
+    assertThat(meals.tagSuggestions(anna, annasHome, "ve"))
+        .containsExactlyInAnyOrder("Vegán", "Vegetarian");
+    assertThat(meals.tagSuggestions(anna, annasHome, " free ")).containsExactly("Gluten free");
+    assertThat(meals.tagSuggestions(anna, annasHome, "zzz")).isEmpty();
+  }
+
+  @Test
+  void tagSuggestionsTreatLikeWildcardsAsPlainText() {
+    addWithTags("Stew", "50% off", "a_b");
+
+    assertThat(meals.tagSuggestions(anna, annasHome, "%")).containsExactly("50% off");
+    assertThat(meals.tagSuggestions(anna, annasHome, "_")).containsExactly("a_b");
+  }
+
+  @Test
+  void tagSuggestionsAreCappedAtTen() {
+    String[] names = new String[12];
+    for (int i = 0; i < names.length; i++) {
+      names[i] = "tag" + (char) ('a' + i);
+    }
+    addWithTags("Stew", names);
+
+    assertThat(meals.tagSuggestions(anna, annasHome, "tag")).hasSize(10);
+  }
+
+  @Test
+  void tagSuggestionsSkipTagsNoMealCarriesAnyMore() {
+    addWithTags("Stew", "vegan");
+    MealView pasta = addWithTags("Pasta", "left-behind");
+    meals.edit(anna, annasHome, pasta.id(), details("Pasta", null, null));
+
+    assertThat(meals.tagSuggestions(anna, annasHome, "")).containsExactly("vegan");
+  }
+
+  @Test
+  void tagSuggestionsNeverShowAnotherHouseholdsTagsOrCounts() {
+    addWithTags("Stew", "vegan");
+    meals.create(bela, belasHome, details("Bela's pie", null, null, "vegan", "secret"));
+    meals.create(bela, belasHome, details("Bela's tart", null, null, "vegan", "secret"));
+
+    assertThat(meals.tagSuggestions(anna, annasHome, "")).containsExactly("vegan");
+    assertThat(meals.tagSuggestions(anna, annasHome, "secret")).isEmpty();
+    assertThat(meals.tagSuggestions(bela, belasHome, "")).containsExactly("secret", "vegan");
+  }
+
+  @Test
+  void tagSuggestionsAreNotFoundForAStranger() {
+    addWithTags("Stew", "vegan");
+
+    assertThatThrownBy(() -> meals.tagSuggestions(bela, annasHome, "v"))
+        .isInstanceOf(HouseholdNotFoundException.class);
+  }
+
+  @Test
   void aPlainMemberMayPlanTheLibrary() {
     memberships.save(new Membership(annasHome, bela, HouseholdRole.MEMBER, Instant.now()));
 
