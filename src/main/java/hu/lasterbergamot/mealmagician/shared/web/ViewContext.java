@@ -20,6 +20,8 @@ import hu.lasterbergamot.mealmagician.shared.i18n.Messages;
  *     {@code null} when no tab does
  * @param theme the colour theme from the {@code mm_theme} cookie, {@link Theme#SYSTEM} when there
  *     is none or it is not recognised
+ * @param assistant whether the assistant is switched on, which decides whether its navigation
+ *     destination is drawn ({@link NavDestination#visible(boolean)})
  */
 public record ViewContext(
     Messages messages,
@@ -28,7 +30,8 @@ public record ViewContext(
     boolean admin,
     ShellUser user,
     NavDestination active,
-    Theme theme) {
+    Theme theme,
+    boolean assistant) {
 
   /**
    * Translates a key; shorthand for {@code messages().t(...)} so templates read {@code

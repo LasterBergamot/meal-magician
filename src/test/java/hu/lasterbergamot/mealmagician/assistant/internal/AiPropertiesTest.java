@@ -19,7 +19,8 @@ class AiPropertiesTest {
         new BigDecimal(input),
         new BigDecimal(output),
         768,
-        Duration.ofSeconds(60));
+        Duration.ofSeconds(60),
+        "food-and-plan");
   }
 
   @Test
@@ -59,14 +60,40 @@ class AiPropertiesTest {
   @Test
   void missingPricesAreAnErrorNotAFreeCall() {
     var noPrices =
-        new AiProperties(true, new BigDecimal("5"), null, null, 768, Duration.ofSeconds(1));
+        new AiProperties(
+            true, new BigDecimal("5"), null, null, 768, Duration.ofSeconds(1), "food-and-plan");
     assertThatThrownBy(() -> noPrices.costMicroUsd(1, 1))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("price-input-per-million-usd");
     var onlyInput =
         new AiProperties(
-            true, new BigDecimal("5"), BigDecimal.ONE, null, 768, Duration.ofSeconds(1));
+            true,
+            new BigDecimal("5"),
+            BigDecimal.ONE,
+            null,
+            768,
+            Duration.ofSeconds(1),
+            "food-and-plan");
     assertThatThrownBy(() -> onlyInput.costMicroUsd(1, 1))
         .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void theChatScopeDefaultsToFoodAndPlanAndAnUnknownNameFailsTheStart() {
+    var bound =
+        new Binder(new MapConfigurationPropertySource(Map.of()))
+            .bindOrCreate("mm.ai", AiProperties.class);
+    assertThat(bound.chatScope()).isEqualTo("food-and-plan");
+
+    assertThatThrownBy(() ->
+            new Binder(new MapConfigurationPropertySource(Map.of("mm.ai.chat-scope", "everything")))
+                .bind("mm.ai", AiProperties.class))
+        .hasStackTraceContaining("mm.ai.chat-scope must be one of: food-and-plan");
+  }
+
+  @Test
+  void chatScopeNamesResolveAndThePolicyFileIsOnTheClasspath() throws Exception {
+    assertThat(ChatScope.of("food-and-plan")).isEqualTo(ChatScope.FOOD_AND_PLAN);
+    assertThat(ChatScope.FOOD_AND_PLAN.policy()).contains("food and the meal plan only");
   }
 }

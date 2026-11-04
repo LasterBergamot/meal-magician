@@ -19,6 +19,7 @@ public class ViewContextAdvice {
   private final ObjectProvider<CsrfMetaSource> csrfSource;
   private final ObjectProvider<HouseholdNavSource> householdSource;
   private final ObjectProvider<ShellUserSource> userSource;
+  private final ObjectProvider<AssistantSwitchSource> assistantSource;
 
   /**
    * Creates the advice.
@@ -29,16 +30,20 @@ public class ViewContextAdvice {
    *     module
    * @param userSource the shell's person source; absent in slices without the identity module, in
    *     which case every page is laid out as anonymous
+   * @param assistantSource says whether the assistant is on; absent in slices without the assistant
+   *     module, in which case the Wizard's navigation is left out
    */
   public ViewContextAdvice(
       Messages messages,
       ObjectProvider<CsrfMetaSource> csrfSource,
       ObjectProvider<HouseholdNavSource> householdSource,
-      ObjectProvider<ShellUserSource> userSource) {
+      ObjectProvider<ShellUserSource> userSource,
+      ObjectProvider<AssistantSwitchSource> assistantSource) {
     this.messages = messages;
     this.csrfSource = csrfSource;
     this.householdSource = householdSource;
     this.userSource = userSource;
+    this.assistantSource = assistantSource;
   }
 
   /**
@@ -49,13 +54,14 @@ public class ViewContextAdvice {
    *     {@code household} is {@code null} when there is no household to show, {@code user} is
    *     {@code null} for an anonymous request, {@code admin} is {@code true} for instance admins,
    *     {@code active} is the navigation destination the path belongs to and {@code theme} comes
-   *     from the {@code mm_theme} cookie
+   *     from the {@code mm_theme} cookie, {@code assistant} says whether the Wizard is on
    */
   @ModelAttribute("ctx")
   public ViewContext viewContext(HttpServletRequest request) {
     CsrfMetaSource csrf = csrfSource.getIfAvailable();
     HouseholdNavSource households = householdSource.getIfAvailable();
     ShellUserSource users = userSource.getIfAvailable();
+    AssistantSwitchSource assistants = assistantSource.getIfAvailable();
     return new ViewContext(
         messages,
         csrf == null ? null : csrf.from(request),
@@ -64,7 +70,8 @@ public class ViewContextAdvice {
         request.isUserInRole("ADMIN"),
         users == null ? null : users.from(request),
         NavDestination.matching(request.getRequestURI()),
-        theme(request));
+        theme(request),
+        assistants != null && assistants.enabled());
   }
 
   /** Reads the {@code mm_theme} cookie; any problem with it means {@link Theme#SYSTEM}. */

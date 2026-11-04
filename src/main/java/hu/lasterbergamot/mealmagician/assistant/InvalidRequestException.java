@@ -15,14 +15,29 @@ public class InvalidRequestException extends RuntimeException {
   /** The longest request or message the assistant accepts, in characters. */
   public static final int MAX_LENGTH = 1200;
 
+  /** The longest chat message the wizard accepts, in characters (#161). */
+  public static final int CHAT_MAX_LENGTH = 1000;
+
   private static final long serialVersionUID = 1L;
 
   /**
-   * Creates the exception. The message holds only the length, never the text.
+   * Creates the exception for a draft request, which is limited to {@link #MAX_LENGTH}. The message
+   * holds only the lengths, never the text.
    *
    * @param length how long the refused text was
    */
   public InvalidRequestException(int length) {
-    super("The request is " + length + " characters; the limit is " + MAX_LENGTH);
+    this(length, MAX_LENGTH);
+  }
+
+  /**
+   * Creates the exception for a text that is longer than its limit. The message holds only the
+   * lengths, never the text, so it can be logged safely.
+   *
+   * @param length how long the refused text was
+   * @param limit the longest text the feature accepts
+   */
+  public InvalidRequestException(int length, int limit) {
+    super("The request is " + length + " characters; the limit is " + limit);
   }
 }

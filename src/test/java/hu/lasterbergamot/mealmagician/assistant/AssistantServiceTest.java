@@ -2,6 +2,7 @@ package hu.lasterbergamot.mealmagician.assistant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import hu.lasterbergamot.mealmagician.assistant.internal.AiProperties;
 import hu.lasterbergamot.mealmagician.assistant.internal.UsageLedger;
@@ -51,6 +52,12 @@ class AssistantServiceTest {
     annas = households.create(anna, "Svc Annas").id();
   }
 
+  private static <T> ObjectProvider<T> absentProvider() {
+    @SuppressWarnings("unchecked")
+    ObjectProvider<T> provider = mock(ObjectProvider.class);
+    return provider;
+  }
+
   private AssistantService enabledService() {
     var on =
         new AiProperties(
@@ -59,8 +66,9 @@ class AssistantServiceTest {
             BigDecimal.ONE,
             BigDecimal.ONE,
             768,
-            Duration.ofSeconds(1));
-    return new AssistantService(on, ledger, households, drafts);
+            Duration.ofSeconds(1),
+            "food-and-plan");
+    return new AssistantService(on, ledger, households, drafts, absentProvider(), absentProvider());
   }
 
   @Test

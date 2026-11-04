@@ -23,7 +23,14 @@ public enum NavDestination {
   OCCASIONS("/occasions", "nav.occasions", IconName.GIFT, true),
 
   /** The households page, where the person manages their households and members. */
-  HOUSEHOLD("/households", "nav.household", IconName.HOME, true);
+  HOUSEHOLD("/households", "nav.household", IconName.HOME, true),
+
+  /**
+   * The wizard's chat page (Phase 7, #161). It is listed only while the assistant is on: see {@link
+   * #visible(boolean)}, which gets the setting from the request's view context, never from a
+   * static.
+   */
+  ASSISTANT("/assistant", "nav.assistant", IconName.WAND, true);
 
   private final String path;
   private final String labelKey;
@@ -65,13 +72,19 @@ public enum NavDestination {
   }
 
   /**
-   * The destinations to show in the navigation, in tab order.
+   * The destinations to show in the navigation, in tab order. The assistant's destination is left
+   * out while the assistant is off, so a switched-off assistant leaves the navigation unchanged.
    *
-   * @return the available destinations in declaration order (Plan, Meals, Occasions, then
-   *     Household)
+   * @param assistantOn whether the assistant is switched on ({@code mm.ai.enabled}), from {@link
+   *     ViewContext#assistant()}
+   * @return the available destinations in declaration order (Plan, Meals, Occasions, Household,
+   *     then Wizard when on)
    */
-  public static List<NavDestination> visible() {
-    return Arrays.stream(values()).filter(destination -> destination.available).toList();
+  public static List<NavDestination> visible(boolean assistantOn) {
+    return Arrays.stream(values())
+        .filter(destination -> destination.available)
+        .filter(destination -> destination != ASSISTANT || assistantOn)
+        .toList();
   }
 
   /**

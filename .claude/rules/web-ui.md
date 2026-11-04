@@ -159,7 +159,7 @@ paths:
   region. `dev/_overlays.jte` shows both; `SheetAndConfirmE2ETest` drives them from the keyboard.
 - **App shell and navigation (R4, #79):** `base.jte` draws `layout/_shell.jte` when `ctx.user()`
   is set (signed-in pages) and the plain anonymous header otherwise. The shell is `_topbar` +
-  `_tabbar` on a phone and `_sidebar` on a desktop, both listing `NavDestination.visible()` (a
+  `_tabbar` on a phone and `_sidebar` on a desktop, both listing `NavDestination.visible(ctx.assistant())` (a
   destination with no page yet is left out, not dead: flip its `available` flag when its phase
   lands). The current tab comes from `ctx.active()`. The household switcher
   (`layout/_household_switcher.jte`, one per shell) is a `ui/_sheet` of the person's own households;
@@ -287,3 +287,11 @@ paths:
   full (`assistant/_hint_chips.jte`), because `UiGuardTest` cannot see a key built as `"assistant.hint."
   + key`. Whatever the model wrote (summary, names, reasons, ingredients) is untrusted: it is only
   ever output with `${}`.
+- **A navigation destination that can be off (#161).** `NavDestination.visible(boolean assistantOn)`
+  lists the Wizard (`ASSISTANT`, `/assistant`) only while the assistant is on. The flag reaches the
+  shell through `ViewContext.assistant()`, which `ViewContextAdvice` fills from an `AssistantSwitchSource`
+  bean (`shared.web`, published by `assistant.internal.AssistantSwitchBean`, the same pattern as
+  `ShellUserSource`). Templates call `NavDestination.visible(ctx.assistant())`. Do not give
+  `NavDestination` a static setting or read configuration in it: a new switchable destination adds one
+  flag, one `visible` filter and one bean, and nothing else. An absent bean (a slice without the
+  assistant) means off.

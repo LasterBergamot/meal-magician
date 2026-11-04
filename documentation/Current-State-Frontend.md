@@ -516,8 +516,10 @@ Every signed-in page is drawn inside the shell (`layout/_shell.jte`; `base.jte` 
   browsers refuse storage.
 - **Destinations** (`shared.web.NavDestination`): Plan (`/plan`, the week view; `/` only redirects, so it highlights no tab),
   Meals (`/meals`, the meal library, #88), Occasions (`/occasions`, #112) and Household
-  (`/households`). All four are listed; a destination whose page is not built yet would be left
-  out (a flag on the enum, so switching one on is a one-word change). `NavDestination.matching` picks the current tab from the request path, so
+  (`/households`). Those four are always listed. The fifth, **Wizard** (`/assistant`, #161, wand
+  icon), is listed only while `mm.ai.enabled` is on: `visible(ctx.assistant())` gets the setting from
+  `ViewContext`, never from a static. A destination whose page is not built yet is left out the same
+  way (a flag on the enum). `NavDestination.matching` picks the current tab from the request path, so
   `/households/members` highlights Household and `/` highlights no tab.
 - **The household switcher** (`layout/_household_switcher.jte`) is in both shells. Its button opens
   a `ui/_sheet` (a bottom sheet on a phone, a centred dialog on a desktop) that lists **only the
@@ -879,6 +881,42 @@ Appendix D; the routes are in `assistant/internal/AssistantController`.
   add idea, merge and replace, second accept, strangers' drafts), `AssistantOffPagesTest` (204 and
   404 while off), `TenantIsolationTests` (every route is registered in `TenantEndpoints`) and
   `AssistantE2ETest` at phone and desktop size, with screenshots in `build/e2e-screenshots/`.
+
+## The Wizard chat and the occasion menu (#161)
+
+The Wizard has a fifth navigation item, `/assistant` (`nav.assistant`, wand icon), shown only while
+the assistant is on (see the destinations above). Its design is Appendix D.5 and D.6 of
+`plan-ui-redesign.md`.
+
+- **The chat page** (`assistant/chat.jte`, inside the shell at reading width). The header holds the
+  title and "New conversation" (a form that posts to `/assistant/chat/reset` and empties the thread).
+  Member messages are right-aligned on `brand-soft`; the wizard's answers are left-aligned with the
+  outline. There are no avatars; each bubble starts with a screen-reader "You:" or "Wizard:". Replies
+  are plain text (`whitespace-pre-line`), escaped by JTE. The empty state (`_chat_empty.jte`) has
+  three starter chips, each a small form that posts its text as the message.
+- **Sending.** The composer (`_chat_composer.jte`) is sticky at the bottom, above the tab bar on a
+  phone. A reply appends its bubbles to `#chat-thread` (`hx-swap="beforeend show:bottom"`) and
+  replaces the composer out of band, so the field is cleared on success and keeps the text after an
+  error. A 422 (over 1 000 characters) shows its sentence under the field; a spend cap (429) or an
+  unavailable model (503) shows an alert in the thread. `#chat-waiting` is a sibling of the thread and
+  shows while the request runs (`hx-indicator`); `hx-disabled-elt` locks the field and the button.
+- **The composer's Alpine component** `chatComposer` (`static/js/app.js`) counts the characters and
+  shows the count from 800 (`assistant.chat.count` with `#` for the number); Ctrl or Cmd + Enter
+  submits. Plain Enter starts a new line. Every handler is a named method (the CSP build of Alpine).
+- **Occasion menu.** The occasion page loads `GET /assistant/occasions/{id}/entry` on opening
+  (`#occasion-menu-suggestions-slot`, in `occasion/detail.jte`). The answer is the "Menüjavaslat" button
+  (`assistant/_menu_suggestions.jte`). Its result lists up to six library meals, each with the
+  planner's own "Add to menu" form (a plain POST to `/occasions/{id}/menu`), and up to three ideas as
+  dashed cards. "Add to meals" creates the library meal and replaces the card with a line
+  (`_menu_idea_added.jte`). Nothing in this flow edits a menu by itself.
+- **Session only.** The conversation is kept in the signed-in session, never in a table, and "New
+  conversation" clears it. A sign-out or an expired session drops it.
+- **Tests:** `AssistantChatPagesTest` (the nav item, the starters, the history carried by the session
+  cookie, the 20-turn cap, 1 000 and 1 001 characters, failure and cap alerts, blank messages, escaped
+  markup), `AssistantOccasionPagesTest` (the loader, the suggestions, invalid ids dropped, adding a
+  suggestion to the menu and an idea to the library, another household's occasion 404, a bad answer,
+  the cap), `AssistantOffPagesTest` (nothing of the chat or the loader while off) and `NavDestinationTest`
+  and `ViewContextAdviceTest` (the Wizard's flag). The browser test is `AssistantChatE2ETest`.
 
 ## Sign-in page (#12)
 

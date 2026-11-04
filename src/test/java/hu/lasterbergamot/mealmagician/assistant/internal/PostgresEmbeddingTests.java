@@ -187,7 +187,8 @@ class PostgresEmbeddingTests extends AbstractPostgresIntegrationTest {
             new BigDecimal("1.65"),
             new BigDecimal("9.90"),
             DIMS,
-            Duration.ofSeconds(60));
+            Duration.ofSeconds(60),
+            "food-and-plan");
     var index = new EmbeddingIndex(meals, households, gateway, store, properties, "model-x");
 
     assertThat(index.sync(anna, annasHome)).isEqualTo(2);

@@ -106,7 +106,8 @@ class DraftServiceTest {
             BigDecimal.ONE,
             BigDecimal.ONE,
             768,
-            Duration.ofSeconds(30));
+            Duration.ofSeconds(30),
+            "food-and-plan");
     when(ledger.record(anyLong(), anyLong(), anyLong())).thenReturn(1L);
     gateway = new ModelGateway(model, mock(EmbeddingModel.class), ledger, properties);
     var generator =

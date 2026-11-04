@@ -122,9 +122,22 @@ foundation, the meal search and the draft logic (#157 to #159, below); its pages
     (limit 1 to 100).
   - **Public API:** `AssistantService.enabled()`, `usageThisMonth(userId, householdId)` (members
     only; 404 while off) and the draft methods above (`draftWeek`, `refine`, `removeItem`,
-    `addIdeaToLibrary`, `accept`, `discard`, `draft`; all 404 while the assistant is off). No page
-    uses them yet (#160). `ProductionConfigGuard` fails a `prod` start with the assistant on and a
-    project, location, model id or price missing.
+    `addIdeaToLibrary`, `accept`, `discard`, `draft`; all 404 while the assistant is off). `ProductionConfigGuard`
+    fails a `prod` start with the assistant on and a project, location, model id or price missing.
+  - **The chat (#161).** `AssistantService.chat(userId, householdId, locale, history, message)` answers
+    one message with `ChatService`: the topic policy of `mm.ai.chat-scope` (`food-and-plan`, the text
+    in `resources/assistant/chat-policy-food.txt`; an unknown scope fails the start), the stored turns
+    and the read-only tools of the drafts. A message over 1 000 characters is refused before any model
+    call (`InvalidRequestException`). The history is `ChatTurn` records (serialisable) under the session
+    attribute `mm.assistant.chat` (`ChatSession`, at most 20 turns, the oldest dropped); the controller
+    stores both turns only after a successful answer. Nothing goes to a table.
+  - **Occasion menus (#161).** `AssistantService.suggestMenu(userId, householdId, locale, occasionId)`
+    (`MenuSuggester`) reads the occasion and the menus of up to five earlier occasions of its type
+    (within five years), asks the model once (no retry: a bad answer is `DraftGenerationException`),
+    keeps the live library meal ids (at most six) and up to three ideas. It never writes a menu.
+    `addMenuIdea` creates the library meal for an idea. The loader and the routes are
+    `AssistantOccasionController` (the name differs from the planner's `OccasionMenuController`, so the
+    two beans do not clash) and `ChatController` for `/assistant`, `/assistant/chat` and its reset.
 - **Guard tests (#14)** enforce the conventions so nobody has to remember them:
   `EveryEndpointNeedsSignInTests` calls every mapped controller endpoint anonymously and fails if
   one outside `SecurityConfig.PUBLIC_PATHS` answers with anything but a redirect to the login page
