@@ -203,6 +203,7 @@ jobs:
           AI_EMBEDDING_LOCATION: ${{ vars.AI_EMBEDDING_LOCATION }}
           AI_PRICE_IN: ${{ vars.AI_PRICE_IN }}
           AI_PRICE_OUT: ${{ vars.AI_PRICE_OUT }}
+          AI_MONTHLY_CAP_USD: ${{ vars.AI_MONTHLY_CAP_USD }}
         run: |
           set -euo pipefail
           image="$REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_REPO/$IMAGE_NAME:$VERSION"
@@ -223,6 +224,10 @@ jobs:
             environment+="|AI_EMBEDDING_LOCATION=${AI_EMBEDDING_LOCATION:-${AI_LOCATION:-}}"
             environment+="|AI_PRICE_IN=${AI_PRICE_IN:-}"
             environment+="|AI_PRICE_OUT=${AI_PRICE_OUT:-}"
+            # Optional: when the variable is empty the app keeps its default (mm.ai.monthly-cap-usd, 10.00).
+            if [[ -n "${AI_MONTHLY_CAP_USD:-}" ]]; then
+              environment+="|MM_AI_MONTHLY_CAP_USD=$AI_MONTHLY_CAP_USD"
+            fi
           fi
           gcloud run deploy "$SERVICE" \
             --project "$PROJECT_ID" \

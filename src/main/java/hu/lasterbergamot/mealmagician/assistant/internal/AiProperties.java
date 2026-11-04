@@ -20,7 +20,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param enabled the master switch; {@code false} (the default) means nothing in the module calls
  *     out, needs credentials or answers a request
  * @param monthlyCapUsd what one household may spend per calendar month; a household at or over it
- *     is refused before any call (default 5.00; {@code 0} blocks the assistant for everyone)
+ *     is refused before any call (default 10.00; {@code 0} blocks the assistant for everyone)
  * @param priceInputPerMillionUsd USD per million input tokens of the chosen chat model; required
  *     when enabled (no default, because it must match the model that was chosen)
  * @param priceOutputPerMillionUsd USD per million output tokens, "thinking" tokens included;
@@ -35,7 +35,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 @ConfigurationProperties(prefix = "mm.ai")
 public record AiProperties(
     @DefaultValue("false") boolean enabled,
-    @DefaultValue("5.00") BigDecimal monthlyCapUsd,
+    @DefaultValue("10.00") BigDecimal monthlyCapUsd,
     BigDecimal priceInputPerMillionUsd,
     BigDecimal priceOutputPerMillionUsd,
     @DefaultValue("768") int embeddingDimensions,
