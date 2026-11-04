@@ -194,7 +194,7 @@ install the Google Cloud CLI (Arch: `google-cloud-cli` from the AUR), then in Cl
 `! gcloud auth login` and `! gcloud config set project <project id>`. The agent still asks before
 any change (CLAUDE.md); it uses this for reading logs and status.
 
-## Part 9 (optional, #157): the AI assistant
+## Part 9 (optional, #157 to #162): the AI assistant
 
 The assistant (Gemini on Vertex AI, PLAN.md D32) is **off** until you do this. Off, the app needs
 no Google AI setup at all, and `release.yml` passes no AI settings to Cloud Run. There is no API
@@ -204,8 +204,8 @@ key: the Cloud Run runtime account `mm-runtime` calls Vertex AI with its own ide
 2. **Let the runtime account call it** (once):
    `gcloud projects add-iam-policy-binding <project id> --member serviceAccount:mm-runtime@<project id>.iam.gserviceaccount.com --role roles/aiplatform.user`.
 3. **Set the GitHub variables** (Settings, Secrets and variables, Actions, Variables). The values
-   below are what the spike of #157 verified with real calls on 2026-11-04; the final chat model is
-   chosen in D33 after the eval, and Gemini model ids and prices change, so check the sources in
+   below are what the spike of #157 verified with real calls on 2026-11-04. The chat model is
+   provisional until you have read the eval report (step 3a) and signed it off as PLAN.md D33; Gemini model ids and prices change, so check the sources in
    [[References]] before you copy them.
 
    | Name | Value |
@@ -220,6 +220,15 @@ key: the Cloud Run runtime account `mm-runtime` calls Vertex AI with its own ide
 
    The project is `GCP_PROJECT_ID`; the monthly cap per household is `mm.ai.monthly-cap-usd`
    (default `5.00`; set `MM_AI_MONTHLY_CAP_USD` only if you add it to the deploy).
+
+   **3a. Run the eval before you switch it on (your own login, costs money).** On your machine, after
+   `gcloud auth application-default login`, run `task ai:eval -- --models <model>,<second model>` with
+   `--price-in` and `--price-out` per model (see [[AI Assistant]] for the full command, the variables it
+   reads and what the checks are). It uses Docker and an invented household, never the real database.
+   Expect cents to a few dollars; `--budget-usd` stops a model at its limit (default 2.00). Read
+   `build/eval/<timestamp>.md`, choose the model, and have D33 in PLAN.md record it. Check first that
+   the second model is offered in your region ([[References]], the locations page). The agent only
+   delivers the tool; reading the report and choosing is yours.
 4. **Deploy.** With `AI_ENABLED=true` and a setting missing, the app **refuses to start** and the
    error names the missing variable (`ProductionConfigGuard`). Setting `AI_ENABLED` back to anything
    else and releasing again switches the assistant off.
@@ -228,7 +237,7 @@ key: the Cloud Run runtime account `mm-runtime` calls Vertex AI with its own ide
    filtered to the service "Vertex AI". The cap is the app's guard only: **Vertex AI has no hard
    billing cap**, so keep the budget alert from part 1 and a low cap.
 
-Run it locally once to see it work: `gcloud auth application-default login`, then start the app with
+Run it locally once to see it work (the app itself, not the eval): `gcloud auth application-default login`, then start the app with
 `MM_AI_ENABLED=true AI_PROJECT_ID=<project id> AI_LOCATION=eu AI_CHAT_MODEL=... AI_EMBEDDING_MODEL=...
 AI_EMBEDDING_LOCATION=europe-west3 AI_PRICE_IN=... AI_PRICE_OUT=...` (see `.env.example`).
 

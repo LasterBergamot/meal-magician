@@ -5,8 +5,9 @@ What exists in `main` today: the build skeleton, the database, the `identity` mo
 library, #66 and #88), the `planning` module (the weekly plan, reuse, occasions and their templates,
 and the week page, `planning/internal/PlanController`), the `feedback` module (ratings and the meal
 history, #124, #128, #132) and the `sharing` module (share links, the print view and the public
-share page, #125, #129, #131). Phases 0 to 5 are built; the `assistant` module (Phase 7) has its
-foundation, the meal search and the draft logic (#157 to #159, below); its pages are still to come.
+share page, #125, #129, #131). Phases 0 to 5 are built, and so is the `assistant` module (Phase 7, #157 to #162, below): the
+Gemini connection and spend cap, the meal search, the draft logic, the week, slot, chat and occasion
+menu pages, and the eval harness. It is off by default; see [[AI Assistant]].
 
 - **Application class** `MealMagicianApplication` starts Spring Boot; everything lives below its
   package `hu.lasterbergamot.mealmagician`.
@@ -19,8 +20,8 @@ foundation, the meal search and the draft logic (#157 to #159, below); its pages
   everything else goes in `internal/` and other modules may not import it.
   `ModularityTests` fails the build on a violation and writes module docs to
   `build/spring-modulith-docs`.
-- **Assistant foundation (#157), module `assistant`:** nothing a person can use yet; it is the
-  base the later issues build on. It is **off by default** (`mm.ai.enabled=false`): then no Google
+- **The assistant (#157 to #162), module `assistant`:** the foundation (#157) comes first below, then
+  the features that sit on it. It is **off by default** (`mm.ai.enabled=false`): then no Google
   client exists, no credentials are needed and the app starts as fast as before.
   - **Spring AI on Vertex AI.** `spring-ai-starter-model-google-genai` (chat) and
     `...-embedding`, Spring AI 2.0.2 (BOM in `gradle/libs.versions.toml`), connect to Gemini with the
@@ -138,6 +139,21 @@ foundation, the meal search and the draft logic (#157 to #159, below); its pages
     `addMenuIdea` creates the library meal for an idea. The loader and the routes are
     `AssistantOccasionController` (the name differs from the planner's `OccasionMenuController`, so the
     two beans do not clash) and `ChatController` for `/assistant`, `/assistant/chat` and its reset.
+  - **The eval harness (#162).** It is test code, not product code: the package
+    `src/test/java/.../assistant/eval` and the files in `src/test/resources/eval/`. It compares chat
+    models on 16 cases against an invented Hungarian household (`household.json`, about 40 meals, three
+    members, three weeks of rated history). `EvalRunner` is a plain `main`, started by the Gradle task
+    `aiEval` (`task ai:eval -- --models <id,id>`), and it is **not** part of `task test` or CI because it calls the
+    real model. `EvalHarness` starts the real application against the Testcontainers Postgres of the
+    integration tests (`AbstractPostgresIntegrationTest.POSTGRES`), loads the household through the real
+    services, moves the clock to each case's date and calls `AssistantService`; tokens and cost are read
+    from the same `UsageLedger`, and the ledger's cap is set very high so that the runner's own
+    `--budget-usd` limit is what stops a model. `Checks` holds the deterministic checks (real meal ids,
+    no neighbouring repeats, "less meat", occasions, language, idea cap, seasonal and the rest) as pure
+    functions with a unit test on a good and a bad sample each (`ChecksTest`); `Report` writes
+    `build/eval/<timestamp>.md`. `EvalHarnessTest` (integration tag) runs the whole harness with the
+    scripted model, so it needs Docker but no Google. The owner reviews the report and signs off the
+    model (PLAN.md D33); how to run it is in [[AI Assistant]].
 - **Guard tests (#14)** enforce the conventions so nobody has to remember them:
   `EveryEndpointNeedsSignInTests` calls every mapped controller endpoint anonymously and fails if
   one outside `SecurityConfig.PUBLIC_PATHS` answers with anything but a redirect to the login page
@@ -257,8 +273,9 @@ foundation, the meal search and the draft logic (#157 to #159, below); its pages
     other meals, newest first. Where no provider exists (a catalog-only test), the sort is newest
     first.
   - **Events:** each create, edit, archive and restore publishes `MealChanged(householdId,
-    mealId)` in the same transaction. Reads publish nothing. Nothing listens yet; the assistant
-    (Phase 7) will re-index on it.
+    mealId)` in the same transaction. Reads publish nothing. Nothing listens to it: the assistant's
+    meal search index does not use events (Cloud Run throttles the CPU after a response) and syncs
+    itself by content hash at the start of each assistant request instead.
   - **Ingredients (V12, #155, D31):** a meal has a list of ingredient names, no amounts.
     `ingredient` is per household like `tag`, but its `name_key` also drops accents (and lower-cases),
     so "Tojás", "tojas" and " TOJÁS " are one row and the first spelling typed is the one shown.
@@ -477,7 +494,7 @@ foundation, the meal search and the draft logic (#157 to #159, below); its pages
   - Migrations live in `src/main/resources/db/migration/`. `common/` holds portable SQL that
     runs on H2 and Postgres; `postgresql/` holds Postgres-only SQL. Version numbers are shared by
     both folders. Today: `V1__init.sql` (an empty baseline), `postgresql/V2__pgvector.sql`
-    (`CREATE EXTENSION vector`, ready for the Phase 7 assistant) and `V3__identity.sql`
+    (`CREATE EXTENSION vector`, used by the assistant's `meal_embedding` table from V14) and `V3__identity.sql`
     (`app_user`, `allowed_email` and the Spring Session tables), `V4__household.sql`
     (`household` with a `version` column, and `membership` with the role OWNER or MEMBER),
     `V5__invite.sql` (`invite`, which stores only the hash of its code), `V6__catalog.sql`

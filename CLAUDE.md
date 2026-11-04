@@ -9,8 +9,8 @@ This file is a **router**: it holds only what every session needs. The detail fo
 A private, household-only meal planner. A user signs in with Google (DB allowlist), creates or
 joins a **household**, and plans its meals per day: breakfast, lunch, dinner and snack. Planned
 meals, single days, whole weeks and dated **occasions** (birthdays, Christmas) can be reused or
-saved as templates, and members rate what they ate. A later AI assistant (Spring AI + pgvector
-RAG, pluggable provider) drafts plans from that history.
+saved as templates, and members rate what they ate. An optional AI assistant (Spring AI + Gemini on
+Vertex AI, pgvector meal search, off by default) drafts plans from that history.
 
 **Stack:**
 - Java 25 and Spring Boot 4, built with Gradle (Kotlin DSL). A **modular monolith** with Spring Modulith.
@@ -18,7 +18,7 @@ RAG, pluggable provider) drafts plans from that history.
 - Data: Postgres with pgvector and Flyway; H2 for fast tests and `task serve`.
 - Hosted on Google Cloud Run, database on Neon (both scale to zero).
 
-All decisions are in `PLAN.md` §2. **Status:** Phases 0–5 are built (Phase 4: #109–#113; Phase 5: #124–#132), pending the owner's phone checks (#134) before v1.0.0. The UI
+All decisions are in `PLAN.md` §2. **Status:** Phases 0–5 (Phase 4: #109–#113; Phase 5: #124–#132), the ingredients (#155, #156) and the assistant (Phase 7, #157–#162, off by default; `documentation/AI-Assistant.md`) are built, pending the owner's phone checks (#134) and the eval review with the model sign-off (D33) before v1.0.0. The UI
 redesign (epic #57, `plan-ui-redesign.md`) has landed except R9, the owner's close-out on a real phone. **Next steps are in `PLAN.md` §9.**
 
 ## Router: working on X → read Y

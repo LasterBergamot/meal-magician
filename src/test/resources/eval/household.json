@@ -1,0 +1,94 @@
+{
+  "_comment": "Invented data only (issue #162): a made-up Hungarian household for the assistant eval. Never put real household data here.",
+  "name": "Eval household",
+  "members": [
+    {"name": "Anna"},
+    {"name": "Béla"},
+    {"name": "Csilla"}
+  ],
+  "meals": [
+    {"key": "gulyasleves", "name": "Gulyásleves", "tags": ["leves", "húsos", "téli"], "ingredients": ["marhahús", "burgonya", "sárgarépa", "paprika", "hagyma"]},
+    {"key": "paprikas-csirke", "name": "Csirkepaprikás nokedlivel", "tags": ["húsos", "főétel"], "ingredients": ["csirkecomb", "hagyma", "paprika", "tejföl", "liszt", "tojás"]},
+    {"key": "toltott-kaposzta", "name": "Töltött káposzta", "tags": ["húsos", "téli", "ünnepi"], "ingredients": ["savanyú káposzta", "darált sertéshús", "rizs", "szalonna", "paprika"], "occasionTypes": ["HOLIDAY"]},
+    {"key": "rantott-hus", "name": "Rántott sertésszelet burgonyapürével", "tags": ["húsos", "főétel"], "ingredients": ["sertéshús", "liszt", "tojás", "zsemlemorzsa", "burgonya", "tej"]},
+    {"key": "bableves", "name": "Csülkös bableves", "tags": ["leves", "húsos", "téli"], "ingredients": ["bab", "füstölt csülök", "sárgarépa", "tejföl"]},
+    {"key": "halaszle", "name": "Halászlé", "tags": ["leves", "halas", "ünnepi"], "ingredients": ["ponty", "hagyma", "paprika"], "occasionTypes": ["HOLIDAY", "PARTY"]},
+    {"key": "sult-csirke-rizs", "name": "Sült csirkecomb rizzsel", "tags": ["húsos", "egytálétel"], "ingredients": ["csirkecomb", "rizs", "olaj", "fokhagyma"]},
+    {"key": "bolognai", "name": "Bolognai spagetti", "tags": ["tészta", "húsos", "gyors"], "ingredients": ["spagetti", "darált marhahús", "paradicsom", "hagyma"], "occasionTypes": ["PARTY"]},
+    {"key": "porkolt-tarhonya", "name": "Sertéspörkölt tarhonyával", "tags": ["húsos", "főétel"], "ingredients": ["sertéslapocka", "tarhonya", "hagyma", "paprika"]},
+    {"key": "rakott-krumpli", "name": "Rakott krumpli kolbásszal", "tags": ["húsos", "főétel"], "ingredients": ["burgonya", "tojás", "tejföl", "kolbász"]},
+    {"key": "lecso", "name": "Tojásos lecsó", "tags": ["vegetáriánus", "nyári", "gyors"], "ingredients": ["paprika", "paradicsom", "hagyma", "tojás"]},
+    {"key": "spenot", "name": "Spenótfőzelék tükörtojással", "tags": ["vegetáriánus", "főzelék", "gyors"], "ingredients": ["spenót", "tej", "liszt", "tojás", "fokhagyma"]},
+    {"key": "tonhalas-teszta", "name": "Tonhalas tészta", "tags": ["halas", "tészta", "gyors"], "ingredients": ["tészta", "tonhal", "paradicsom", "olívaolaj"]},
+    {"key": "gombapaprikas", "name": "Gombapaprikás galuskával", "tags": ["vegetáriánus", "főétel"], "ingredients": ["gomba", "hagyma", "paprika", "tejföl", "liszt"]},
+    {"key": "gombas-rizotto", "name": "Gombás rizottó", "tags": ["vegetáriánus", "egytálétel"], "ingredients": ["rizs", "gomba", "parmezán", "hagyma"]},
+    {"key": "gombaleves", "name": "Gombaleves", "tags": ["leves", "vegetáriánus"], "ingredients": ["gomba", "tejföl", "hagyma", "petrezselyem"]},
+    {"key": "tejberizs", "name": "Tejberizs fahéjjal", "tags": ["édes", "vegetáriánus"], "ingredients": ["rizs", "tej", "cukor", "fahéj"]},
+    {"key": "paradicsomleves", "name": "Paradicsomleves rizzsel", "tags": ["leves", "vegetáriánus", "gyors"], "ingredients": ["paradicsompüré", "rizs", "hagyma"]},
+    {"key": "dinnyes-salata", "name": "Görögdinnyés fetasaláta", "tags": ["nyári", "vegetáriánus", "könnyű", "gyors"], "ingredients": ["görögdinnye", "feta", "menta"]},
+    {"key": "cukkini-fozelek", "name": "Cukkinifőzelék", "tags": ["főzelék", "nyári", "vegetáriánus"], "ingredients": ["cukkini", "tej", "kapor", "liszt"]},
+    {"key": "epres-torta", "name": "Epres joghurtos torta", "tags": ["édes", "nyári", "ünnepi"], "ingredients": ["eper", "joghurt", "piskóta", "tejszín"], "occasionTypes": ["BIRTHDAY", "PARTY"]},
+    {"key": "csokitorta", "name": "Csokoládétorta", "tags": ["édes", "ünnepi"], "ingredients": ["csokoládé", "tojás", "liszt", "vaj", "cukor"], "occasionTypes": ["BIRTHDAY"]},
+    {"key": "almas-pite", "name": "Almás pite", "tags": ["édes", "sütés"], "ingredients": ["alma", "liszt", "vaj", "fahéj", "cukor"]},
+    {"key": "palacsinta", "name": "Palacsinta kakaóval", "tags": ["édes", "vegetáriánus", "gyors"], "ingredients": ["liszt", "tej", "tojás", "kakaó"], "occasionTypes": ["BIRTHDAY"]},
+    {"key": "bejgli", "name": "Mákos bejgli", "tags": ["édes", "ünnepi", "téli"], "ingredients": ["mák", "liszt", "vaj", "cukor", "dió"], "occasionTypes": ["HOLIDAY"]},
+    {"key": "rantott-ponty", "name": "Rántott ponty", "tags": ["halas", "ünnepi", "téli"], "ingredients": ["ponty", "liszt", "tojás", "zsemlemorzsa"], "occasionTypes": ["HOLIDAY"]},
+    {"key": "kocsonya", "name": "Kocsonya", "tags": ["húsos", "téli", "ünnepi"], "ingredients": ["sertéslábszár", "sárgarépa", "fokhagyma"], "occasionTypes": ["HOLIDAY"]},
+    {"key": "sutotok-leves", "name": "Sütőtökkrémleves", "tags": ["leves", "vegetáriánus", "téli"], "ingredients": ["sütőtök", "hagyma", "tejszín"]},
+    {"key": "kelkaposzta", "name": "Kelkáposzta-főzelék", "tags": ["főzelék", "téli", "vegetáriánus"], "ingredients": ["kelkáposzta", "tej", "liszt", "tejföl"]},
+    {"key": "lencseleves", "name": "Lencseleves", "tags": ["leves", "vegetáriánus", "téli"], "ingredients": ["lencse", "sárgarépa", "hagyma", "ecet"]},
+    {"key": "lasagne", "name": "Zöldséges lasagne", "tags": ["tészta", "vegetáriánus", "sütés"], "ingredients": ["lasagne tészta", "cukkini", "paradicsom", "sajt"], "occasionTypes": ["PARTY"]},
+    {"key": "pizza", "name": "Margherita pizza", "tags": ["vegetáriánus", "sütés"], "ingredients": ["liszt", "paradicsom", "mozzarella"], "occasionTypes": ["PARTY", "BIRTHDAY"]},
+    {"key": "hamburger", "name": "Házi hamburger", "tags": ["húsos", "gyors"], "ingredients": ["darált marhahús", "zsemle", "saláta", "paradicsom"], "occasionTypes": ["PARTY", "BIRTHDAY"]},
+    {"key": "lazac", "name": "Sült lazac párolt zöldséggel", "tags": ["halas", "könnyű"], "ingredients": ["lazac", "brokkoli", "citrom"]},
+    {"key": "zoldseges-rizs", "name": "Zöldséges rizs", "tags": ["vegetáriánus", "gyors", "egytálétel"], "ingredients": ["rizs", "borsó", "sárgarépa", "kukorica"]},
+    {"key": "turos-csusza", "name": "Túrós csusza", "tags": ["tészta", "gyors"], "ingredients": ["tészta", "túró", "tejföl", "szalonna"]},
+    {"key": "csirkesalata", "name": "Csirkemelles saláta", "tags": ["húsos", "könnyű", "nyári"], "ingredients": ["csirkemell", "saláta", "uborka", "paradicsom"]},
+    {"key": "rantotta", "name": "Rántotta kenyérrel", "tags": ["vegetáriánus", "gyors"], "ingredients": ["tojás", "kenyér", "vaj"]},
+    {"key": "muzli", "name": "Joghurtos müzli gyümölccsel", "tags": ["könnyű", "gyors", "vegetáriánus"], "ingredients": ["joghurt", "zabpehely", "alma"]},
+    {"key": "rostelyos", "name": "Hagymás rostélyos", "tags": ["húsos", "főétel"], "ingredients": ["marhaszelet", "hagyma", "burgonya"]},
+    {"key": "regi-leves", "name": "Régi diétás leves", "tags": ["leves"], "ingredients": ["zeller", "sárgarépa"], "archived": true},
+    {"key": "regi-teszta", "name": "Régi sajtos tészta", "tags": ["tészta"], "ingredients": ["tészta", "sajt"], "archived": true}
+  ],
+  "history": [
+    {"weekOffset": -1, "day": 0, "slot": "DINNER", "meal": "gulyasleves", "ratings": [
+      {"member": 0, "thumb": "UP", "stars": 5, "comment": "Nagyon finom volt, a gyerekek is kértek még."},
+      {"member": 1, "thumb": "UP", "stars": 4}]},
+    {"weekOffset": -1, "day": 1, "slot": "LUNCH", "meal": "rantotta"},
+    {"weekOffset": -1, "day": 1, "slot": "DINNER", "meal": "tonhalas-teszta", "ratings": [
+      {"member": 2, "thumb": "DOWN", "stars": 2, "comment": "Túl sok volt benne a tonhal."}]},
+    {"weekOffset": -1, "day": 2, "slot": "DINNER", "meal": "lecso", "ratings": [
+      {"member": 0, "thumb": "UP", "stars": 4}]},
+    {"weekOffset": -1, "day": 3, "slot": "DINNER", "meal": "rakott-krumpli", "ratings": [
+      {"member": 1, "thumb": "UP", "stars": 5, "comment": "Ez a kedvencem!"}]},
+    {"weekOffset": -1, "day": 4, "slot": "DINNER", "meal": "lazac"},
+    {"weekOffset": -1, "day": 5, "slot": "LUNCH", "meal": "paprikas-csirke", "ratings": [
+      {"member": 0, "thumb": "UP", "stars": 5},
+      {"member": 2, "thumb": "UP", "stars": 4}]},
+    {"weekOffset": -1, "day": 6, "slot": "LUNCH", "meal": "tejberizs", "ratings": [
+      {"member": 2, "thumb": "UP", "stars": 5, "comment": "Ezt bármikor megeszem."}]},
+    {"weekOffset": -2, "day": 0, "slot": "DINNER", "meal": "spenot", "ratings": [
+      {"member": 1, "thumb": "DOWN", "stars": 2, "comment": "Kicsit híg lett."}]},
+    {"weekOffset": -2, "day": 1, "slot": "DINNER", "meal": "bolognai", "ratings": [
+      {"member": 0, "thumb": "UP", "stars": 4}]},
+    {"weekOffset": -2, "day": 2, "slot": "LUNCH", "meal": "lencseleves"},
+    {"weekOffset": -2, "day": 3, "slot": "DINNER", "meal": "gombapaprikas", "ratings": [
+      {"member": 0, "thumb": "UP", "stars": 4},
+      {"member": 1, "thumb": "DOWN", "stars": 2, "comment": "Nem szeretem a gombát."}]},
+    {"weekOffset": -2, "day": 4, "slot": "DINNER", "meal": "pizza", "ratings": [
+      {"member": 0, "thumb": "UP"}, {"member": 1, "thumb": "UP"}, {"member": 2, "thumb": "UP"}]},
+    {"weekOffset": -2, "day": 5, "slot": "LUNCH", "meal": "hamburger"},
+    {"weekOffset": -2, "day": 6, "slot": "LUNCH", "meal": "toltott-kaposzta", "ratings": [
+      {"member": 0, "thumb": "UP", "stars": 5, "comment": "Mint a nagymamánál."}]},
+    {"weekOffset": -3, "day": 0, "slot": "DINNER", "meal": "paradicsomleves"},
+    {"weekOffset": -3, "day": 1, "slot": "DINNER", "meal": "zoldseges-rizs"},
+    {"weekOffset": -3, "day": 2, "slot": "DINNER", "meal": "rantott-hus", "ratings": [
+      {"member": 1, "thumb": "UP", "stars": 4}]},
+    {"weekOffset": -3, "day": 3, "slot": "SNACK", "meal": "almas-pite", "ratings": [
+      {"member": 2, "thumb": "UP", "stars": 5}]},
+    {"weekOffset": -3, "day": 4, "slot": "DINNER", "meal": "halaszle"},
+    {"weekOffset": -3, "day": 6, "slot": "LUNCH", "meal": "bableves", "ratings": [
+      {"member": 0, "thumb": "UP", "stars": 4},
+      {"member": 2, "thumb": "DOWN", "stars": 3, "comment": "Egy kicsit sós volt."}]}
+  ]
+}

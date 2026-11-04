@@ -27,8 +27,13 @@ public abstract class AbstractPostgresIntegrationTest {
               "pgvector/pgvector@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d")
           .asCompatibleSubstituteFor("postgres");
 
-  /** Started once; {@code @ServiceConnection} points the datasource at it, overriding the yml. */
-  @ServiceConnection static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(IMAGE);
+  /**
+   * Started once; {@code @ServiceConnection} points the datasource at it, overriding the yml.
+   * Public so that the assistant eval runner (a {@code main}, not a test) can use the same
+   * container and image.
+   */
+  @ServiceConnection
+  public static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(IMAGE);
 
   static {
     POSTGRES.start();

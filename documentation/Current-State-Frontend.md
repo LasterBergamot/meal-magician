@@ -3,8 +3,9 @@
 What exists in `main` today: the signed-in app shell with the meal library, the week planner (with
 reuse, plan templates and occasions), the ratings, the print page and the share links, built from
 the design system (tokens, `ui/` components, light and dark themes), plus the sign-in, error and
-household pages and the PWA shell with its install hint. Phases 0 to 5 are built; what is still open
-is the owner's phone checks (#134). Planned UI work: [[Roadmap: Frontend]].
+household pages and the PWA shell with its install hint, and, when the assistant is switched on, the
+Wizard (draft, one-slot, chat and occasion menu screens, see [[AI Assistant]]). Phases 0 to 5 and the
+assistant (Phase 7) are built; what is still open is the owner's phone checks (#134 and the Wizard's). Planned UI work: [[Roadmap: Frontend]].
 
 ## Pages and templates
 

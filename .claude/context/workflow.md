@@ -14,6 +14,7 @@ task format       # Spotless apply (google-java-format)
 task serve        # bootRun with the dev profile on in-memory H2 (no Docker needed) + `tailwindcss --watch` (scripts/serve.sh stops both together)
 task serve:pg     # same, with profiles dev,postgres against the compose Postgres (run `task up` first)
 task test         # unit + slice + Testcontainers integration tests, JaCoCo 100 % gate (needs Docker)
+task ai:eval -- --models <id,id>  # the assistant eval (#162) against REAL Gemini models: costs money, needs Docker and `gcloud auth application-default login`, never part of `task test` or CI; writes build/eval/<timestamp>.md for the owner to review (D33); `-- --help` needs neither
 task test:fast    # skips @Tag("integration") tests (-Pfast): no Docker, no coverage gate (inner loop; CI always runs `task test`)
 task test-e2e     # build the image, start compose.e2e.yml (app + stub OIDC + Postgres), run the Playwright tests, tear down (needs Docker; the first run downloads Chromium)
 task test-e2e:run # the same without the image build (CI builds the image with a layer cache first)

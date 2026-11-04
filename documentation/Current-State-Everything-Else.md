@@ -29,7 +29,9 @@ What exists in `main` today:
   (`task --list`). Working today: `install`, `doctor`, `lint`, `format`, `serve`, `test`,
   `test:fast`, `up`, `down`, `serve:pg`, `migrate-check`, `build`, `test-e2e` (#15), `smoke` (#58, `task smoke -- <url>`) and `db:restore` (#154,
   `task db:restore -- <file-or-gs://object> --target local|neon-branch|neon-project`: fetch with your own
-  `gcloud` login, `pg_restore`; guide: [[Backup and Restore]]).
+  `gcloud` login, `pg_restore`; guide: [[Backup and Restore]]) and `ai:eval` (#162,
+  `task ai:eval -- --models <id,id>`: the assistant eval against real Gemini models, which costs money, so it is
+  never part of `task test` or CI; it runs the Gradle task `aiEval`; guide: [[AI Assistant]]).
   `docs:check` (#14) runs `DocsToolingTests` alone; the full `task test` runs it too. Why the tasks exist: everyone, including CI, runs the same commands,
   so "works on my machine" and "passes in CI" mean the same thing.
   - `scripts/doctor.sh` (`task doctor`) prints `ok`/`FAIL` per tool: Java 17+ (only to start

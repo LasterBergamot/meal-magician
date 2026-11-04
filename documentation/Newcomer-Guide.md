@@ -1,13 +1,16 @@
 # Newcomer Guide
 
 For a junior developer joining Meal Magician. **Status:** covers what exists today (households, the meal
-library, the week planner, ratings, share links and the print view; Phases 0 to 5). The build works; run `./gradlew build`.
+library, the week planner, ratings, share links and the print view, and the optional AI assistant;
+Phases 0 to 5 and 7). The build works; run `./gradlew build`.
 
 ## What the app does
 
 A household plans meals per day (breakfast, lunch, dinner, snack) and for special occasions,
 reuses meals, days and weeks, and rates what it ate. It can also send one week of its plan to someone
-outside the household as a read-only link that needs no sign-in. Everyone signs in with Google; only
+outside the household as a read-only link that needs no sign-in. An optional AI assistant, the
+"Varázsló / Wizard" (off by default, see [[AI Assistant]]), can draft a week from the household's own
+meals. Everyone signs in with Google; only
 allowlisted emails get in; households are shared through email-bound invite links.
 
 ## Tools and why
@@ -20,7 +23,9 @@ allowlisted emails get in; households are shared through email-bound invite link
 | Design tokens + `ui/` components | one look in two themes: pages use token classes such as `bg-surface` and `text-ink`, and the shared fragments live in `src/main/jte/ui/`. The style guide `/dev/ui` (in `task serve`) shows every one of them |
 | Content-Security-Policy | a response header that makes the browser refuse inline scripts and foreign origins. It is why templates have no `onclick=`, `<script>` blocks or `style=` and why the JS libraries are copied into `static/js/` instead of loaded from a CDN. A test checks the templates |
 | Service worker + manifest | what lets a phone install the app to the home screen. The worker only caches CSS/JS/icons, never pages |
-| PostgreSQL + pgvector, Flyway | one DB for app data and later AI embeddings; versioned schema |
+| PostgreSQL + pgvector, Flyway | one DB for app data and the AI meal-search vectors (`meal_embedding`); versioned schema |
+| Spring AI + Gemini on Vertex AI | the optional assistant (module `assistant`). Spring AI is the Java library that talks to the model; Gemini is Google's model; Vertex AI is the Google Cloud service it runs on. The app calls it with the Cloud Run service account, so there is no API key. Only `ModelGateway` makes the calls |
+| Testcontainers | starts a throw-away Postgres in Docker for the integration tests and for the assistant eval (`task ai:eval`) |
 | H2 | fast local runs and tests without Docker |
 | Gradle + Taskfile | build, and one command surface for people, agents and CI: type `task --list` to see every command, `task doctor` to check your machine. The `gradlew` wrapper pins the Gradle version; a *toolchain* downloads Java 25 itself, so your machine's JDK doesn't matter |
 | GitHub Actions | CI: on every PR it runs the same `task` commands you run locally (lint, tests with the 100 % gate, migrations, docs-updated check), so you can reproduce any red check on your machine. After a merge it also copies `documentation/` into the wiki |
@@ -51,8 +56,8 @@ allowlisted emails get in; households are shared through email-bound invite link
   a new date, for example next Christmas.
 - **Rating:** a member's answer about a meal that was planned on a past or current day: a required
   thumb (up or down), optional stars (1 to 5) and an optional comment of up to 500 characters. Each
-  member has one rating per slot, so giving again changes it. The ratings are the history the later
-  AI assistant will learn from (PLAN.md D27).
+  member has one rating per slot, so giving again changes it. The ratings are the history the AI
+  assistant reads to learn what the household likes (PLAN.md D27).
 - **Snooze ("Not now"):** pressing "Not now" on the "How did it go?" card hides it for the rest of
   the day. The only thing stored is a cookie with a date (`mm_rating_snooze`); the server keeps nothing.
 - **Share link:** a read-only link to one ISO week of the plan, valid for 1, 7 (the default) or 30
@@ -83,6 +88,20 @@ allowlisted emails get in; households are shared through email-bound invite link
 - **Idea:** an item in a draft that is not a meal of the household's library yet (a name, a reason and
   some ingredients the model made up). It is drawn as a dashed card; "Add to meals" puts it in the
   library, and an accepted draft leaves out the ideas that were not added.
+- **Chip:** a small rounded label or button. In the assistant, the quick-request chips ("less meat",
+  "something quick") on the request form and the starter chips on an empty chat each add a ready-made
+  phrase or send a ready-made message; in the meal form a chip is a removable tag or ingredient.
+- **Spend cap:** the most a household may spend on the assistant in a calendar month ($5 by default,
+  `mm.ai.monthly-cap-usd`). `ModelGateway` checks it before every call and `UsageLedger` adds the tokens
+  and cost after it, so over the cap a member gets a message and no call is made. Vertex AI itself has no
+  hard cap, so this check is the control.
+- **Token:** a piece of a word; models are billed per million tokens, with output (including the
+  model's "thinking") dearer than input.
+- **Eval:** a fixed set of requests (`src/test/resources/eval/`) run against candidate models, with
+  deterministic checks (real meal ids, no repeats, "less meat" respected, ...) instead of a person or
+  another model judging. `task ai:eval` runs it by hand because it costs money and varies from run to
+  run. The owner reads the report and picks the model (PLAN.md D33). The checks themselves are unit
+  tested without any model.
 - **Quick-request chip:** one of four ticks (less meat, quick meals, more vegetable stews, leftovers)
   next to the request box. The browser sends only its key; the server turns it into text in the
   member's language.
@@ -170,6 +189,30 @@ The chat is a plain page with htmx in front of it. Take one message, "Mi van mos
 
 In tests the model is `ScriptedChatModel`; `AssistantChatPagesTest` carries the session cookie from
 request to request, the way a browser does.
+
+### Judging a model: the eval (#162)
+
+Tests never call Google, so they cannot tell whether a model is *good* at planning. The eval can. It is
+a plain `main` in the test sources, `assistant/eval/EvalRunner`, started by `task ai:eval -- --models
+<id,id>`. Follow one run:
+
+1. `EvalOptions` parses the command line. No `--models` means exit code 2 and the usage text; `--help`
+   works with no Google login and no Docker. Then the runner checks that Docker and the Google login
+   exist and stops with a plain sentence if not.
+2. For each model, `EvalHarness` starts the real application on a throw-away Postgres (the
+   Testcontainers one from `AbstractPostgresIntegrationTest`) with that model, and builds an invented
+   household from `household.json` through the real services (`MealService`, `PlanningService`,
+   `RatingService`). A moving clock makes "today" the case's date.
+3. Each case from `cases.json` is run `--runs` times (default 3, because answers vary) through
+   `AssistantService`, exactly as a page would call it. Tokens and cost are the difference in the
+   `assistant_usage` row, so they come from the ledger.
+4. `Checks` judges every answer with plain Java: is each meal id real, is any meal on two days in a
+   row, is the summary in the right language, and so on. `ChecksTest` feeds each check one good and one
+   bad answer, so the judge is tested without a model.
+5. `Report` prints a table and writes `build/eval/<timestamp>.md`. The owner reads it and decides.
+
+`EvalHarnessTest` runs steps 2 to 5 with the scripted model, so the harness itself is tested without
+spending anything. More in [[AI Assistant]].
 
 ### A request with no sign-in: `GET /share/{token}`
 

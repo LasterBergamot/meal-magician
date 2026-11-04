@@ -47,4 +47,8 @@ paths:
 - The `@WebMvcTest` slices (`WebSliceTest`) leave the `household` package out, because its web
   classes need a database; test them with `@SpringBootTest` + MockMvc.
 - Test names describe behaviour (`copiesDayIntoEmptyDate`), one behaviour per test.
-- Never hit real Google or the real AI provider in tests; stub them.
+- Never hit real Google or the real AI provider in tests; stub them. The assistant **eval**
+  (`src/test/java/.../assistant/eval`, `task ai:eval`) is the one program that does call the real model;
+  it is a `main` run by hand (Gradle task `aiEval`), never a test, never in CI. Its checks are pure
+  functions with unit tests on a good and a bad sample, and `EvalHarnessTest` runs the harness with the
+  scripted `fake-ai` model. Eval data (`src/test/resources/eval`) is invented, never real household data.
