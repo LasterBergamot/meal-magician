@@ -32,7 +32,7 @@ class AiPropertiesTest {
             .bindOrCreate("mm.ai", AiProperties.class);
 
     assertThat(bound.enabled()).isFalse();
-    assertThat(bound.monthlyCapUsd()).isEqualByComparingTo("5.00");
+    assertThat(bound.monthlyCapUsd()).isEqualByComparingTo("10.00");
     assertThat(bound.priceInputPerMillionUsd()).isNull();
     assertThat(bound.priceOutputPerMillionUsd()).isNull();
     assertThat(bound.embeddingDimensions()).isEqualTo(768);

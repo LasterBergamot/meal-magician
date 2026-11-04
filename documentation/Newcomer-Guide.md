@@ -91,7 +91,7 @@ allowlisted emails get in; households are shared through email-bound invite link
 - **Chip:** a small rounded label or button. In the assistant, the quick-request chips ("less meat",
   "something quick") on the request form and the starter chips on an empty chat each add a ready-made
   phrase or send a ready-made message; in the meal form a chip is a removable tag or ingredient.
-- **Spend cap:** the most a household may spend on the assistant in a calendar month ($5 by default,
+- **Spend cap:** the most a household may spend on the assistant in a calendar month ($10 by default,
   `mm.ai.monthly-cap-usd`). `ModelGateway` checks it before every call and `UsageLedger` adds the tokens
   and cost after it, so over the cap a member gets a message and no call is made. Vertex AI itself has no
   hard cap, so this check is the control.

@@ -36,7 +36,7 @@ menu pages, and the eval harness. It is off by default; see [[AI Assistant]].
     provider's message can echo the prompt.
   - **Spend cap.** `UsageLedger` keeps `assistant_usage` (V13): tokens and micro-USD per household
     and calendar month (Europe/Budapest, so a new month starts at zero by itself). A household at
-    or over `mm.ai.monthly-cap-usd` (default 5.00) gets `SpendCapExceededException` and no call is
+    or over `mm.ai.monthly-cap-usd` (default 10.00) gets `SpendCapExceededException` and no call is
     made. Usage is added with one `UPDATE x = x + n` (row created with `ON CONFLICT DO NOTHING`
     first) in a transaction of its own, so concurrent calls lose nothing. Cost is rounded up per
     call. The check is before the call, so two simultaneous calls can overshoot the cap by one call.
