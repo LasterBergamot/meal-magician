@@ -37,7 +37,8 @@ paths:
   (or `forMembers`). The map gives the path variables that point at the *home* household's
   resource; if the `TenantWorld` fixture has no such resource yet, add a field to it and create
   it in `TenantIsolationTests.buildWorld`. `TenantWorld` also has `homeTemplateId`,
-  `homeOccasionId`, `homeOccasionItemId` and `homeOccasionTemplateId` (#109). The guard then checks 404 for a person in no household,
+  `homeOccasionId`, `homeOccasionItemId` and `homeOccasionTemplateId` (#109), and `homeDraftId` (#159, an assistant
+  draft). The guard then checks 404 for a person in no household,
   404 for the owner of another household on any path with ids, 403 for a plain member on
   `ownerOnly` endpoints, and that the home owner gets neither (so the path is real). Remove a
   registration when its endpoint goes away: a stale one fails too.

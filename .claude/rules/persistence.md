@@ -30,6 +30,11 @@ paths:
 - Postgres-only assistant tables (`meal_embedding`, V14, #158) live in `db/migration/postgresql/`
   and are read and written only through `assistant.internal.EmbeddingStore`, always filtered by
   `household_id`; the table is derived data, rebuilt lazily from the meals.
+- `assistant_draft` and `assistant_draft_item` (V15, common, #159) hold the assistant's short-lived
+  drafts (purged after 7 days when a new one is stored). The item carries `household_id` with
+  composite foreign keys to its draft and, when `meal_id` is set, to `meal`; a check requires
+  exactly one of `meal_id` and `idea_name`. A draft changes status only through the conditional
+  update `DraftRepository.claim`.
 - Aggregates that users edit concurrently (`meal`, `meal_slot`, `plan_template`, `occasion`,
   `occasion_template`, `household`) carry a `version` column (`@Version`).
 - Child rows of a template or menu (`plan_template_item`, `occasion_item`,

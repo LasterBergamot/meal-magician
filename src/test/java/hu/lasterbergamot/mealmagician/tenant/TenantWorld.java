@@ -21,6 +21,7 @@ package hu.lasterbergamot.mealmagician.tenant;
  * @param homeOccasionItemId the occasion's one menu item
  * @param homeOccasionTemplateId an occasion template of the home household
  * @param homeShareLinkId an active share link of the home household's week of 2026-11-02
+ * @param homeDraftId an open assistant draft of the home household (for the endpoints of #160)
  */
 public record TenantWorld(
     long homeId,
@@ -36,7 +37,8 @@ public record TenantWorld(
     long homeOccasionId,
     long homeOccasionItemId,
     long homeOccasionTemplateId,
-    long homeShareLinkId) {
+    long homeShareLinkId,
+    long homeDraftId) {
 
   /**
    * Who sends a request in a check.

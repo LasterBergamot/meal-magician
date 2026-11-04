@@ -57,6 +57,15 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
       long householdId, long mealId, Pageable page);
 
   /**
+   * The household's latest ratings of any meal, most recently given or changed first.
+   *
+   * @param householdId the household; the only filter that keeps other households out
+   * @param page how many to return
+   * @return the ratings, newest first
+   */
+  List<Rating> findByHouseholdIdOrderByUpdatedAtDescIdDesc(long householdId, Pageable page);
+
+  /**
    * Counts a meal's ratings with one thumb.
    *
    * @param householdId the household

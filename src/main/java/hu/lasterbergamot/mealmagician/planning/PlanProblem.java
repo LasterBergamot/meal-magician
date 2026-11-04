@@ -20,5 +20,9 @@ public enum PlanProblem {
   /** An occasion has no date. */
   DATE_REQUIRED,
   /** An occasion has no type. */
-  TYPE_REQUIRED
+  TYPE_REQUIRED,
+  /** A draft slot lies outside the ISO week that is being written. */
+  OUTSIDE_WEEK,
+  /** A draft slot names an archived meal, which the library no longer offers. */
+  MEAL_ARCHIVED
 }

@@ -9,8 +9,15 @@ paths:
 # Java modules (Spring Modulith)
 
 - Base package `hu.lasterbergamot.mealmagician` (PLAN.md D20). Modules: `identity`,
-  `household`, `catalog`, `planning`, `feedback`, `sharing`, later `assistant`; `shared` is the
+  `household`, `catalog`, `planning`, `feedback`, `sharing`, `assistant`; `shared` is the
   shared kernel. The module table (who owns what, which events) is PLAN.md §4.1.
+- **`assistant`** depends on `planning`, `feedback`, `catalog`, `household`, `identity` (the
+  controllers of #160 use `SignedInUser`; amends the plan's list) and `shared`, and nothing depends
+  on it. It listens to no events. `assistant.internal.ModelGateway` is the only class that calls the
+  model. The model's tools (`AssistantTools`) are read-only, bound to one user and household in the
+  constructor and never take an id from the model; its only write into another module is
+  `PlanningService.applyDraft`, called when a member accepts a draft. Never put a display name or
+  e-mail address into a prompt (`Pseudonyms`), and keep model calls outside database transactions.
 - **A module's root package is its public API** (services, DTO/command records, events).
   Everything else lives in `<module>/internal/` (entities, repositories, controllers). Never
   import another module's `internal` package; `ApplicationModules.of(...).verify()` in
