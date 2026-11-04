@@ -3,6 +3,7 @@ package hu.lasterbergamot.mealmagician.assistant.eval;
 import hu.lasterbergamot.mealmagician.MealMagicianApplication;
 import hu.lasterbergamot.mealmagician.assistant.AssistantService;
 import hu.lasterbergamot.mealmagician.assistant.DraftGenerationException;
+import hu.lasterbergamot.mealmagician.assistant.ModelUnavailableException;
 import hu.lasterbergamot.mealmagician.assistant.MonthlyUsage;
 import hu.lasterbergamot.mealmagician.catalog.MealDetails;
 import hu.lasterbergamot.mealmagician.catalog.MealSearch;
@@ -251,8 +252,7 @@ final class EvalHarness implements EvalEnvironment.Harness {
       error = "DraftGenerationException: " + e.getMessage();
       invalidIds = e.getMessage().contains(INVALID_IDS_MARK);
     } catch (RuntimeException e) {
-      // The kind of failure only; the gateway's messages are prompt-free, others might not be.
-      error = e.getClass().getSimpleName();
+      error = describe(e);
     }
     long millis = (System.nanoTime() - started) / 1_000_000;
     MonthlyUsage after = assistant.usageThisMonth(owner, household);
@@ -276,6 +276,22 @@ final class EvalHarness implements EvalEnvironment.Harness {
         after.costMicroUsd() - before.costMicroUsd(),
         millis,
         invalidIds);
+  }
+
+  /**
+   * Why a run had no answer, for the report's "no answer (...)" line. A {@link
+   * ModelUnavailableException} keeps its message: the gateway builds it from the kind of failure
+   * only (the provider's exception class, a timeout, an empty prompt message), never from the
+   * prompt or the reply, so it says what went wrong without leaking anything. Any other exception
+   * is reduced to its class name, because its message might quote member text.
+   *
+   * @param failure what the assistant threw
+   * @return a prompt-free reason
+   */
+  static String describe(RuntimeException failure) {
+    return failure instanceof ModelUnavailableException
+        ? failure.getMessage()
+        : failure.getClass().getSimpleName();
   }
 
   private Checks.Answer ask(EvalCase c, List<OccasionView> madeOccasions) {

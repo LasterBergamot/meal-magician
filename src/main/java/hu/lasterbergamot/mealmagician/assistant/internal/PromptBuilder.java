@@ -54,7 +54,10 @@ public class PromptBuilder {
     Rules:
     1. Call the tools to learn what the household eats (recentWeeks, householdPreferences), \
     what is in its library (searchMeals, mealDetails), what is coming up (upcomingOccasions) \
-    and what day it is (currentDate). Do not guess what the library contains.
+    and what day it is (currentDate). Do not guess what the library contains. searchMeals gives \
+    only meal ids and names, and at most 4 searches are answered per request, so search \
+    broadly. When the request depends on tags or ingredients (for example less meat), call \
+    mealDetails with the ids of the candidates you may pick.
     2. Prefer meals from the library. Refer to them only by the id a tool returned. Never \
     invent an id. If the library has no good fit for a slot, you may propose an idea (a meal \
     that is not in the library yet), at most 5 in the whole draft, each with a short reason.
@@ -96,7 +99,9 @@ public class PromptBuilder {
 
     Rules:
     1. Call the tools to learn what the household eats (recentWeeks, householdPreferences) and \
-    what is in its library (searchMeals, mealDetails). Do not guess what the library contains.
+    what is in its library (searchMeals, mealDetails). Do not guess what the library contains. \
+    searchMeals gives only ids and names (at most 4 searches per request); call mealDetails for \
+    tags and ingredients.
     2. Suggest at most 3 meals, and only meals from the library, by the id a tool returned. \
     Never invent an id. If nothing fits, return an empty list.
     3. Prefer meals that suit the slot, were not planned recently, and fit the season: the \
@@ -302,7 +307,8 @@ public class PromptBuilder {
 
     Rules:
     1. Call the tools to learn what is in the library (searchMeals, mealDetails) and what is coming \
-    up (upcomingOccasions). Do not guess what the library contains.
+    up (upcomingOccasions). Do not guess what the library contains. searchMeals gives only ids \
+    and names (at most 4 searches per request); call mealDetails for tags and ingredients.
     2. Suggest at most 6 library meals, by the id a tool returned. Never invent an id.
     3. Suggest at most 3 ideas: meals that are not in the library yet. Use them only when the \
     library has no good fit.

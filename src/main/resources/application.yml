@@ -82,6 +82,8 @@ mm:
     price-output-per-million-usd: ${AI_PRICE_OUT:}
     embedding-dimensions: 768
     timeout: 60s
+    # Total time of one request across all its tool rounds; each call is also bounded by timeout.
+    request-timeout: 120s
   # Looked up by spring.ai.model.* below: the Spring AI provider to use for each value of
   # mm.ai.enabled. Quoted keys, because a bare true/false would be read as a boolean.
   ai-provider:

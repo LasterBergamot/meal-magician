@@ -29,6 +29,12 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  *     so the gateway refuses a model that answers with another size (default 768)
  * @param timeout how long one call to the model may take before it is abandoned (default 60
  *     seconds)
+ * @param requestTimeout the most time one assistant request may take in total, across all its tool
+ *     rounds (default 120 seconds). A model that asks for tool after tool could otherwise hold a
+ *     request thread for minutes while the member waits without an answer. Each round's own limit
+ *     is the smaller of {@code timeout} and what is left of this budget, and a request that has
+ *     used it up fails with {@code ModelUnavailableException}; the rounds already made stay in the
+ *     ledger
  * @param chatScope the topics the chat wizard may answer, {@code food-and-plan} by default (#161);
  *     an unknown name fails the start-up, because the policy is a choice the owner makes
  */
@@ -40,6 +46,7 @@ public record AiProperties(
     BigDecimal priceOutputPerMillionUsd,
     @DefaultValue("768") int embeddingDimensions,
     @DefaultValue("60s") Duration timeout,
+    @DefaultValue("120s") Duration requestTimeout,
     @DefaultValue("food-and-plan") String chatScope) {
 
   private static final BigDecimal MICRO = BigDecimal.valueOf(1_000_000L);

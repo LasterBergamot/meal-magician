@@ -211,7 +211,7 @@ key: the Cloud Run runtime account `mm-runtime` calls Vertex AI with its own ide
    | Name | Value |
    |---|---|
    | `AI_ENABLED` | `true` (anything else, or unset, keeps the assistant off) |
-   | `AI_LOCATION` | `eu` (the EU multi-region: Google keeps the processing inside the EU) |
+   | `AI_LOCATION` | `europe-west3` (Frankfurt: the chat model and the embeddings are both served there; the `eu` multi-region is not usable by the client, see #183) |
    | `AI_CHAT_MODEL` | `gemini-3.5-flash` (or `gemini-3.5-flash-lite`, about a fifth of the price) |
    | `AI_EMBEDDING_MODEL` | `gemini-embedding-001` |
    | `AI_EMBEDDING_LOCATION` | `europe-west3` (this model is not offered in the `eu` multi-region; leave unset to use `AI_LOCATION`) |
@@ -238,7 +238,7 @@ key: the Cloud Run runtime account `mm-runtime` calls Vertex AI with its own ide
    billing cap**, so keep the budget alert from part 1 and a low cap.
 
 Run it locally once to see it work (the app itself, not the eval): `gcloud auth application-default login`, then start the app with
-`MM_AI_ENABLED=true AI_PROJECT_ID=<project id> AI_LOCATION=eu AI_CHAT_MODEL=... AI_EMBEDDING_MODEL=...
+`MM_AI_ENABLED=true AI_PROJECT_ID=<project id> AI_LOCATION=europe-west3 AI_CHAT_MODEL=... AI_EMBEDDING_MODEL=...
 AI_EMBEDDING_LOCATION=europe-west3 AI_PRICE_IN=... AI_PRICE_OUT=...` (see `.env.example`).
 
 ## When you are done

@@ -73,6 +73,7 @@ class EmbeddingIndexTest {
             new BigDecimal("9.90"),
             DIMENSIONS,
             Duration.ofSeconds(60),
+            Duration.ofSeconds(120),
             "food-and-plan");
     return new EmbeddingIndex(meals, households, gateway, store, properties, model);
   }
@@ -164,6 +165,7 @@ class EmbeddingIndexTest {
                 new BigDecimal("9.90"),
                 DIMENSIONS + 1,
                 Duration.ofSeconds(60),
+                Duration.ofSeconds(120),
                 "food-and-plan"),
             "m");
 

@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -107,9 +108,16 @@ class DraftServiceTest {
             BigDecimal.ONE,
             768,
             Duration.ofSeconds(30),
+            Duration.ofSeconds(120),
             "food-and-plan");
     when(ledger.record(anyLong(), anyLong(), anyLong())).thenReturn(1L);
-    gateway = new ModelGateway(model, mock(EmbeddingModel.class), ledger, properties);
+    gateway =
+        new ModelGateway(
+            model,
+            mock(EmbeddingModel.class),
+            ledger,
+            properties,
+            ToolCallingManager.builder().build());
     var generator =
         new DraftGenerator(
             gateway,
@@ -120,7 +128,8 @@ class DraftServiceTest {
             ratings,
             occasions,
             mock(EmbeddingIndex.class),
-            clock);
+            clock,
+            "test-model");
     service = new DraftService(store, drafts, items, generator, meals, planning, households);
 
     anna = HouseholdTestSupport.insertUser(jdbc, "ds-anna");
@@ -301,6 +310,42 @@ class DraftServiceTest {
     assertThatThrownBy(() -> service.draftWeek(anna, home, EN, MONDAY, "x"))
         .isInstanceOf(DraftGenerationException.class)
         .hasMessageContaining("not valid JSON");
+  }
+
+  /** The kinds and indexes of the messages of a prompt that carry no text, never the text. */
+  private static List<String> emptyMessages(Prompt prompt) {
+    List<String> empty = new java.util.ArrayList<>();
+    for (int i = 0; i < prompt.getInstructions().size(); i++) {
+      var message = prompt.getInstructions().get(i);
+      if (message.getText() == null || message.getText().isBlank()) {
+        empty.add(message.getMessageType() + "#" + i);
+      }
+    }
+    return empty;
+  }
+
+  @Test
+  void anEmptyAnswerIsRetriedWithoutSendingTheModelAnEmptyMessage() {
+    // Gemini answered a real request with no text; echoing that as an assistant turn made the
+    // retry fail with "must include at least one parts field" (#183).
+    model.thenReply("");
+    model.thenReply(json("ok", lib(0, "LUNCH", stew)));
+
+    assertThat(service.draftWeek(anna, home, EN, MONDAY, "Plan us a simple week").items())
+        .hasSize(1);
+
+    assertThat(model.prompts).hasSize(2);
+    assertThat(model.prompts).allSatisfy(p -> assertThat(emptyMessages(p)).isEmpty());
+    assertThat(lastUserMessage(model.prompts.get(1))).contains("not valid JSON");
+  }
+
+  @Test
+  void aWeekRequestThatNeedsNoRetryHasNoEmptyMessage() {
+    model.thenReply(json("ok", lib(0, "LUNCH", stew)));
+
+    service.draftWeek(anna, home, EN, MONDAY, "Plan us a simple week");
+
+    assertThat(emptyMessages(model.prompts.getFirst())).isEmpty();
   }
 
   @Test
@@ -696,6 +741,17 @@ class DraftServiceTest {
 
     assertThatThrownBy(() -> service.suggestSlot(anna, home, EN, MONDAY, SlotType.LUNCH))
         .isInstanceOf(DraftGenerationException.class);
+  }
+
+  @Test
+  void anEmptySlotAnswerIsRetriedWithoutSendingTheModelAnEmptyMessage() {
+    model.thenReply("").thenReply(picks(pick(soup, "ok")));
+
+    assertThat(service.suggestSlot(anna, home, EN, MONDAY, SlotType.LUNCH)).hasSize(1);
+
+    assertThat(model.prompts).hasSize(2);
+    assertThat(model.prompts).allSatisfy(p -> assertThat(emptyMessages(p)).isEmpty());
+    assertThat(lastUserMessage(model.prompts.get(1))).contains("not valid JSON");
   }
 
   @Test

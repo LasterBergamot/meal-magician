@@ -67,6 +67,7 @@ class UsageLedgerTest {
             new BigDecimal("9.90"),
             768,
             Duration.ofSeconds(60),
+            Duration.ofSeconds(120),
             "food-and-plan");
     return new UsageLedger(usage, properties, clock, transactions);
   }

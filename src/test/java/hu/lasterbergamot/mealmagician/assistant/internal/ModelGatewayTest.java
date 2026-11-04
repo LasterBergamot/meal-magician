@@ -24,6 +24,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -34,6 +37,10 @@ import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.tool.annotation.Tool;
 
 /**
  * The gateway with fake models: no Google, no credentials, no database. The ledger is a mock so the
@@ -53,6 +60,10 @@ class ModelGatewayTest {
   private final Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
   private static AiProperties properties(Duration timeout) {
+    return properties(timeout, Duration.ofSeconds(120));
+  }
+
+  private static AiProperties properties(Duration timeout, Duration requestTimeout) {
     return new AiProperties(
         true,
         new BigDecimal("5.00"),
@@ -60,12 +71,19 @@ class ModelGatewayTest {
         new BigDecimal("9.90"),
         DIMENSIONS,
         timeout,
+        requestTimeout,
         "food-and-plan");
   }
 
   @BeforeEach
   void gateway() {
-    gateway = new ModelGateway(chat, embeddings, ledger, properties(Duration.ofSeconds(5)));
+    gateway =
+        new ModelGateway(
+            chat,
+            embeddings,
+            ledger,
+            properties(Duration.ofSeconds(5)),
+            ToolCallingManager.builder().build());
     when(ledger.record(anyLong(), anyLong(), anyLong())).thenReturn(7L);
     logs.start();
     root.addAppender(logs);
@@ -142,6 +160,107 @@ class ModelGatewayTest {
     assertThat(gateway.complete(1L, new Prompt("abcd")).text()).isEmpty();
   }
 
+  /** A tool the fake model asks for; counts its runs so a test sees that the gateway ran it. */
+  public static final class Lookup {
+    final java.util.concurrent.atomic.AtomicInteger runs =
+        new java.util.concurrent.atomic.AtomicInteger();
+
+    /**
+     * Answers a lookup.
+     *
+     * @param what what to look up
+     * @return a fixed result that includes the argument
+     */
+    @Tool(description = "Looks something up")
+    public String lookup(String what) {
+      runs.incrementAndGet();
+      return "found-" + what;
+    }
+  }
+
+  private static ChatResponse toolRequest(String name, DefaultUsage usage) {
+    var call = new AssistantMessage.ToolCall("call-1", "function", name, "{\"what\":\"paprika\"}");
+    return new ChatResponse(
+        List.of(
+            new Generation(
+                AssistantMessage.builder().content("").toolCalls(List.of(call)).build())),
+        ChatResponseMetadata.builder().usage(usage).build());
+  }
+
+  private static Prompt promptWith(Lookup tool) {
+    return new Prompt(
+        List.of(new UserMessage(PROMPT)),
+        ToolCallingChatOptions.builder().toolCallbacks(ToolCallbacks.from(tool)).build());
+  }
+
+  @Test
+  void aToolRequestIsRunAndItsResultGoesBackToTheModelInTheNextCall() {
+    var tool = new Lookup();
+    when(chat.call(any(Prompt.class)))
+        .thenReturn(toolRequest("lookup", new DefaultUsage(100, 10, 110)))
+        .thenReturn(answer(ANSWER, new DefaultUsage(150, 20, 170)));
+
+    ModelReply reply = gateway.complete(1L, promptWith(tool));
+
+    assertThat(reply.text()).isEqualTo(ANSWER);
+    assertThat(tool.runs).hasValue(1);
+    var prompts = org.mockito.ArgumentCaptor.forClass(Prompt.class);
+    verify(chat, org.mockito.Mockito.times(2)).call(prompts.capture());
+    var second = prompts.getAllValues().get(1).getInstructions();
+    assertThat(second).hasSize(3);
+    assertThat(second.get(1)).isInstanceOf(AssistantMessage.class);
+    assertThat(((ToolResponseMessage) second.get(2)).getResponses())
+        .singleElement()
+        .satisfies(response -> assertThat(response.responseData()).contains("found-paprika"));
+    // The tools stay on the options of every round.
+    assertThat(prompts.getAllValues().get(1).getOptions()).isNotNull();
+  }
+
+  @Test
+  void everyRoundIsMeteredAndTheReplyAddsThemUp() {
+    when(chat.call(any(Prompt.class)))
+        .thenReturn(toolRequest("lookup", new DefaultUsage(100, 10, 110)))
+        .thenReturn(answer(ANSWER, new DefaultUsage(150, 20, 170)));
+
+    ModelReply reply = gateway.complete(1L, promptWith(new Lookup()));
+
+    verify(ledger).record(1L, 100, 10);
+    verify(ledger).record(1L, 150, 20);
+    verify(ledger).assertWithinCap(1L);
+    assertThat(reply).isEqualTo(new ModelReply(ANSWER, 250, 30, 14L));
+  }
+
+  @Test
+  void aModelThatNeverStopsAskingForToolsIsStoppedAtTheRoundLimit() {
+    var tool = new Lookup();
+    when(chat.call(any(Prompt.class)))
+        .thenReturn(toolRequest("lookup", new DefaultUsage(10, 1, 11)));
+
+    assertThatThrownBy(() -> gateway.complete(1L, promptWith(tool)))
+        .isInstanceOf(ModelUnavailableException.class)
+        .hasMessageContaining(String.valueOf(ModelGateway.MAX_ROUNDS))
+        .message()
+        .doesNotContain(PROMPT);
+
+    verify(chat, org.mockito.Mockito.times(ModelGateway.MAX_ROUNDS)).call(any(Prompt.class));
+    verify(ledger, org.mockito.Mockito.times(ModelGateway.MAX_ROUNDS)).record(1L, 10, 1);
+    assertThat(tool.runs).hasValue(ModelGateway.MAX_ROUNDS);
+  }
+
+  @Test
+  void aRequestForAToolThePromptDoesNotCarryNamesOnlyTheKindOfFailure() {
+    when(chat.call(any(Prompt.class)))
+        .thenReturn(toolRequest("noSuchTool", new DefaultUsage(10, 1, 11)));
+
+    assertThatThrownBy(() -> gateway.complete(1L, promptWith(new Lookup())))
+        .isInstanceOf(ModelUnavailableException.class)
+        .hasMessageContaining("the tool call failed (")
+        .hasMessageNotContaining("paprika")
+        .hasNoCause();
+
+    verify(chat).call(any(Prompt.class));
+  }
+
   @Test
   void aHouseholdOverItsCapIsRefusedAndTheModelIsNeverCalled() {
     doThrow(new SpendCapExceededException(5_000_000L, 5_000_000L))
@@ -158,9 +277,166 @@ class ModelGatewayTest {
   }
 
   @Test
+  void aPromptWithAnEmptyMessageIsRefusedBeforeTheCallAndTheReasonNamesItsKindAndPosition() {
+    var prompt =
+        new Prompt(
+            List.of(
+                new SystemMessage(PROMPT),
+                new UserMessage(ANSWER),
+                new AssistantMessage("  \n"),
+                new UserMessage("again")));
+
+    assertThatThrownBy(() -> gateway.complete(1L, prompt))
+        .isInstanceOf(ModelUnavailableException.class)
+        .hasMessageContaining("empty ASSISTANT message at 2")
+        .message()
+        .doesNotContain(PROMPT)
+        .doesNotContain(ANSWER)
+        .doesNotContain("again");
+
+    verifyNoInteractions(chat);
+    verify(ledger, never()).record(anyLong(), anyLong(), anyLong());
+  }
+
+  @Test
+  void aMessageWithNoTextAtAllIsRefusedToo() {
+    var prompt = new Prompt(List.of(new UserMessage(PROMPT), new AssistantMessage(null)));
+
+    assertThatThrownBy(() -> gateway.complete(1L, prompt))
+        .isInstanceOf(ModelUnavailableException.class)
+        .hasMessageContaining("empty ASSISTANT message at 1");
+
+    verifyNoInteractions(chat);
+  }
+
+  /** A clock the fake model moves: each call "takes" the given time, without sleeping. */
+  private static final class FakeTicker implements java.util.function.LongSupplier {
+    private long nanos;
+
+    void advance(Duration by) {
+      nanos += by.toNanos();
+    }
+
+    @Override
+    public long getAsLong() {
+      return nanos;
+    }
+  }
+
+  private ModelGateway gatewayWithBudget(Duration requestTimeout, FakeTicker ticker) {
+    gateway.close();
+    gateway =
+        new ModelGateway(
+            chat,
+            embeddings,
+            ledger,
+            properties(Duration.ofSeconds(5), requestTimeout),
+            ToolCallingManager.builder().build(),
+            ticker);
+    return gateway;
+  }
+
+  @Test
+  void aRequestWhoseRoundsUseUpTheTotalBudgetIsStoppedAndKeepsTheRoundsAlreadyRecorded() {
+    var ticker = new FakeTicker();
+    var tool = new Lookup();
+    gatewayWithBudget(Duration.ofSeconds(10), ticker);
+    when(chat.call(any(Prompt.class)))
+        .thenAnswer(invocation -> {
+          ticker.advance(Duration.ofSeconds(4));
+          return toolRequest("lookup", new DefaultUsage(10, 1, 11));
+        });
+
+    assertThatThrownBy(() -> gateway.complete(1L, promptWith(tool)))
+        .isInstanceOf(ModelUnavailableException.class)
+        .hasMessageContaining("took longer than PT10S")
+        .message()
+        .doesNotContain(PROMPT);
+
+    // 4 s, 8 s, 12 s: the third round ends over budget, so no fourth call starts.
+    verify(chat, org.mockito.Mockito.times(3)).call(any(Prompt.class));
+    verify(ledger, org.mockito.Mockito.times(3)).record(1L, 10, 1);
+  }
+
+  @Test
+  void aRequestWithinTheTotalBudgetStillReturnsTheReply() {
+    var ticker = new FakeTicker();
+    gatewayWithBudget(Duration.ofSeconds(10), ticker);
+    when(chat.call(any(Prompt.class)))
+        .thenAnswer(invocation -> {
+          ticker.advance(Duration.ofSeconds(4));
+          return toolRequest("lookup", new DefaultUsage(10, 1, 11));
+        })
+        .thenAnswer(invocation -> {
+          ticker.advance(Duration.ofSeconds(4));
+          return answer(ANSWER, new DefaultUsage(20, 2, 22));
+        });
+
+    ModelReply reply = gateway.complete(1L, promptWith(new Lookup()));
+
+    assertThat(reply.text()).isEqualTo(ANSWER);
+    verify(ledger).record(1L, 10, 1);
+    verify(ledger).record(1L, 20, 2);
+  }
+
+  @Test
+  void aCallIsNeverAllowedToRunLongerThanTheBudgetThatIsLeft() {
+    var ticker = new FakeTicker();
+    gatewayWithBudget(Duration.ofSeconds(10), ticker);
+    when(chat.call(any(Prompt.class)))
+        .thenAnswer(invocation -> {
+          // The first round "takes" 9.9 s of the 10 s, leaving 100 ms; the per-call timeout is 5 s.
+          ticker.advance(Duration.ofMillis(9_900));
+          return toolRequest("lookup", new DefaultUsage(10, 1, 11));
+        })
+        .thenAnswer(invocation -> {
+          Thread.sleep(4_000);
+          return answer(ANSWER, new DefaultUsage(1, 1, 2));
+        });
+
+    long started = System.nanoTime();
+    assertThatThrownBy(() -> gateway.complete(1L, promptWith(new Lookup())))
+        .isInstanceOf(ModelUnavailableException.class)
+        .hasMessageContaining("took longer than PT10S");
+    long tookMillis = Duration.ofNanos(System.nanoTime() - started).toMillis();
+
+    assertThat(tookMillis).isLessThan(2_000);
+    verify(ledger).record(1L, 10, 1);
+    verify(ledger, org.mockito.Mockito.times(1)).record(anyLong(), anyLong(), anyLong());
+  }
+
+  @Test
+  void aCallWithMoreBudgetThanItsOwnTimeoutKeepsTheOwnTimeout() {
+    gateway.close();
+    gateway =
+        new ModelGateway(
+            chat,
+            embeddings,
+            ledger,
+            properties(Duration.ofMillis(50), Duration.ofSeconds(120)),
+            ToolCallingManager.builder().build(),
+            new FakeTicker());
+    when(chat.call(any(Prompt.class)))
+        .thenAnswer(invocation -> {
+          Thread.sleep(4_000);
+          return answer(ANSWER, new DefaultUsage(1, 1, 2));
+        });
+
+    assertThatThrownBy(() -> gateway.complete(1L, new Prompt(PROMPT)))
+        .isInstanceOf(ModelUnavailableException.class)
+        .hasMessageContaining("the call timed out after PT0.05S");
+  }
+
+  @Test
   void aSlowCallTimesOutAndNothingIsRecorded() {
     gateway.close();
-    gateway = new ModelGateway(chat, embeddings, ledger, properties(Duration.ofMillis(50)));
+    gateway =
+        new ModelGateway(
+            chat,
+            embeddings,
+            ledger,
+            properties(Duration.ofMillis(50)),
+            ToolCallingManager.builder().build());
     when(chat.call(any(Prompt.class)))
         .thenAnswer(invocation -> {
           Thread.sleep(5_000);
