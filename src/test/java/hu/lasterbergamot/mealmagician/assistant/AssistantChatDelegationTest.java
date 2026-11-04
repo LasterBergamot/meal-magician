@@ -38,6 +38,7 @@ class AssistantChatDelegationTest {
         BigDecimal.ONE,
         768,
         Duration.ofSeconds(1),
+        Duration.ofSeconds(120),
         "food-and-plan");
   }
 

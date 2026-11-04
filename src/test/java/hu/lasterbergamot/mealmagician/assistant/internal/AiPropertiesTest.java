@@ -22,11 +22,12 @@ class AiPropertiesTest {
         new BigDecimal(output),
         768,
         Duration.ofSeconds(60),
+        Duration.ofSeconds(120),
         "food-and-plan");
   }
 
   @Test
-  void defaultsAreOffFiveDollarsNoPricesAndSixtySeconds() {
+  void defaultsAreOffFiveDollarsNoPricesSixtySecondsPerCallAndTwoMinutesPerRequest() {
     var bound =
         new Binder(new MapConfigurationPropertySource(Map.of()))
             .bindOrCreate("mm.ai", AiProperties.class);
@@ -37,6 +38,7 @@ class AiPropertiesTest {
     assertThat(bound.priceOutputPerMillionUsd()).isNull();
     assertThat(bound.embeddingDimensions()).isEqualTo(768);
     assertThat(bound.timeout()).isEqualTo(Duration.ofSeconds(60));
+    assertThat(bound.requestTimeout()).isEqualTo(Duration.ofSeconds(120));
   }
 
   /**
@@ -79,7 +81,14 @@ class AiPropertiesTest {
   void missingPricesAreAnErrorNotAFreeCall() {
     var noPrices =
         new AiProperties(
-            true, new BigDecimal("5"), null, null, 768, Duration.ofSeconds(1), "food-and-plan");
+            true,
+            new BigDecimal("5"),
+            null,
+            null,
+            768,
+            Duration.ofSeconds(1),
+            Duration.ofSeconds(120),
+            "food-and-plan");
     assertThatThrownBy(() -> noPrices.costMicroUsd(1, 1))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("price-input-per-million-usd");
@@ -91,6 +100,7 @@ class AiPropertiesTest {
             null,
             768,
             Duration.ofSeconds(1),
+            Duration.ofSeconds(120),
             "food-and-plan");
     assertThatThrownBy(() -> onlyInput.costMicroUsd(1, 1))
         .isInstanceOf(IllegalStateException.class);

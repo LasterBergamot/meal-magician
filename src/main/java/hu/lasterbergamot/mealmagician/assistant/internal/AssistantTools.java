@@ -50,6 +50,13 @@ public class AssistantTools {
   /** The most meals {@link #searchMeals} and {@link #mealDetails} return. */
   static final int MAX_MEALS = 15;
 
+  /**
+   * The most times {@link #searchMeals} does real work in one request. Each search adds a round to
+   * the model's conversation, and long chains of searches made requests run past the time limit;
+   * after this many, the tool returns an empty list and the model must answer with what it has.
+   */
+  static final int MAX_SEARCHES = 4;
+
   /** The most days ahead {@link #upcomingOccasions} looks. */
   static final int MAX_DAYS = 90;
 
@@ -68,6 +75,9 @@ public class AssistantTools {
   private final OccasionService occasions;
   private final EmbeddingIndex index;
   private final Clock clock;
+
+  /** How many searches this request has made; compared with {@link #MAX_SEARCHES}. */
+  private int searches;
 
   /** Whether the embedding index was brought up to date during this request. */
   private boolean synced;
@@ -147,25 +157,32 @@ public class AssistantTools {
   }
 
   /**
-   * Finds library meals by meaning. The first call of a request brings the embedding index up to
-   * date (which may take a moment and is metered like any model call).
+   * Finds library meals by meaning and returns only their ids and names; tags and ingredients come
+   * from {@link #mealDetails}. The first call of a request brings the embedding index up to date
+   * (which may take a moment and is metered like any model call). At most {@value #MAX_SEARCHES}
+   * searches are answered per object (that is, per request): later calls return an empty list
+   * without touching the index. Blank queries do not count.
    *
    * @param query what to look for, for example "light summer dinner with fish"
    * @param limit how many meals to return, clamped to 1 to {@value #MAX_MEALS}
-   * @return the best matches first; empty when the query is blank or nothing is indexed
+   * @return the best matches first; empty when the query is blank, nothing is indexed or the search
+   *     budget of the request is spent
    */
   @Tool(
       description =
-          "Search the household's meal library by meaning. Returns meals that exist in the library"
-              + " with their ids, tags and ingredients. Only ids returned by tools may be used in"
-              + " the draft.")
-  public List<MealSummary> searchMeals(
+          "Search the household's meal library by meaning. Returns only the id and name of meals"
+              + " that exist in the library. For tags or ingredients call mealDetails with the"
+              + " ids. Only ids returned by tools may be used in the draft. It can be called at"
+              + " most 4 times per request; after that it returns an empty list, so answer with"
+              + " what you already have.")
+  public List<MealName> searchMeals(
       @ToolParam(description = "What to look for, e.g. 'light summer dinner with fish'")
           String query,
       @ToolParam(description = "How many meals to return, 1 to 15") int limit) {
-    if (query == null || query.isBlank()) {
+    if (query == null || query.isBlank() || searches >= MAX_SEARCHES) {
       return List.of();
     }
+    searches++;
     if (!synced) {
       index.sync(userId, householdId);
       synced = true;
@@ -174,7 +191,7 @@ public class AssistantTools {
     return index.search(userId, householdId, query, Math.clamp(limit, 1, MAX_MEALS)).stream()
         .map(known::get)
         .filter(Objects::nonNull)
-        .map(MealSummary::of)
+        .map(MealName::of)
         .toList();
   }
 
@@ -311,17 +328,16 @@ public class AssistantTools {
   public record PlannedMeal(String date, String slot, long mealId, String name) {}
 
   /**
-   * A search hit.
+   * A search hit: just enough to pick a meal. It has no tags or ingredients on purpose, so a search
+   * result stays small; the model asks {@link #mealDetails} for those.
    *
    * @param id the library meal's id
    * @param name the name (data)
-   * @param tags the tag names
-   * @param ingredients the ingredient names
    */
-  public record MealSummary(long id, String name, List<String> tags, List<String> ingredients) {
+  public record MealName(long id, String name) {
 
-    static MealSummary of(MealView meal) {
-      return new MealSummary(meal.id(), meal.name(), meal.tags(), meal.ingredients());
+    static MealName of(MealView meal) {
+      return new MealName(meal.id(), meal.name());
     }
   }
 

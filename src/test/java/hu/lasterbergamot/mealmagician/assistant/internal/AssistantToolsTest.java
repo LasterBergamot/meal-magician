@@ -206,7 +206,7 @@ class AssistantToolsTest {
   // ---- searchMeals ----
 
   @Test
-  void searchMealsSyncsTheIndexOncePerRequestAndReturnsTagsAndIngredients() {
+  void searchMealsSyncsTheIndexOncePerRequestAndReturnsOnlyIdAndName() {
     when(index.search(eq(anna), eq(home), anyString(), anyInt())).thenReturn(List.of(stew, 999L));
     var tools = tools(anna, home);
 
@@ -218,10 +218,73 @@ class AssistantToolsTest {
         .satisfies(m -> {
           assertThat(m.id()).isEqualTo(stew);
           assertThat(m.name()).isEqualTo("Stew");
+        });
+    assertThat(AssistantTools.MealName.class.getRecordComponents())
+        .extracting(c -> c.getName())
+        .containsExactly("id", "name");
+    verify(index, times(1)).sync(anna, home);
+  }
+
+  @Test
+  void theFifthSearchInOneRequestReturnsNothingAndDoesNotTouchTheIndex() {
+    when(index.search(eq(anna), eq(home), anyString(), anyInt())).thenReturn(List.of(stew));
+    var tools = tools(anna, home);
+
+    for (int i = 0; i < AssistantTools.MAX_SEARCHES; i++) {
+      assertThat(tools.searchMeals("q" + i, 5)).hasSize(1);
+    }
+    assertThat(tools.searchMeals("one more", 5)).isEmpty();
+    assertThat(tools.searchMeals("and another", 5)).isEmpty();
+
+    assertThat(AssistantTools.MAX_SEARCHES).isEqualTo(4);
+    verify(index, times(AssistantTools.MAX_SEARCHES))
+        .search(eq(anna), eq(home), anyString(), anyInt());
+    verify(index, never()).search(anna, home, "one more", 5);
+  }
+
+  @Test
+  void aNewToolsObjectStartsCountingSearchesAgain() {
+    when(index.search(eq(anna), eq(home), anyString(), anyInt())).thenReturn(List.of(stew));
+    var spent = tools(anna, home);
+    for (int i = 0; i < AssistantTools.MAX_SEARCHES; i++) {
+      spent.searchMeals("q", 5);
+    }
+
+    assertThat(spent.searchMeals("q", 5)).isEmpty();
+    assertThat(tools(anna, home).searchMeals("q", 5)).hasSize(1);
+  }
+
+  @Test
+  void theSearchToolTextStatesTheLimitAndPointsToMealDetails() throws Exception {
+    String description =
+        AssistantTools.class
+            .getMethod("searchMeals", String.class, int.class)
+            .getAnnotation(Tool.class)
+            .description();
+
+    assertThat(description).contains("4 times").contains("mealDetails").contains("empty list");
+  }
+
+  @Test
+  void aBlankQueryDoesNotUseUpASearch() {
+    when(index.search(eq(anna), eq(home), anyString(), anyInt())).thenReturn(List.of(stew));
+    var tools = tools(anna, home);
+
+    for (int i = 0; i < 10; i++) {
+      tools.searchMeals(" ", 5);
+    }
+
+    assertThat(tools.searchMeals("q", 5)).hasSize(1);
+  }
+
+  @Test
+  void mealDetailsStillCarriesTagsAndIngredients() {
+    assertThat(tools(anna, home).mealDetails(List.of(stew)))
+        .singleElement()
+        .satisfies(m -> {
           assertThat(m.tags()).containsExactly("winter");
           assertThat(m.ingredients()).containsExactly("beef");
         });
-    verify(index, times(1)).sync(anna, home);
   }
 
   @Test

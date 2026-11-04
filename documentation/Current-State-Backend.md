@@ -32,7 +32,11 @@ menu pages, and the eval harness. It is off by default; see [[AI Assistant]].
   - **`ModelGateway`** is the only class that calls Spring AI's `ChatModel` and `EmbeddingModel`,
     and the only place household data could leave the app. Every call: cap checked first, a
     timeout (`mm.ai.timeout`), usage read from the provider (thinking tokens count as output) and
-    added to the ledger. It logs nothing, and its failures name only the kind of error, because a
+    added to the ledger. It also runs the tool loop: the Gemini model only asks for tools, so the
+    gateway runs them with `ToolCallingManager`, calls again and stops after 12 calls, metering each
+    one. A whole request may take at most 120 seconds (`mm.ai.request-timeout`); each call's own
+    limit is the smaller of `mm.ai.timeout` and what is left of that budget. The in-app spend cap is
+    $5 per household and month (`mm.ai.monthly-cap-usd`). It logs nothing, and its failures name only the kind of error, because a
     provider's message can echo the prompt.
   - **Spend cap.** `UsageLedger` keeps `assistant_usage` (V13): tokens and micro-USD per household
     and calendar month (Europe/Budapest, so a new month starts at zero by itself). A household at

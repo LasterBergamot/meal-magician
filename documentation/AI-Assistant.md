@@ -52,7 +52,7 @@ Things to know:
 - A member can write a name into a note or a comment, and it would be sent. The request form and the
   chat page say that the text goes to Google Gemini.
 - Google says it does not train on customer data without permission, but it may log prompts to watch for
-  abuse. The processing region is the EU (`eu` for chat, `europe-west3` for the embeddings).
+  abuse. The processing region is `europe-west3` (Frankfurt) for both the chat model and the embeddings.
 - **No dietary rules or allergies are stored.** The assistant is told never to claim that a meal is safe
   for an allergy or a diet. Check ingredients yourself.
 - Everything a member typed is treated as data, not as an instruction. A meal named "ignore all rules"
@@ -71,9 +71,21 @@ cents per month.
   zero by itself.
 - **Vertex AI has no hard billing cap.** The app's check is the control, so keep the Google Cloud budget
   alert. Google's own bill is in the Cloud Console, Billing, filtered to "Vertex AI".
-- **Timeouts:** every call stops after `mm.ai.timeout` (60 seconds), and a member can cancel a request.
+- **Timeouts:** every call stops after `mm.ai.timeout` (60 seconds), a whole request (all its tool
+  rounds together) after `mm.ai.request-timeout` (120 seconds), and a member can cancel a request.
 - **Prices** come from the settings `AI_PRICE_IN` and `AI_PRICE_OUT`, so the table above must match the
   model (they are not guessed).
+- **The model id** (`AI_CHAT_MODEL`) is sent with every request that uses tools (drafts, slot
+  suggestions, chat, menu help), as Spring AI's Google options. Without it the Google client falls back
+  to a default model this project cannot use (a 404), so the app refuses to start with the assistant on
+  and no model id.
+- **Tools run in the gateway.** Spring AI 2's Gemini model returns the model's tool requests but does
+  not run them. `ModelGateway` runs them (Spring AI's `ToolCallingManager`), sends the results back and
+  asks again until the model answers with text, at most 12 calls per request. A whole request may take
+  at most 120 seconds (`mm.ai.request-timeout`), whatever the number of calls; the call that would run
+  past it is cut short and the member gets the usual "assistant unavailable" answer. Each call is
+  metered separately, so the spend cap (**$5 per household and month**, `mm.ai.monthly-cap-usd`) counts
+  all of them.
 
 ## How to turn it off
 
@@ -112,7 +124,7 @@ Gemini models and costs money**, and the answers differ from run to run, so it n
 
 ```bash
 gcloud auth application-default login          # your own login; no key is ever stored
-export AI_PROJECT_ID=<project id> AI_LOCATION=eu AI_EMBEDDING_MODEL=gemini-embedding-001 \
+export AI_PROJECT_ID=<project id> AI_LOCATION=europe-west3 AI_EMBEDDING_MODEL=gemini-embedding-001 \
        AI_EMBEDDING_LOCATION=europe-west3
 task ai:eval -- --models gemini-3.5-flash,<second model> \
   --price-in gemini-3.5-flash=1.65,<second model>=<usd> --price-out gemini-3.5-flash=9.90,<second model>=<usd>
@@ -148,7 +160,7 @@ task ai:eval -- --models gemini-3.5-flash,<second model> \
 
 **The eval report is the owner's to review.** The owner reads it, picks the chat model, and PLAN.md D33
 records the choice (model id, region, prices). Until then D33 is provisional: `gemini-3.5-flash` in the
-`eu` multi-region, with the embeddings in `europe-west3`. Newer models appear all the time, so check
+`europe-west3`, with the embeddings there too. Newer models appear all the time, so check
 that a model is offered in the region before you add it to the comparison ([[References]] has the
 locations page).
 

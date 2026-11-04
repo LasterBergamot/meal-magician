@@ -25,8 +25,10 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -62,6 +64,7 @@ public class DraftGenerator {
   private final OccasionService occasions;
   private final EmbeddingIndex index;
   private final Clock clock;
+  private final String chatModel;
 
   /**
    * Creates the generator.
@@ -75,6 +78,11 @@ public class DraftGenerator {
    * @param occasions the planner's occasion service, for the tools
    * @param index the meal search, for the tools
    * @param clock the application clock
+   * @param chatModel the configured chat model id ({@code spring.ai.google.genai.chat.model}, set
+   *     from {@code AI_CHAT_MODEL}); every tool-calling request names it, because the Google client
+   *     would otherwise fall back to a model this project has no access to
+   * @throws IllegalStateException if {@code chatModel} is blank, so a missing setting stops the
+   *     start-up instead of sending a request with no model
    */
   public DraftGenerator(
       ModelGateway gateway,
@@ -85,7 +93,13 @@ public class DraftGenerator {
       RatingService ratings,
       OccasionService occasions,
       EmbeddingIndex index,
-      Clock clock) {
+      Clock clock,
+      @Value("${spring.ai.google.genai.chat.model:}") String chatModel) {
+    if (chatModel == null || chatModel.isBlank()) {
+      throw new IllegalStateException(
+          "spring.ai.google.genai.chat.model (AI_CHAT_MODEL) must be set when mm.ai.enabled=true");
+    }
+    this.chatModel = chatModel;
     this.gateway = gateway;
     this.prompts = prompts;
     this.meals = meals;
@@ -157,9 +171,7 @@ public class DraftGenerator {
       if (attempt > 0) {
         throw new DraftGenerationException(failure(result));
       }
-      messages = new ArrayList<>(messages);
-      messages.add(new AssistantMessage(reply));
-      messages.add(new UserMessage(complaint));
+      messages = withComplaint(messages, reply, complaint);
     }
   }
 
@@ -203,15 +215,38 @@ public class DraftGenerator {
       if (proposal != null && (attempt > 0 || !hasUnknownIds(proposal, names))) {
         return usable(proposal, names);
       }
-      messages = new ArrayList<>(messages);
-      messages.add(new AssistantMessage(reply));
-      messages.add(
-          new UserMessage(
+      messages =
+          withComplaint(
+              messages,
+              reply,
               proposal == null
                   ? "Your last answer was not valid JSON in the required format. Answer again"
                       + " with only the JSON."
-                  : "Some meal ids are not in the library. Use only ids returned by the tools."));
+                  : "Some meal ids are not in the library. Use only ids returned by the tools.");
     }
+  }
+
+  /**
+   * The conversation for the second try: the messages so far, the model's last answer and what was
+   * wrong with it.
+   *
+   * <p>The answer is echoed back only when it has text. Gemini answers an empty message with HTTP
+   * 400 ("must include at least one parts field"), and a model can well answer with nothing (#183);
+   * then the complaint alone follows the original request, and it says what to do.
+   *
+   * @param messages the messages sent last time; not changed
+   * @param reply the model's answer, possibly empty; never {@code null}
+   * @param complaint what was wrong with the answer, never empty
+   * @return a new list: the messages, the answer (when it has text) and the complaint
+   */
+  private static List<Message> withComplaint(
+      List<Message> messages, String reply, String complaint) {
+    List<Message> next = new ArrayList<>(messages);
+    if (!reply.isBlank()) {
+      next.add(new AssistantMessage(reply));
+    }
+    next.add(new UserMessage(complaint));
+    return next;
   }
 
   private static boolean hasUnknownIds(SlotProposal proposal, Map<Long, String> names) {
@@ -247,7 +282,8 @@ public class DraftGenerator {
    *
    * @param userId the member the tools run as
    * @param householdId the household the tools are bound to
-   * @return the chat options carrying the tool callbacks
+   * @return the Google GenAI chat options carrying the tool callbacks and the configured model id
+   *     (typed as the common interface, which is all the callers and the test doubles need)
    */
   ToolCallingChatOptions toolOptions(long userId, long householdId) {
     AssistantTools tools =
@@ -261,7 +297,13 @@ public class DraftGenerator {
             occasions,
             index,
             clock);
-    return ToolCallingChatOptions.builder().toolCallbacks(ToolCallbacks.from(tools)).build();
+    // The Google client casts the options to GoogleGenAiChatOptions, so the generic builder would
+    // fail with a ClassCastException. It also needs the model id on every request: without it the
+    // SDK falls back to its own default model, which this project has no access to (#183).
+    return GoogleGenAiChatOptions.builder()
+        .model(chatModel)
+        .toolCallbacks(ToolCallbacks.from(tools))
+        .build();
   }
 
   private static SlotProposal parseSlot(BeanOutputConverter<SlotProposal> converter, String reply) {

@@ -12,3 +12,8 @@ spring:
       chat: none
       embedding:
         text: none
+    google:
+      genai:
+        chat:
+          # DraftGenerator refuses to start without a chat model id; the scripted model ignores it.
+          model: scripted-model

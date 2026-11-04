@@ -2,6 +2,7 @@ package hu.lasterbergamot.mealmagician.assistant.eval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import hu.lasterbergamot.mealmagician.assistant.ModelUnavailableException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -117,6 +118,28 @@ class ReportTest {
         .contains("- `plain-week` run 2: language: looks like en")
         .contains("### lite")
         .contains("- `less-meat` run 1: no answer (DraftGenerationException: bad)");
+  }
+
+  @Test
+  void aFailedRunShowsTheReasonOfTheModelFailureAndNoPromptText() {
+    String reason =
+        EvalHarness.describe(new ModelUnavailableException("the call failed (ClientException)"));
+    RunResult failed =
+        new RunResult("flash", "plain-week", 1, List.of(), reason, 0, 0, 0, 1, false);
+
+    String report = Report.render(List.of(failed), meta(Set.of()));
+
+    assertThat(report)
+        .contains(
+            "- `plain-week` run 1: no answer (The AI model is unavailable: the call failed"
+                + " (ClientException))")
+        .doesNotContain("(ModelUnavailableException)");
+  }
+
+  @Test
+  void aFailureOfAnotherKindIsReducedToItsClassNameBecauseItsMessageMightQuoteMemberText() {
+    assertThat(EvalHarness.describe(new IllegalStateException("Plan us a week, said Anna")))
+        .isEqualTo("IllegalStateException");
   }
 
   @Test
