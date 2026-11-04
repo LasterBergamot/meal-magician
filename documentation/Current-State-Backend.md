@@ -39,6 +39,25 @@ foundation (#157, below) and the features are still to come.
     made. Usage is added with one `UPDATE x = x + n` (row created with `ON CONFLICT DO NOTHING`
     first) in a transaction of its own, so concurrent calls lose nothing. Cost is rounded up per
     call. The check is before the call, so two simultaneous calls can overshoot the cap by one call.
+  - **Meal search index (#158).** `EmbeddingIndex` finds the household's meals that fit a request
+    ("something light with vegetables") without sending the library to the model. The vectors live
+    in `meal_embedding` (V14, Postgres only, `vector(768)`), written by `EmbeddingStore` with
+    `JdbcClient`. Every row carries `household_id`, and a composite foreign key to `meal` makes the
+    database refuse a cross-household row and delete the row with its meal. **It stays current
+    without events or a scheduler:** Cloud Run throttles the CPU after a response and nothing may
+    wake the app on a timer (D11), so `sync(userId, householdId)` runs inside the assistant's own
+    request. It builds one text per active meal (`MealDocument`: name, tags, ingredients, occasion
+    types, notes, at most 2 000 characters; **no ratings and no recipe link**, so the text changes
+    only when the meal does), hashes it with the model id and vector size, and embeds only meals
+    whose stored hash differs or is missing, in batches of 50 through `ModelGateway` (so the spend
+    cap and timeout apply). Rows of archived or removed meals are deleted; a changed model id or
+    size changes every hash and re-embeds everything. A per-household lock makes two simultaneous
+    requests embed once. `search(userId, householdId, query, limit)` embeds the query and returns
+    meal ids by cosine distance, always `WHERE household_id = ?`, never archived meals; it does not
+    sync (the caller decides). There is no vector index: a household has hundreds of meals, so a
+    scan is exact and fast. Meal text (names, notes, ingredients) goes to Vertex to be embedded and
+    is never logged. The table is derived data and can be rebuilt; the H2 profile has no such table,
+    so the assistant is unavailable without Postgres.
   - **Public API:** `AssistantService.enabled()` and `usageThisMonth(userId, householdId)` (members
     only; 404 while off). `ProductionConfigGuard` fails a `prod` start with the assistant on and a
     project, location, model id or price missing.
