@@ -9,7 +9,7 @@
 # digest from `docker image inspect eclipse-temurin:25-jdk --format '{{index .RepoDigests 0}}'`
 # (Dependabot's docker ecosystem proposes the same change weekly).
 
-FROM eclipse-temurin:25-jdk@sha256:83f4a7fc27df94dcc7b8de04d14cbbba8da14406f921e966969c3b09000aa507 AS build
+FROM eclipse-temurin:25-jdk@sha256:b8705e936964c228dfce359e63dbf08f6c69cb380ed1d576b1f6b1064f15567d AS build
 # scripts/install-tailwind.sh downloads the Tailwind CLI with curl, which the JDK image lacks.
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends curl \
@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/root/.gradle \
     # Unpack into app.jar + lib/: CDS and AOT caches cannot read the nested jars of a fat jar.
     && java -Djarmode=tools -jar build/libs/app.jar extract --destination /workspace/extracted
 
-FROM eclipse-temurin:25-jre@sha256:ecdc0adb37bde1a281c4d245a3cd535004b1fc8322d560f5b09463b248c81df0
+FROM eclipse-temurin:25-jre@sha256:a640968ae55027b322cedd5f8228b01a84baff0b9e9360e47601c6a111ba1699
 # uid 10001 is not in use by the base image; no home directory and no login shell.
 RUN groupadd --gid 10001 app \
     && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin app
