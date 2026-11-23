@@ -46,7 +46,7 @@ dependencies {
     // ci.yml fails on it). This pins the fixed release for every configuration. Remove it when the
     // SDK's own Guava is new enough.
     constraints {
-        implementation("com.google.guava:guava:33.7.2-jre") {
+        implementation("com.google.guava:guava:33.8.0-jre") {
             because("CVE-2026-102554 in the Guava 33.4.0 that the Google GenAI SDK brings in")
         }
     }
