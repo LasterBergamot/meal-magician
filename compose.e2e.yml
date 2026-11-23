@@ -48,7 +48,7 @@ services:
   # navikt/mock-oauth2-server: a small OIDC provider. With interactiveLogin off it answers the
   # authorization request at once; the token callback in the config file decides who signs in.
   oidc:
-    image: ghcr.io/navikt/mock-oauth2-server@sha256:647dd8c78a54f0e6fcd58d79c884e612f8f998a0662276f3e1db22e464a50192
+    image: ghcr.io/navikt/mock-oauth2-server@sha256:eb07a0a65007c34c40c7b849592a47e6299128a514a5c6c582a53451cc6e3390
     environment:
       SERVER_PORT: "18081"
       JSON_CONFIG_PATH: /config/config.json
